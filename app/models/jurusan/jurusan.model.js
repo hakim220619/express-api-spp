@@ -1,33 +1,36 @@
 const db = require("../../config/db.config");
 const bcrypt = require("bcrypt");
 // constructor
-const Kelas = function (data) {
+const Jurusan = function (data) {
   this.id = data.uid;
   this.school_id = data.school_id;
-  this.class_name = data.class_name;
-  this.class_desc = data.class_desc;
-  this.class_status = data.class_status || null; // Fallback to null if not provided
+  this.major_name = data.major_name;
+  this.major_status = data.major_status || 'ON'; // Fallback to null if not provided
   // Timestamps and created/updated information
   this.created_at = data.created_at || new Date(); // Use current date if not provided
 };
 
-Kelas.create = (newUsers, result) => {
-  db.query("INSERT INTO class SET ?", newUsers, (err, res) => {
+Jurusan.create = (newJurusan, result) => {
+    console.log(newJurusan);
+    
+  db.query("INSERT INTO major SET ?", newJurusan, (err, res) => {
     if (err) {
       console.log("error: ", err);
       result(err, null);
       return;
     }
 
-    console.log("created Kelas: ", { id: res.insertId, ...newUsers });
-    result(null, { id: res.insertId, ...newUsers });
+    console.log("created Jurusan: ", { id: res.insertId, ...newJurusan });
+    result(null, { id: res.insertId, ...newJurusan });
   });
 };
 
-Kelas.update = (newUsers, result) => {
+Jurusan.update = (newJurusan, result) => {
+    console.log(newJurusan);
+    
   db.query(
-    "UPDATE class SET ? WHERE id = ?",
-    [newUsers, newUsers.id],
+    "UPDATE major SET ? WHERE id = ?",
+    [newJurusan, newJurusan.id],
     (err, res) => {
       if (err) {
         console.error("Error: ", err);
@@ -39,24 +42,24 @@ Kelas.update = (newUsers, result) => {
         result({ kind: "not_found" }, null);
         return;
       }
-      console.log("Updated User: ", { id: newUsers.id, ...newUsers });
-      result(null, { id: newUsers.uid, ...newUsers });
+      console.log("Updated Jurusan: ", { id: newJurusan.id, ...newJurusan });
+      result(null, { id: newJurusan.uid, ...newJurusan });
     }
   );
 };
 
-Kelas.listKelas = (class_name, school_id, status, result) => {
+Jurusan.listJurusan = (major_name, school_id, major_status, result) => {
   let query =
-    "SELECT ROW_NUMBER() OVER () AS no, c.*  FROM class c WHERE 1=1";
+    "SELECT ROW_NUMBER() OVER () AS no, m.*  FROM major m WHERE 1=1";
 
-  if (class_name) {
-    query += ` AND c.class_name like '%${class_name}%'`;
+  if (major_name) {
+    query += ` AND m.major_name like '%${major_name}%'`;
   }
   if (school_id) {
-    query += ` AND c.school_id = '${school_id}'`;
+    query += ` AND m.school_id = '${school_id}'`;
   }
-  if (status) {
-    query += ` AND c.status = '${status}'`;
+  if (major_status) {
+    query += ` AND m.major_status = '${major_status}'`;
   }
 
   db.query(query, (err, res) => {
@@ -69,8 +72,8 @@ Kelas.listKelas = (class_name, school_id, status, result) => {
     result(null, res);
   });
 };
-Kelas.delete = (uid, result) => {
-  let query = `DELETE FROM class WHERE id = '${uid}'`;
+Jurusan.delete = (uid, result) => {
+  let query = `DELETE FROM major WHERE id = '${uid}'`;
   db.query(query, (err, res) => {
     if (err) {
       console.log("error: ", err);
@@ -81,9 +84,9 @@ Kelas.delete = (uid, result) => {
     result(null, res);
   });
 };
-Kelas.detailKelas = async (uid, result) => {
+Jurusan.detailJurusan = async (uid, result) => {
   let query =
-    "SELECT * from class where id = '" +
+    "SELECT * from major where id = '" +
     uid +
     "'";
   db.query(query, (err, res) => {
@@ -98,4 +101,4 @@ Kelas.detailKelas = async (uid, result) => {
   });
 };
 
-module.exports = Kelas;
+module.exports = Jurusan;

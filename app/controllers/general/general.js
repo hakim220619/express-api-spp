@@ -130,6 +130,33 @@ exports.getClass = (req, res, next) => {
     res.status(200).send(data);
   });
 };
+exports.getMonths = (req, res, next) => {
+  const schoolId = req.query.schoolId;
+
+  // Validasi jika schoolId tidak ada di query
+  if (!schoolId) {
+    return res.status(400).json({ error: "schoolId is required" });
+  }
+
+  // Panggil fungsi General.getMonths dengan schoolId sebagai parameter
+  General.getMonths(schoolId, (err, data) => {
+    if (err) {
+      return res.status(500).send({
+        message: err.message || "Some error occurred while retrieving majors.",
+      });
+    }
+
+    // Jika data ditemukan, kirimkan respons dengan data
+    if (!data || data.length === 0) {
+      return res
+        .status(404)
+        .json({ message: "No majors found for this schoolId." });
+    }
+
+    // Kirimkan data jurusan yang ditemukan
+    res.status(200).send(data);
+  });
+};
 
 exports.generate = (req, res) => {
   Generate.create((err, data) => {

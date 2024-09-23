@@ -113,7 +113,7 @@ Admin.detailAdmin = async (uid, result) => {
       return;
     }
 
-    console.log("users: ", res);
+    // console.log("users: ", res);
     result(null, res[0]);
   });
 };

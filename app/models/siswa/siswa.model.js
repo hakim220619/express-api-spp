@@ -109,7 +109,7 @@ Siswa.delete = (uid, result) => {
     result(null, res);
   });
 };
-Siswa.detailAdmin = async (uid, result) => {
+Siswa.detailSiswa = async (uid, result) => {
   let query =
     "SELECT u.*, r.role_name, s.school_name FROM users u, role r, school s WHERE u.role=r.id AND u.school_id=s.id AND u.uid = '" +
     uid +

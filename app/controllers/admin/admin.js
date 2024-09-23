@@ -60,7 +60,7 @@ exports.createAdmin = [
       const admin = new Admin({
         uid: uuidv4(),
         school_id: school,
-        full_name: full_name,
+        full_name: full_name.toUpperCase(),
         email: email,
         address: address,
         phone: phone,
@@ -103,7 +103,7 @@ exports.updateAdmin = [
     try {
       const admin = new Admin({
         uid: req.body.data.uid,
-        full_name: req.body.data.full_name,
+        full_name: req.body.data.full_name.toUpperCase(),
         email: req.body.data.email,
         date_of_birth: req.body.data.date_of_birth,
         address: req.body.data.address,

@@ -13,9 +13,6 @@ Login.loginAction = async (req, res) => {
     db.query(
       `SELECT u.*, r.role_name FROM users u, role r WHERE u.role=r.id and u.email = '${req.email}'`,
       async (err, respons) => {
-        console.log(err);
-        console.log(respons);
-        
         if (respons.length == 0) {
           res(err, {
             message: "Email tidak terdaftar!.",

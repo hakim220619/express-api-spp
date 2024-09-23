@@ -100,78 +100,24 @@ General.getClass = async (schoolId, result) => {
     result(null, res);
   });
 };
+General.getMonths = async (schoolId, result) => {
+  // Siapkan query dasar
+  let query = "SELECT * FROM months WHERE month_status = 'ON'";
 
-General.getReligion = async (result) => {
-  let query = "SELECT * from religion where religion_status = 'ON'";
-  db.query(query, (err, res) => {
-    if (err) {
-      console.log("error: ", err);
-      result(null, err);
-      return;
-    }
-
-    // console.log("role: ", res);
-    result(null, res);
-  });
-};
-General.getWorking = async (result) => {
-  let query = "SELECT * from work where work_status = 'ON'";
-  db.query(query, (err, res) => {
-    if (err) {
-      console.log("error: ", err);
-      result(null, err);
-      return;
-    }
-
-    // console.log("role: ", res);
-    result(null, res);
-  });
-};
-General.getMaritalStatus = async (result) => {
-  let query = "SELECT * from marital_status where ms_status = 'ON'";
-  db.query(query, (err, res) => {
-    if (err) {
-      console.log("error: ", err);
-      result(null, err);
-      return;
-    }
-
-    // console.log("role: ", res);
-    result(null, res);
-  });
-};
-General.getIdentityTypes = async (result) => {
-  let query = "SELECT * from identity_type where idt_status = 'ON'";
-  db.query(query, (err, res) => {
-    if (err) {
-      console.log("error: ", err);
-      result(null, err);
-      return;
-    }
-
-    // console.log("role: ", res);
-    result(null, res);
-  });
-};
-General.getCompany = async (company_id, result) => {
-  // Construct the query based on whether company_id is provided
-  let query = "SELECT * FROM company WHERE company_status = 'ON'";
-  const queryParams = [];
-
-  if (company_id != '1') {
-    query += " AND id = ?";
-    queryParams.push(company_id);
+  // Jika schoolId ada, tambahkan filter berdasarkan school_id
+  if (schoolId) {
+    query += " AND school_id = ?";
   }
 
-  // Execute the query with or without the company_id filter
-  db.query(query, queryParams, (err, res) => {
+  // Eksekusi query dengan atau tanpa parameter schoolId
+  db.query(query, [schoolId], (err, res) => {
     if (err) {
-      console.log("error: ", err);
+      console.log("Error: ", err);
       result(null, err);
       return;
     }
 
-    // Return the result
+    // Kembalikan hasil query
     result(null, res);
   });
 };

@@ -64,7 +64,7 @@ exports.createSiswa = [
         uid: uuidv4(),
         nisn: nisn,
         school_id: school_id,
-        full_name: full_name,
+        full_name: full_name.toUpperCase(),
         email: email,
         address: address,
         phone: phone,
@@ -110,7 +110,7 @@ exports.updateSiswa = [
       const siswa = new Siswa({
         uid: req.body.data.uid,
         nisn: req.body.data.nisn,
-        full_name: req.body.data.full_name,
+        full_name: req.body.data.full_name.toUpperCase(),
         email: req.body.data.email,
         date_of_birth: req.body.data.date_of_birth,
         address: req.body.data.address,
@@ -155,10 +155,10 @@ exports.delete = (req, res) => {
   });
 };
 
-exports.detailAdmin = (req, res, next) => {
+exports.detailSiswa = (req, res, next) => {
   const uid = req.body.uid;
   // console.log(req);
-  Siswa.detailAdmin(uid, (err, data) => {
+  Siswa.detailSiswa(uid, (err, data) => {
     if (err)
       res.status(500).send({
         message:

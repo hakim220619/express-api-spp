@@ -5,6 +5,9 @@ module.exports = (app) => {
   const Register = require("../controllers/Auth/register.js");
   const Login = require("../controllers/Auth/login.js");
   const Kelas = require("../controllers/kelas/kelas.js");
+  const Jurusan = require("../controllers/jurusan/jurusan.js");
+  const Bulan = require("../controllers/bulan/bulan.js");
+  const SettingPembayaran = require("../controllers/setting/pembayaran/pembayaran.js");
   const general = require("../controllers/general/general.js");
   const token = require("../../app/config/tokenHandler.js");
   var router = require("express").Router();
@@ -12,6 +15,7 @@ module.exports = (app) => {
   router.post("/login", Login.login);
   router.post("/register", Register.register);
   router.get("/cheklogin", token.authenticateToken, Login.cheklogin);
+  router.post("/refresh-token", token.authenticateToken, Login.refreshToken);
   //Admin
   router.get("/list-admin", token.authenticateToken, Admin.listAdmin);
   router.post("/create-admin", token.authenticateToken, Admin.createAdmin);
@@ -23,19 +27,44 @@ module.exports = (app) => {
   router.post("/create-siswa", token.authenticateToken, Siswa.createSiswa);
   router.post("/update-siswa", token.authenticateToken, Siswa.updateSiswa);
   router.post("/delete-siswa", token.authenticateToken, Siswa.delete);
-    // router.post("/detailSiswa", token.authenticateToken, Siswa.detailSiswa);
+  router.post("/detailSiswa", token.authenticateToken, Siswa.detailSiswa);
   //kelas
   router.get("/list-kelas", token.authenticateToken, Kelas.listKelas);
-  // router.post("/create-siswa", token.authenticateToken, Siswa.createSiswa);
-  // router.post("/update-siswa", token.authenticateToken, Siswa.updateSiswa);
-  // router.post("/delete-siswa", token.authenticateToken, Siswa.delete);
-
+  router.post("/create-kelas", token.authenticateToken, Kelas.createKelas);
+  router.post("/update-kelas", token.authenticateToken, Kelas.updateKelas);
+  router.post("/delete-kelas", token.authenticateToken, Kelas.delete);
+  router.post("/detailKelas", token.authenticateToken, Kelas.detailKelas);
+  //Jurusan
+  router.get("/list-jurusan", token.authenticateToken, Jurusan.listJurusan);
+  router.post(
+    "/create-jurusan",
+    token.authenticateToken,
+    Jurusan.createJurusan
+  );
+  router.post(
+    "/update-jurusan",
+    token.authenticateToken,
+    Jurusan.updateJurusan
+  );
+  router.post("/delete-jurusan", token.authenticateToken, Jurusan.delete);
+  router.post("/detailJurusan", token.authenticateToken, Jurusan.detailJurusan);
+  //Bulan
+  router.get("/list-bulan", token.authenticateToken, Bulan.listBulan);
+  router.post("/update-bulan", token.authenticateToken, Bulan.updateBulan);
+  router.post("/detailBulan", token.authenticateToken, Bulan.detailBulan);
+  //Setting Pembayaran
+  router.get("/list-setting-pembayaran", token.authenticateToken, SettingPembayaran.listSettingPembayaran);
+  router.post("/create-setting-pembayaran", token.authenticateToken, SettingPembayaran.createSettingPembayaran);
+  // router.post("/update-kelas", token.authenticateToken, Kelas.updateKelas);
+  router.post("/delete-setting-pembayaran", token.authenticateToken, SettingPembayaran.delete);
+  router.post("/detailSettingPembayaran", token.authenticateToken, SettingPembayaran.detailSettingPembayaran);
 
   //General
   router.get("/getSchool", token.authenticateToken, general.getSchool);
   router.get("/getRole", token.authenticateToken, general.getRole);
   router.get("/getMajors", token.authenticateToken, general.getMajors);
   router.get("/getClass", token.authenticateToken, general.getClass);
+  router.get("/getMonths", token.authenticateToken, general.getMonths);
 
   //Anggota
   // router.get("/list-anggota", token.authenticateToken, Anggota.listAnggota);

@@ -36,3 +36,19 @@ exports.cheklogin = async (req, res) => {
     else res.status(200).send(data);
   });
 };
+exports.refreshToken = async (req, res) => {
+
+  
+  const AccessToken = req.headers["authorization"];
+  console.log(AccessToken);
+  Login.cheklogin(AccessToken, (err, data) => {
+    console.log(err);
+    
+    if (err != 200)
+      res.status(500).send({
+        message:
+          err.message || "Some error occurred while retrieving ChekLogin.",
+      });
+    else res.status(200).send(data);
+  });
+};

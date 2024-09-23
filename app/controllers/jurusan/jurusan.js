@@ -1,16 +1,16 @@
-const Kelas = require("../../models/kelas/kelas.model.js");
+const Jurusan = require("../../models/jurusan/jurusan.model.js");
 const { v4: uuidv4 } = require("uuid");
 const bcrypt = require("bcrypt");
 const multer = require("multer");
 const upload = multer();
 
 // Retrieve all Admins from the database with conditions
-exports.listKelas = (req, res, next) => {
-  const class_name = req.query.q;
+exports.listJurusan = (req, res, next) => {
+  const major_name = req.query.q;
   const school_id = req.query.school_id;
-  const status = req.query.status;
+  const major_status = req.query.major_status;
 
-  Kelas.listKelas(class_name, school_id, status, (err, data) => {
+  Jurusan.listJurusan(major_name, school_id, major_status, (err, data) => {
     if (err)
       res.status(500).send({
         message: err.message || "Some error occurred while retrieving Data.",
@@ -20,7 +20,7 @@ exports.listKelas = (req, res, next) => {
 };
 
 // Create new Admin
-exports.createKelas = [
+exports.createJurusan = [
   upload.none(),
   async (req, res) => {
     // Validate request
@@ -30,20 +30,19 @@ exports.createKelas = [
       });
     }
 
-    const { school_id, class_name, class_desc, class_status } = req.body;
+    const { school_id, major_name, major_status } = req.body;
 
     try {
       // Create new admin object
-      const kelas = new Kelas({
+      const jurusan = new Jurusan({
         school_id: school_id,
-        class_name: class_name,
-        class_desc: class_desc,
-        class_status: class_status || "ON",
+        major_name: major_name.toUpperCase(),
+        major_status: major_status || "ON",
         created_at: new Date(),
       });
 
       // Save admin to the database
-      Kelas.create(kelas, (err, data) => {
+      Jurusan.create(jurusan, (err, data) => {
         if (err) {
           return res.status(500).send({
             message:
@@ -60,7 +59,7 @@ exports.createKelas = [
 ];
 
 // Update existing Admin
-exports.updateKelas = [
+exports.updateJurusan = [
   upload.none(),
   async (req, res) => {
     if (!req.body) {
@@ -70,15 +69,16 @@ exports.updateKelas = [
     }
 
     try {
-      const kelas = new Kelas({
+      const jurusan = new Jurusan({
         uid: req.body.data.uid,
         school_id: req.body.data.school_id,
-        class_name: req.body.data.class_name,
-        class_desc: req.body.data.class_desc,
-        class_status: req.body.data.class_status,
+        major_name: req.body.data.major_name.toUpperCase(),
+        major_status: req.body.data.major_status,
         updated_at: new Date(),
       }); 
-      Kelas.update(kelas, (err, data) => {
+      console.log(req.body.data);
+      
+      Jurusan.update(jurusan, (err, data) => {
         if (err) {
           return res.status(500).send({
             message:
@@ -98,10 +98,10 @@ exports.updateKelas = [
 exports.delete = (req, res) => {
   const uid = req.body.data;
 
-  Kelas.delete(uid, (err, data) => {
+  Jurusan.delete(uid, (err, data) => {
     if (err) {
       return res.status(500).send({
-        message: err.message || "Some error occurred while deleting the Admin.",
+        message: err.message || "Some error occurred while deleting the Jurusan.",
       });
     } else {
       res.send(data);
@@ -109,10 +109,10 @@ exports.delete = (req, res) => {
   });
 };
 
-exports.detailKelas = (req, res, next) => {
+exports.detailJurusan = (req, res, next) => {
   const uid = req.body.uid;
   // console.log(req);
-  Kelas.detailKelas(uid, (err, data) => {
+  Jurusan.detailJurusan(uid, (err, data) => {
     if (err)
       res.status(500).send({
         message:

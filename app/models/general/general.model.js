@@ -105,12 +105,17 @@ General.getMonths = async (schoolId, result) => {
   let query = "SELECT * FROM months WHERE month_status = 'ON'";
 
   // Jika schoolId ada, tambahkan filter berdasarkan school_id
+  const params = [];
   if (schoolId) {
     query += " AND school_id = ?";
+    params.push(schoolId);
   }
 
-  // Eksekusi query dengan atau tanpa parameter schoolId
-  db.query(query, [schoolId], (err, res) => {
+  // Urutkan hasil berdasarkan month_number
+  query += " ORDER BY month_number ASC";
+
+  // Eksekusi query dengan parameter yang sesuai
+  db.query(query, params, (err, res) => {
     if (err) {
       console.log("Error: ", err);
       result(null, err);
@@ -121,6 +126,7 @@ General.getMonths = async (schoolId, result) => {
     result(null, res);
   });
 };
+
 
 
 module.exports = General;

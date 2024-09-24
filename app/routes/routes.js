@@ -54,10 +54,15 @@ module.exports = (app) => {
   router.post("/detailBulan", token.authenticateToken, Bulan.detailBulan);
   //Setting Pembayaran
   router.get("/list-setting-pembayaran", token.authenticateToken, SettingPembayaran.listSettingPembayaran);
+  router.get("/list-setting-pembayaran-detail", token.authenticateToken, SettingPembayaran.listSettingPembayaranDetail);
   router.post("/create-setting-pembayaran", token.authenticateToken, SettingPembayaran.createSettingPembayaran);
+  router.post("/create-payment-byMonth", token.authenticateToken, SettingPembayaran.createPaymentByMonth);
+  router.post("/create-payment-byStudent", token.authenticateToken, SettingPembayaran.createPaymentByStudent);
   // router.post("/update-kelas", token.authenticateToken, Kelas.updateKelas);
   router.post("/delete-setting-pembayaran", token.authenticateToken, SettingPembayaran.delete);
+  router.post("/delete-setting-pembayaran-detail", token.authenticateToken, SettingPembayaran.deleteDetail);
   router.post("/detailSettingPembayaran", token.authenticateToken, SettingPembayaran.detailSettingPembayaran);
+  router.post("/detailSettingPembayaranByUid", token.authenticateToken, SettingPembayaran.detailSettingPembayaranByUid);
 
   //General
   router.get("/getSchool", token.authenticateToken, general.getSchool);

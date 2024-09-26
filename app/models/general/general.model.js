@@ -58,6 +58,19 @@ General.getRole = async (result) => {
     result(null, res);
   });
 };
+General.getTypePayment = async (result) => {
+  let query = "SELECT * from type_payment";
+  db.query(query, (err, res) => {
+    if (err) {
+      console.log("error: ", err);
+      result(null, err);
+      return;
+    }
+
+    // console.log("role: ", res);
+    result(null, res);
+  });
+};
 General.getMajors = async (schoolId, result) => {
   // Siapkan query dasar
   let query = "SELECT * FROM major WHERE major_status = 'ON'";

@@ -31,15 +31,15 @@ exports.listSettingPembayaran = (req, res, next) => {
 exports.listSettingPembayaranDetail = (req, res, next) => {
   const full_name = req.query.q;
   const school_id = req.query.school_id;
-  const years = req.query.year;
-  const status = req.query.status;
+  const clas = req.query.clas;
+  const major = req.query.major;
   const setting_payment_uid = req.query.setting_payment_uid;
 
   SettingPembayaran.listSettingPembayaranDetail(
     full_name,
     school_id,
-    years,
-    status,
+    clas,
+    major,
     setting_payment_uid,
     (err, data) => {
       if (err)
@@ -106,6 +106,55 @@ exports.createSettingPembayaran = [
   },
 ];
 
+exports.createPaymentByFree = [
+  upload.none(),
+  async (req, res) => {
+    if (!req.body) {
+      return res.status(400).send({ message: "Content cannot be empty!" });
+    }
+
+    const {
+      school_id,
+      sp_name,
+      years,
+      sp_type,
+      sp_status,
+      class_id,
+      major_id,
+      amount
+    } = req.body;
+
+    try {
+      const st_pembayaran = new SettingPembayaran({
+        uid: `${uuidv4()}-${Date.now()}`,
+        setting_payment_uid: req.body.uid,
+        school_id,
+        sp_name: sp_name.toUpperCase(),
+        years,
+        sp_type,
+        sp_status: sp_status || "ON",
+        created_at: new Date(),
+        class_id,
+        major_id,
+        amount
+      });
+
+      SettingPembayaran.createPaymentByFree(st_pembayaran, (err, data) => {
+        if (err) {
+          return res.status(500).send({
+            message:
+              err.message || "Some error occurred while creating the payment.",
+          });
+        }
+        res.send(data);
+      });
+    } catch (error) {
+      res
+        .status(500)
+        .send({ message: "Error creating payment: " + error.message });
+    }
+  },
+];
 exports.createPaymentByMonth = [
   upload.none(),
   async (req, res) => {
@@ -211,6 +260,146 @@ exports.createPaymentByStudent = [
     }
   },
 ];
+exports.updateSettingPaymentByMonth = [
+  upload.none(),
+  async (req, res) => {
+    if (!req.body) {
+      return res.status(400).send({ message: "Content cannot be empty!" });
+    }
+
+    const {
+      uid,
+      setting_payment_uid,
+      school_id,
+      years,
+      sp_type,
+      months,
+    } = req.body;
+
+    try {
+      const st_pembayaran = new SettingPembayaran({
+        setting_payment_uid,
+        uid,
+        school_id,
+        years,
+        sp_type,
+        created_at: new Date(),
+        months,
+      });
+      // console.log(st_pembayaran);
+
+      SettingPembayaran.updateSettingPaymentByMonth(st_pembayaran, (err, data) => {
+        if (err) {
+          return res.status(500).send({
+            message:
+              err.message || "Some error occurred while creating the payment.",
+          });
+        }
+        res.send(data);
+      });
+    } catch (error) {
+      res
+        .status(500)
+        .send({ message: "Error creating payment: " + error.message });
+    }
+  },
+];
+exports.updateSettingPaymentByFree = [
+  upload.none(),
+  async (req, res) => {
+    if (!req.body) {
+      return res.status(400).send({ message: "Content cannot be empty!" });
+    }
+
+    const {
+      uid,
+      setting_payment_uid,
+      school_id,
+      years,
+      sp_type,
+      amount,
+    } = req.body;
+
+    try {
+      const st_pembayaran = new SettingPembayaran({
+        setting_payment_uid,
+        uid,
+        school_id,
+        years,
+        sp_type,
+        created_at: new Date(),
+        amount,  
+      });
+      // console.log(st_pembayaran);
+
+      SettingPembayaran.updateSettingPaymentByFree(st_pembayaran, (err, data) => {
+        if (err) {
+          return res.status(500).send({
+            message:
+              err.message || "Some error occurred while creating the payment.",
+          });
+        }
+        res.send(data);
+      });
+    } catch (error) {
+      res
+        .status(500)
+        .send({ message: "Error creating payment: " + error.message });
+    }
+  },
+];
+exports.createPaymentByFreeStudent = [
+  upload.none(),
+  async (req, res) => {
+    if (!req.body) {
+      return res.status(400).send({ message: "Content cannot be empty!" });
+    }
+
+    const {
+      user_id,
+      school_id,
+      sp_name,
+      years,
+      sp_type,
+      sp_status,
+      class_id,
+      major_id,
+      amount
+    } = req.body;
+
+    try {
+      const st_pembayaran = new SettingPembayaran({
+        uid: `${uuidv4()}-${Date.now()}`,
+        user_id,
+        setting_payment_uid: req.body.uid,
+        school_id,
+        sp_name: sp_name.toUpperCase(),
+        years,
+        sp_type,
+        sp_status: sp_status || "ON",
+        created_at: new Date(),
+        class_id,
+        major_id,
+        amount,
+      });
+      // console.log(st_pembayaran);
+
+      SettingPembayaran.createPaymentByFreeStudent(st_pembayaran, (err, data) => {
+        if (err) {
+          return res.status(500).send({
+            message:
+              err.message || "Some error occurred while creating the payment.",
+          });
+        }
+        res.send(data);
+      });
+    } catch (error) {
+      res
+        .status(500)
+        .send({ message: "Error creating payment: " + error.message });
+    }
+  },
+];
 
 // Delete an Admin
 exports.delete = (req, res) => {
@@ -266,6 +455,18 @@ exports.detailSettingPembayaranByUid = (req, res, next) => {
   const uid = req.body.uid;
   // console.log(req);
   SettingPembayaran.detailSettingPembayaranByUid(uid, (err, data) => {
+    if (err)
+      res.status(500).send({
+        message:
+          err.message || "Some error occurred while retrieving tutorials.",
+      });
+    else res.send(data);
+  });
+};
+exports.detailSettingPembayaranByUidFree = (req, res, next) => {
+  const uid = req.body.id;
+  console.log(req.body);
+  SettingPembayaran.detailSettingPembayaranByUidFree(uid, (err, data) => {
     if (err)
       res.status(500).send({
         message:

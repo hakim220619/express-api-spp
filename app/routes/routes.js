@@ -7,6 +7,10 @@ module.exports = (app) => {
   const Kelas = require("../controllers/kelas/kelas.js");
   const Jurusan = require("../controllers/jurusan/jurusan.js");
   const Bulan = require("../controllers/bulan/bulan.js");
+  const Sekolah = require("../controllers/sekolah/sekolah.js");
+  const Aplikasi = require("../controllers/aplikasi/aplikasi.js");
+  const Dashboard = require("../controllers/dashboard/dashboard.js");
+  const Pembayaran = require("../controllers/pembayaran/pembayaran.js");
   const SettingPembayaran = require("../controllers/setting/pembayaran/pembayaran.js");
   const general = require("../controllers/general/general.js");
   const token = require("../../app/config/tokenHandler.js");
@@ -52,17 +56,40 @@ module.exports = (app) => {
   router.get("/list-bulan", token.authenticateToken, Bulan.listBulan);
   router.post("/update-bulan", token.authenticateToken, Bulan.updateBulan);
   router.post("/detailBulan", token.authenticateToken, Bulan.detailBulan);
+  //Sekolah
+  router.get("/list-sekolah", token.authenticateToken, Sekolah.listSekolah);
+  router.post("/create-sekolah", token.authenticateToken, Sekolah.createSekolah);
+  router.post("/update-sekolah", token.authenticateToken, Sekolah.updateSekolah);
+  router.post("/detailSekolah", token.authenticateToken, Sekolah.detailSekolah);
+  router.post("/delete-sekolah", token.authenticateToken, Sekolah.delete);
+  //Aplikasi
+  router.get("/list-aplikasi", token.authenticateToken, Aplikasi.listAplikasi);
+  // router.post("/create-sekolah", token.authenticateToken, Sekolah.createSekolah);
+  router.post("/update-aplikasi", token.authenticateToken, Aplikasi.updateAplikasi);
+  router.post("/detailAplikasi", token.authenticateToken, Aplikasi.detailAplikasi);
+  router.post("/detailSettingAplikasi", token.authenticateToken, Aplikasi.detailSettingAplikasi);
+  // router.post("/delete-sekolah", token.authenticateToken, Sekolah.delete);
+  //Dashboard List Payment
+  router.get("/dashboard-list-payment-month", token.authenticateToken, Dashboard.listPaymentByMonths);
+  //Pembayaran
+  router.get("/list-payment-pay-byMonth", token.authenticateToken, Pembayaran.listPembayaranPayByMonth);
+
+
   //Setting Pembayaran
   router.get("/list-setting-pembayaran", token.authenticateToken, SettingPembayaran.listSettingPembayaran);
   router.get("/list-setting-pembayaran-detail", token.authenticateToken, SettingPembayaran.listSettingPembayaranDetail);
   router.post("/create-setting-pembayaran", token.authenticateToken, SettingPembayaran.createSettingPembayaran);
+  router.post("/create-payment-byFree", token.authenticateToken, SettingPembayaran.createPaymentByFree);
+  router.post("/create-payment-byFreeStudent", token.authenticateToken, SettingPembayaran.createPaymentByFreeStudent);
   router.post("/create-payment-byMonth", token.authenticateToken, SettingPembayaran.createPaymentByMonth);
   router.post("/create-payment-byStudent", token.authenticateToken, SettingPembayaran.createPaymentByStudent);
-  // router.post("/update-kelas", token.authenticateToken, Kelas.updateKelas);
+  router.post("/update-payment-updateSettingPaymentByMonth", token.authenticateToken, SettingPembayaran.updateSettingPaymentByMonth);
+  router.post("/update-payment-updateSettingPaymentByFree", token.authenticateToken, SettingPembayaran.updateSettingPaymentByFree);
   router.post("/delete-setting-pembayaran", token.authenticateToken, SettingPembayaran.delete);
   router.post("/delete-setting-pembayaran-detail", token.authenticateToken, SettingPembayaran.deleteDetail);
   router.post("/detailSettingPembayaran", token.authenticateToken, SettingPembayaran.detailSettingPembayaran);
   router.post("/detailSettingPembayaranByUid", token.authenticateToken, SettingPembayaran.detailSettingPembayaranByUid);
+  router.post("/detailSettingPembayaranByUidFree", token.authenticateToken, SettingPembayaran.detailSettingPembayaranByUidFree);
 
   //General
   router.get("/getSchool", token.authenticateToken, general.getSchool);
@@ -70,6 +97,7 @@ module.exports = (app) => {
   router.get("/getMajors", token.authenticateToken, general.getMajors);
   router.get("/getClass", token.authenticateToken, general.getClass);
   router.get("/getMonths", token.authenticateToken, general.getMonths);
+  router.get("/getTypePayment", token.authenticateToken, general.getTypePayment);
 
   //Anggota
   // router.get("/list-anggota", token.authenticateToken, Anggota.listAnggota);

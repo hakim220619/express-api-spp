@@ -76,6 +76,17 @@ exports.getRole = (req, res, next) => {
     else res.send(data);
   });
 };
+exports.getTypePayment = (req, res, next) => {
+  // console.log(req);
+  General.getTypePayment((err, data) => {
+    if (err)
+      res.status(500).send({
+        message:
+          err.message || "Some error occurred while retrieving tutorials.",
+      });
+    else res.send(data);
+  });
+};
 exports.getMajors = (req, res, next) => {
   const schoolId = req.query.schoolId;
 

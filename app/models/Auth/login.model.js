@@ -11,7 +11,7 @@ const Login = function (data) {
 Login.loginAction = async (req, res) => {
   try {
     db.query(
-      `SELECT u.*, r.role_name FROM users u, role r WHERE u.role=r.id and u.email = '${req.email}'`,
+      `SELECT u.id, u.full_name, u.password, u.image, u.role, u.school_id, r.role_name, a.owner, a.title, a.aplikasi_name,a.logo, a.copy_right, s.school_name FROM users u, role r, aplikasi a, school s WHERE u.role=r.id AND u.school_id=a.school_id and u.school_id=s.id and u.email = '${req.email}'`,
       async (err, respons) => {
         if (respons.length == 0) {
           res(err, {

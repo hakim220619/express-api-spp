@@ -8,8 +8,8 @@ const Dashboard = function (data) {
 };
 
 
-Dashboard.listPaymentByMonths = (sp_name, school_id, user_id, result) => {
-    let query = `SELECT 
+Dashboard.listPaymentByMonths = (sp_name, school_id, user_id, setting_payment_uid, result) => {
+    let query = `SELECT
     ROW_NUMBER() OVER () AS no,
     p.id,
     p.uid,
@@ -24,12 +24,87 @@ Dashboard.listPaymentByMonths = (sp_name, school_id, user_id, result) => {
     c.class_name,
     m.major_name,
     sp.sp_name,
+    
+    -- Aggregating amounts from the payment table
     SUM(CASE WHEN p.status = 'Pending' THEN p.amount ELSE 0 END) AS pending,
+    SUM(CASE WHEN p.status = 'Verified' THEN p.amount ELSE 0 END) AS verified,
     SUM(CASE WHEN p.status = 'Paid' THEN p.amount ELSE 0 END) AS paid,
-    CASE 
-        WHEN SUM(CASE WHEN p.status = 'Pending' THEN p.amount ELSE 0 END) = 0 THEN 'Pending' 
-        ELSE 'Paid' 
-    END AS status_lunas
+    
+    -- Calculating status_lunas based on aggregated values in the payment table
+    CASE
+        WHEN SUM(CASE WHEN p.status = 'Pending' THEN p.amount ELSE 0 END) = 0 
+             AND SUM(CASE WHEN p.status = 'Verified' THEN p.amount ELSE 0 END) = 0 THEN 'Paid'
+        WHEN SUM(CASE WHEN p.status = 'Pending' THEN p.amount ELSE 0 END) = 0 THEN 'Verified'
+        ELSE 'Pending'
+    END AS status_lunas,
+    
+    -- Subquery for detail_pending specific to type 'BEBAS'
+    (SELECT SUM(CASE WHEN pd.status = 'Pending' THEN pd.amount ELSE 0 END) 
+     FROM payment_detail pd 
+     WHERE pd.user_id = p.user_id 
+     AND pd.status = 'Pending' 
+     AND pd.setting_payment_uid = p.setting_payment_uid
+     AND p.type = 'BEBAS') AS detail_pending,
+     
+    -- Subquery for detail_verified specific to type 'BEBAS'
+    (SELECT SUM(CASE WHEN pd.status = 'Verified' THEN pd.amount ELSE 0 END) 
+     FROM payment_detail pd 
+     WHERE pd.user_id = p.user_id 
+     AND pd.status = 'Verified' 
+     AND pd.setting_payment_uid = p.setting_payment_uid
+     AND p.type = 'BEBAS') AS detail_verified,
+
+    -- Subquery for detail_paid specific to type 'BEBAS'
+    (SELECT SUM(CASE WHEN pd.status = 'Paid' THEN pd.amount ELSE 0 END) 
+     FROM payment_detail pd 
+     WHERE pd.user_id = p.user_id 
+     AND pd.status = 'Paid' 
+     AND pd.setting_payment_uid = p.setting_payment_uid
+     AND p.type = 'BEBAS') AS detail_paid,
+
+    -- Adjusting status_lunas_detail based on the detail_paid and pending values
+    CASE
+        -- If detail_verified is not null, set status to 'Verified'
+        WHEN COALESCE((SELECT SUM(CASE WHEN pd.status = 'Verified' THEN pd.amount ELSE 0 END) 
+                       FROM payment_detail pd 
+                       WHERE pd.user_id = p.user_id 
+                       AND pd.status = 'Verified' 
+                       AND pd.setting_payment_uid = p.setting_payment_uid
+                       AND p.type = 'BEBAS'), 0) > 0 THEN 'Verified'
+                       
+        WHEN COALESCE((SELECT SUM(CASE WHEN pd.status = 'Pending' THEN pd.amount ELSE 0 END) 
+                       FROM payment_detail pd 
+                       WHERE pd.user_id = p.user_id 
+                       AND pd.status = 'Pending' 
+                       AND pd.setting_payment_uid = p.setting_payment_uid
+                       AND p.type = 'BEBAS'), 0) = 0 
+             AND COALESCE((SELECT SUM(CASE WHEN pd.status = 'Verified' THEN pd.amount ELSE 0 END) 
+                           FROM payment_detail pd 
+                           WHERE pd.user_id = p.user_id 
+                           AND pd.status = 'Verified' 
+                           AND pd.setting_payment_uid = p.setting_payment_uid
+                           AND p.type = 'BEBAS'), 0) = 0 
+             AND COALESCE((SELECT SUM(CASE WHEN pd.status = 'Paid' THEN pd.amount ELSE 0 END) 
+                           FROM payment_detail pd 
+                           WHERE pd.user_id = p.user_id 
+                           AND pd.status = 'Paid' 
+                           AND pd.setting_payment_uid = p.setting_payment_uid
+                           AND p.type = 'BEBAS'), 0) = 0 THEN 'Pending'
+        -- If detail_paid equals pending, set status to 'Paid'
+        WHEN COALESCE((SELECT SUM(CASE WHEN pd.status = 'Paid' THEN pd.amount ELSE 0 END) 
+                       FROM payment_detail pd 
+                       WHERE pd.user_id = p.user_id 
+                       AND pd.status = 'Paid' 
+                       AND pd.setting_payment_uid = p.setting_payment_uid
+                       AND p.type = 'BEBAS'), 0) = SUM(CASE WHEN p.status = 'Pending' THEN p.amount ELSE 0 END) THEN 'Paid'
+        WHEN COALESCE((SELECT SUM(CASE WHEN pd.status = 'Verified' THEN pd.amount ELSE 0 END) 
+                       FROM payment_detail pd 
+                       WHERE pd.user_id = p.user_id 
+                       AND pd.status = 'Verified' 
+                       AND pd.setting_payment_uid = p.setting_payment_uid
+                       AND p.type = 'BEBAS'), 0) = 0 THEN 'Verified'
+        ELSE 'Pending'
+    END AS status_lunas_detail
 FROM 
     payment p
 JOIN 
@@ -52,7 +127,7 @@ JOIN
   }
 
   query += `GROUP BY p.setting_payment_uid ORDER BY p.type DESC`;
-  // console.log(query);
+  console.log(query);
 
   db.query(query, (err, res) => {
     if (err) {

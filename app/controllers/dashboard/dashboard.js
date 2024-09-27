@@ -9,8 +9,9 @@ exports.listPaymentByMonths = (req, res, next) => {
   const sp_name = req.query.q;
   const school_id = req.query.school_id;
   const user_id = req.query.user_id;
+  const setting_payment_uid = req.query.setting_payment_uid;
 
-  Dashboard.listPaymentByMonths(sp_name, school_id, user_id, (err, data) => {
+  Dashboard.listPaymentByMonths(sp_name, school_id, user_id, setting_payment_uid, (err, data) => {
     console.log(data);
     
     if (err)

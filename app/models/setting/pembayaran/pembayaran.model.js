@@ -38,7 +38,6 @@ SettingPembayaran.create = (newSettingPembayaran, result) => {
       insertData[key] = paymentData[key];
     }
   });
-  console.log(insertData);
 
   db.query("INSERT INTO setting_payment SET ?", insertData, (err, res) => {
     if (err) {
@@ -396,8 +395,6 @@ SettingPembayaran.updateSettingPaymentByMonth = (
     });
 };
 SettingPembayaran.updateSettingPaymentByFree = (newSettingPembayaran, result) => {
-  console.log(newSettingPembayaran);
-  
   const updateQuery =
     "UPDATE payment SET amount = ? WHERE uid = ? AND setting_payment_uid = ? AND school_id = ?";
 
@@ -733,8 +730,6 @@ SettingPembayaran.detailSettingPembayaranByUid = async (uid, result) => {
   });
 };
 SettingPembayaran.detailSettingPembayaranByUidFree = async (uid, result) => {
-  console.log(uid);
-
   let query =
     "SELECT p.*, sp.sp_name, sp.sp_type, c.class_name, m.major_name from payment p, setting_payment sp, class c, major m where p.setting_payment_uid=sp.uid AND p.class_id=c.id AND p.major_id=m.id AND p.month_id IS NULL AND p.status = 'Pending' and p.uid = '" +
     uid +

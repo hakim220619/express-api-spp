@@ -87,6 +87,50 @@ exports.getTypePayment = (req, res, next) => {
     else res.send(data);
   });
 };
+exports.cekTransaksiSuccesMidtrans = (req, res, next) => {
+  // console.log(req);
+  General.cekTransaksiSuccesMidtrans((err, data) => {
+    if (err)
+      res.status(500).send({
+        message:
+          err.message || "Some error occurred while retrieving tutorials.",
+      });
+    else res.send(data);
+  });
+};
+exports.cekTransaksiSuccesMidtransByUserId = (req, res, next) => {
+  const userId = req.query.user_id;
+  console.log(userId);
+
+  if (!userId) {
+    return res.status(400).send({
+      message: "User ID is required",
+    });
+  }
+
+  General.cekTransaksiSuccesMidtransByUserId(userId, (err, data) => {
+    if (err) {
+      res.status(500).send({
+        message:
+          err.message || "Some error occurred while retrieving transactions.",
+      });
+    } else {
+      res.send(data);
+    }
+  });
+};
+
+exports.cekTransaksiSuccesMidtransFree = (req, res, next) => {
+  // console.log(req);
+  General.cekTransaksiSuccesMidtransFree((err, data) => {
+    if (err)
+      res.status(500).send({
+        message:
+          err.message || "Some error occurred while retrieving tutorials.",
+      });
+    else res.send(data);
+  });
+};
 exports.getMajors = (req, res, next) => {
   const schoolId = req.query.schoolId;
 

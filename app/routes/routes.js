@@ -73,6 +73,12 @@ module.exports = (app) => {
   router.get("/dashboard-list-payment-month", token.authenticateToken, Dashboard.listPaymentByMonths);
   //Pembayaran
   router.get("/list-payment-pay-byMonth", token.authenticateToken, Pembayaran.listPembayaranPayByMonth);
+  router.get("/list-payment-pay-byFree", token.authenticateToken, Pembayaran.listPembayaranPayByFree);
+  router.get("/list-payment-pay-byFreeDetail", token.authenticateToken, Pembayaran.listPembayaranPayByFreeDetail);
+  router.post("/create-payment-success", token.authenticateToken, Pembayaran.createPaymentSuccess);
+  router.post("/create-payment-success-Free", token.authenticateToken, Pembayaran.createPaymentSuccessFree);
+  router.post("/create-payment-pending", token.authenticateToken, Pembayaran.createPaymentPending);
+  router.post("/create-payment-pending-Free", token.authenticateToken, Pembayaran.createPaymentPendingFree);
 
 
   //Setting Pembayaran
@@ -98,6 +104,9 @@ module.exports = (app) => {
   router.get("/getClass", token.authenticateToken, general.getClass);
   router.get("/getMonths", token.authenticateToken, general.getMonths);
   router.get("/getTypePayment", token.authenticateToken, general.getTypePayment);
+  router.get("/cekTransaksiSuccesMidtransByUserId", general.cekTransaksiSuccesMidtransByUserId);
+  router.get("/cekTransaksiSuccesMidtrans", general.cekTransaksiSuccesMidtrans);
+  router.get("/cekTransaksiSuccesMidtransFree", general.cekTransaksiSuccesMidtransFree);
 
   //Anggota
   // router.get("/list-anggota", token.authenticateToken, Anggota.listAnggota);

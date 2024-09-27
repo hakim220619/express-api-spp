@@ -1,4 +1,6 @@
 const db = require("../../config/db.config");
+const axios = require("axios");
+
 const General = function (data) {};
 
 General.findUsersByUid = async (uid, result) => {
@@ -71,6 +73,238 @@ General.getTypePayment = async (result) => {
     result(null, res);
   });
 };
+General.cekTransaksiSuccesMidtrans = async (result) => {
+  try {
+    const query = `SELECT order_id, status FROM payment WHERE status = 'Verified' AND metode_pembayaran = 'Online' AND redirect_url IS NOT NULL GROUP BY order_id`;
+    
+    // Fetch payment records where metode_pembayaran is Midtrans and status is Verified
+    db.query(query, async (err, rows) => {
+      if (err) {
+        console.log("error: ", err);
+        result(err, null);
+        return;
+      }
+      console.log(rows);
+
+      if (rows.length === 0) {
+        console.log("No verified payments found.");
+        result(null, {
+          success: false,
+          message: "No verified payments found.",
+        });
+        return;
+      }
+
+      const midtransServerKey = "SB-Mid-server-z5T9WhivZDuXrJxC7w-civ_k";
+      const authHeader = Buffer.from(midtransServerKey + ":").toString("base64");
+
+      try {
+        for (const payment of rows) {
+          const url = `https://api.sandbox.midtrans.com/v2/${payment.order_id}/status`;
+
+          // Make request to Midtrans API
+          const response = await axios.get(url, {
+            headers: {
+              Authorization: `Basic ${authHeader}`,
+              "Content-Type": "application/json",
+            },
+          });
+
+          const dataResponse = response.data;
+          console.log(dataResponse);
+
+          if (dataResponse.status_code == 200) {
+            console.log(dataResponse);
+
+            // If status_code is 200, update the payment status to 'Paid'
+            const updateQuery = `UPDATE payment SET status = 'Paid' WHERE order_id = ?`;
+            db.query(updateQuery, [payment.order_id], (updateErr, updateResult) => {
+              if (updateErr) {
+                console.log("Error updating payment status: ", updateErr);
+              } else {
+                console.log(`Payment status updated for order_id: ${payment.order_id}`);
+              }
+            });
+          }
+
+          // Additional logic for handling different status codes can be added here
+        }
+
+        result(null, {
+          success: true,
+          message: "Transactions checked and updated successfully.",
+        });
+      } catch (err) {
+        console.error("Error during payment check:", err);
+        result(err, null);
+      }
+    });
+  } catch (err) {
+    console.error("Error during payment check:", err);
+    result(err, null);
+  }
+};
+
+const MIDTRANS_SERVER_KEY = process.env.MIDTRANS_SERVER_KEY || "SB-Mid-server-z5T9WhivZDuXrJxC7w-civ_k"; // use environment variable for server key
+
+General.cekTransaksiSuccesMidtransByUserId = async (userId, result) => {
+  try {
+    if (!userId) {
+      return result({
+        success: false,
+        message: "User ID is required.",
+      }, null);
+    }
+
+    const query = `
+      SELECT order_id, status 
+      FROM payment 
+      WHERE status = 'Verified' 
+      AND metode_pembayaran = 'Online' 
+      AND redirect_url IS NOT NULL 
+      AND user_id = ? 
+      GROUP BY order_id
+    `;
+
+    // Fetch payment records where metode_pembayaran is Midtrans and status is Verified for a specific user_id
+    const rows = await new Promise((resolve, reject) => {
+      db.query(query, [userId], (err, rows) => {
+        if (err) {
+          console.error("Database query error: ", err);
+          return reject(err);
+        }
+        resolve(rows);
+      });
+    });
+
+    if (rows.length === 0) {
+      console.log("No verified payments found for user_id:", userId);
+      return result(null, {
+        success: false,
+        message: "No verified payments found for the given user.",
+      });
+    }
+
+    const authHeader = Buffer.from(`${MIDTRANS_SERVER_KEY}:`).toString("base64");
+
+    for (const payment of rows) {
+      const url = `https://api.sandbox.midtrans.com/v2/${payment.order_id}/status`;
+
+      try {
+        // Make request to Midtrans API
+        const response = await axios.get(url, {
+          headers: {
+            Authorization: `Basic ${authHeader}`,
+            "Content-Type": "application/json",
+          },
+        });
+
+        const dataResponse = response.data;
+        console.log(`Response for order_id ${payment.order_id}:`, dataResponse);
+
+        if (dataResponse.status_code == 200) {
+          // If status_code is 200, update the payment status to 'Paid'
+          const updateQuery = `UPDATE payment SET status = 'Paid' WHERE order_id = ?`;
+          await new Promise((resolve, reject) => {
+            db.query(updateQuery, [payment.order_id], (updateErr) => {
+              if (updateErr) {
+                console.error("Error updating payment status: ", updateErr);
+                return reject(updateErr);
+              }
+              console.log(`Payment status updated for order_id: ${payment.order_id}`);
+              resolve();
+            });
+          });
+        }
+
+      } catch (apiError) {
+        console.error(`Error checking status for order_id ${payment.order_id}:`, apiError);
+        // Continue to the next payment if there's an error with Midtrans API
+      }
+    }
+
+    result(null, {
+      success: true,
+      message: "Transactions checked and updated successfully.",
+    });
+
+  } catch (error) {
+    console.error("Error during transaction check:", error);
+    result(error, null);
+  }
+};
+
+General.cekTransaksiSuccesMidtransFree = async (result) => {
+  try {
+    const query = `SELECT order_id, status FROM payment_detail WHERE status = 'Verified' AND metode_pembayaran = 'Online' AND redirect_url IS NOT NULL GROUP BY order_id`;
+    
+    // Fetch payment records where metode_pembayaran is Midtrans and status is Verified
+    db.query(query, async (err, rows) => {
+      if (err) {
+        console.log("error: ", err);
+        result(err, null);
+        return;
+      }
+      console.log(rows);
+
+      if (rows.length === 0) {
+        console.log("No verified payments found.");
+        result(null, {
+          success: false,
+          message: "No verified payments found.",
+        });
+        return;
+      }
+
+      const midtransServerKey = "SB-Mid-server-z5T9WhivZDuXrJxC7w-civ_k";
+      const authHeader = Buffer.from(midtransServerKey + ":").toString("base64");
+
+      try {
+        for (const payment of rows) {
+          const url = `https://api.sandbox.midtrans.com/v2/${payment.order_id}/status`;
+
+          // Make request to Midtrans API
+          const response = await axios.get(url, {
+            headers: {
+              Authorization: `Basic ${authHeader}`,
+              "Content-Type": "application/json",
+            },
+          });
+
+          const dataResponse = response.data;
+          console.log(dataResponse);
+
+          if (dataResponse.status_code == 200) {
+            console.log(dataResponse);
+
+            // If status_code is 200, update the payment status to 'Paid'
+            const updateQuery = `UPDATE payment_detail SET status = 'Paid' WHERE order_id = ?`;
+            db.query(updateQuery, [payment.order_id], (updateErr, updateResult) => {
+              if (updateErr) {
+                console.log("Error updating payment status: ", updateErr);
+              } else {
+                console.log(`Payment status updated for order_id: ${payment.order_id}`);
+              }
+            });
+          }
+
+          // Additional logic for handling different status codes can be added here
+        }
+
+        result(null, {
+          success: true,
+          message: "Transactions checked and updated successfully.",
+        });
+      } catch (err) {
+        console.error("Error during payment check:", err);
+        result(err, null);
+      }
+    });
+  } catch (err) {
+    console.error("Error during payment check:", err);
+    result(err, null);
+  }
+};
 General.getMajors = async (schoolId, result) => {
   // Siapkan query dasar
   let query = "SELECT * FROM major WHERE major_status = 'ON'";
@@ -139,7 +373,5 @@ General.getMonths = async (schoolId, result) => {
     result(null, res);
   });
 };
-
-
 
 module.exports = General;

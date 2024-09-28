@@ -11,7 +11,7 @@ Pembayaran.listPembayaranPayByMonth = (
   id_payment,
   result
 ) => {
-  let query = `SELECT 
+  let query = `SELECT
     ROW_NUMBER() OVER () AS no,
     p.id,
     p.uid,
@@ -31,7 +31,9 @@ Pembayaran.listPembayaranPayByMonth = (
     u.email,
     u.nisn,
     u.phone,
-    p.redirect_url
+    p.redirect_url,
+    (select sum(af.amount) FROM affiliate af WHERE af.school_id = p.school_id) as affiliate,
+    (p.amount +  (select sum(af.amount) FROM affiliate af WHERE af.school_id = p.school_id)) as total_payment
 FROM 
     payment p
 JOIN 
@@ -58,7 +60,7 @@ JOIN
     query += ` AND p.uid = '${id_payment}'`;
   }
   query += 'ORDER BY mt.month_number ASC'
-  // console.log(query);
+  console.log(query);
 
   db.query(query, (err, res) => {
     if (err) {
@@ -96,7 +98,8 @@ Pembayaran.listPembayaranPayByFree = (
     u.nisn,
     u.phone,
     p.redirect_url,
-    sp.sp_name
+    sp.sp_name,
+    (SELECT SUM(amount) as amount FROM affiliate WHERE school_id = p.school_id ) as affiliate
 FROM 
     payment p
 JOIN 
@@ -120,7 +123,7 @@ JOIN
   if (setting_payment_uid) {
     query += ` AND p.setting_payment_uid = '${setting_payment_uid}'`;
   }
-  // console.log(query);
+  console.log(query);
 
   db.query(query, (err, res) => {
     if (err) {
@@ -156,7 +159,8 @@ Pembayaran.listPembayaranPayByFreeDetail = (
     p.redirect_url,
     p.metode_pembayaran,
     p.created_at,
-    sp.sp_name
+    sp.sp_name,
+    (SELECT SUM(amount) as amount FROM affiliate WHERE school_id = u.school_id ) as affiliate
 FROM 
     payment_detail p
 JOIN 
@@ -174,7 +178,7 @@ JOIN
     query += ` AND p.payment_id = '${id_payment}'`;
   }
   query += 'order by p.created_at asc'
-  // console.log(query);
+  console.log(query);
 
   db.query(query, (err, res) => {
     if (err) {

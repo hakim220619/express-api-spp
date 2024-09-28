@@ -65,6 +65,17 @@ exports.getSchool = (req, res, next) => {
     else res.send(data);
   });
 };
+exports.getUsersAffiliate = (req, res, next) => {
+  // console.log(req);
+  General.getUsersAffiliate((err, data) => {
+    if (err)
+      res.status(500).send({
+        message:
+          err.message || "Some error occurred while retrieving tutorials.",
+      });
+    else res.send(data);
+  });
+};
 exports.getRole = (req, res, next) => {
   // console.log(req);
   General.getRole((err, data) => {
@@ -123,6 +134,17 @@ exports.cekTransaksiSuccesMidtransByUserId = (req, res, next) => {
 exports.cekTransaksiSuccesMidtransFree = (req, res, next) => {
   // console.log(req);
   General.cekTransaksiSuccesMidtransFree((err, data) => {
+    if (err)
+      res.status(500).send({
+        message:
+          err.message || "Some error occurred while retrieving tutorials.",
+      });
+    else res.send(data);
+  });
+};
+exports.cekFunction = (req, res, next) => {
+  // console.log(req);
+  General.cekFunction((err, data) => {
     if (err)
       res.status(500).send({
         message:

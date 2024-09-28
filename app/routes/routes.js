@@ -11,6 +11,7 @@ module.exports = (app) => {
   const Aplikasi = require("../controllers/aplikasi/aplikasi.js");
   const Dashboard = require("../controllers/dashboard/dashboard.js");
   const Pembayaran = require("../controllers/pembayaran/pembayaran.js");
+  const Affiliate = require("../controllers/affiliate/affiliate.js");
   const SettingPembayaran = require("../controllers/setting/pembayaran/pembayaran.js");
   const general = require("../controllers/general/general.js");
   const token = require("../../app/config/tokenHandler.js");
@@ -26,6 +27,12 @@ module.exports = (app) => {
   router.post("/update-admin", token.authenticateToken, Admin.updateAdmin);
   router.post("/delete-admin", token.authenticateToken, Admin.delete);
   router.post("/detailAdmin", token.authenticateToken, Admin.detailAdmin);
+  //Affiliate
+  router.get("/list-affiliate", token.authenticateToken, Affiliate.listAffiliate);
+  router.post("/create-account-affiliate", token.authenticateToken, Affiliate.createAccountAffiliate);
+  // router.post("/update-admin", token.authenticateToken, Admin.updateAdmin);
+  // router.post("/delete-admin", token.authenticateToken, Admin.delete);
+  // router.post("/detailAdmin", token.authenticateToken, Admin.detailAdmin);
   //Siswa
   router.get("/list-siswa", token.authenticateToken, Siswa.listSiswa);
   router.post("/create-siswa", token.authenticateToken, Siswa.createSiswa);
@@ -71,6 +78,13 @@ module.exports = (app) => {
   // router.post("/delete-sekolah", token.authenticateToken, Sekolah.delete);
   //Dashboard List Payment
   router.get("/dashboard-list-payment-month", token.authenticateToken, Dashboard.listPaymentByMonths);
+  router.get("/get-total-pembayaran-bulanan", token.authenticateToken, Dashboard.getTotalPembayaranBulanan);
+  router.get("/get-total-pembayaran-bebas", token.authenticateToken, Dashboard.getTotalPembayaranBebas);
+  router.get("/get-total-tunggakan-bulanan", token.authenticateToken, Dashboard.getTotalTunggakanBulanan);
+  router.get("/get-total-tunggakan-bebas", token.authenticateToken, Dashboard.getTotalTunggakanBebas);
+  router.get("/get-saldo-bySchool", token.authenticateToken, Dashboard.getSaldoBySchool);
+  router.get("/get-total-tunggakan-bulanan-bySiswa", token.authenticateToken, Dashboard.getTotalTunggakanBulananBySiswa);
+  router.get("/get-total-tunggakan-free-bySiswa", token.authenticateToken, Dashboard.getTotalTunggakanFreeBySiswa);
   //Pembayaran
   router.get("/list-payment-pay-byMonth", token.authenticateToken, Pembayaran.listPembayaranPayByMonth);
   router.get("/list-payment-pay-byFree", token.authenticateToken, Pembayaran.listPembayaranPayByFree);
@@ -99,6 +113,7 @@ module.exports = (app) => {
 
   //General
   router.get("/getSchool", token.authenticateToken, general.getSchool);
+  router.get("/getUsersAffiliate", token.authenticateToken, general.getUsersAffiliate);
   router.get("/getRole", token.authenticateToken, general.getRole);
   router.get("/getMajors", token.authenticateToken, general.getMajors);
   router.get("/getClass", token.authenticateToken, general.getClass);
@@ -107,6 +122,9 @@ module.exports = (app) => {
   router.get("/cekTransaksiSuccesMidtransByUserId", general.cekTransaksiSuccesMidtransByUserId);
   router.get("/cekTransaksiSuccesMidtrans", general.cekTransaksiSuccesMidtrans);
   router.get("/cekTransaksiSuccesMidtransFree", general.cekTransaksiSuccesMidtransFree);
+
+
+  router.get("/cekFunction", general.cekFunction);
 
   //Anggota
   // router.get("/list-anggota", token.authenticateToken, Anggota.listAnggota);

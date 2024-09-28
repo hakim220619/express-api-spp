@@ -8,7 +8,7 @@ const Dashboard = function (data) {
 };
 
 
-Dashboard.listPaymentByMonths = (sp_name, school_id, user_id, setting_payment_uid, result) => {
+Dashboard.listPaymentByMonths = (sp_name, school_id, user_id, result) => {
     let query = `SELECT
     ROW_NUMBER() OVER () AS no,
     p.id,
@@ -117,7 +117,7 @@ JOIN
     setting_payment sp ON p.setting_payment_uid = sp.uid`;
 
   if (sp_name) {
-    query += ` AND u.sp_name like '%${sp_name}%'`;
+    query += ` AND sp.sp_name like '%${sp_name}%'`;
   }
   if (school_id) {
     query += ` AND p.school_id = '${school_id}'`;
@@ -127,7 +127,6 @@ JOIN
   }
 
   query += `GROUP BY p.setting_payment_uid ORDER BY p.type DESC`;
-  console.log(query);
 
   db.query(query, (err, res) => {
     if (err) {
@@ -137,6 +136,165 @@ JOIN
     }
     // console.log("users: ", res);
     result(null, res);
+  });
+};
+
+Dashboard.getTotalPembayaranBulanan = async (schoolId, result) => {
+  // Siapkan query dasar
+  let query = "SELECT SUM(amount) as amount, school_id FROM payment WHERE status = 'Paid'";
+
+  // Jika schoolId ada, tambahkan filter berdasarkan school_id
+  if (schoolId) {
+    query += " AND school_id = ?";
+  }
+
+  // Eksekusi query dengan atau tanpa parameter schoolId
+  db.query(query, [schoolId], (err, res) => {
+    if (err) {
+      console.log("Error: ", err);
+      result(null, err);
+      return;
+    }
+
+    // Kembalikan hasil query
+    result(null, res[0]);
+  });
+};
+Dashboard.getTotalTunggakanBulananBySiswa = async (schoolId, user_id, result) => {
+  // Siapkan query dasar
+  let query = "SELECT SUM(amount) as amount, school_id, user_id FROM payment WHERE status IN ('Pending', 'Verified') and type = 'BULANAN'";
+
+  // Jika schoolId ada, tambahkan filter berdasarkan school_id
+  if (schoolId) {
+    query += ` AND school_id = '${schoolId}'`;
+  }
+  if (user_id) {
+    query += ` AND user_id = '${user_id}'`;
+  }
+console.log(query);
+
+  // Eksekusi query dengan atau tanpa parameter schoolId
+  db.query(query, [schoolId], (err, res) => {
+    if (err) {
+      console.log("Error: ", err);
+      result(null, err);
+      return;
+    }
+
+    // Kembalikan hasil query
+    result(null, res[0]);
+  });
+};
+Dashboard.getTotalTunggakanFreeBySiswa = async (schoolId, user_id, result) => {
+  // Siapkan query dasar
+  let query = `SELECT 
+    pd.user_id,
+    (  COALESCE((SELECT SUM(amount) FROM payment WHERE type='BEBAS' AND status='Pending' AND user_id = pd.user_id), 0) - SUM(pd.amount)) AS total_amount
+FROM 
+    payment_detail pd
+WHERE 
+    pd.status = 'Paid' `;
+
+  if (user_id) {
+    query += ` AND pd.user_id = '${user_id}'`;
+  }
+  query += `GROUP BY pd.user_id`;
+console.log(query);
+
+  // Eksekusi query dengan atau tanpa parameter schoolId
+  db.query(query, [schoolId], (err, res) => {
+    if (err) {
+      console.log("Error: ", err);
+      result(null, err);
+      return;
+    }
+
+    // Kembalikan hasil query
+    result(null, res[0]);
+  });
+};
+Dashboard.getTotalPembayaranBebas = async (schoolId, result) => {
+  // Siapkan query dasar
+  let query = "SELECT SUM(pd.amount) as amount, p.school_id FROM payment_detail pd, payment p WHERE pd.payment_id=p.uid AND pd.status = 'Paid'";
+
+  // Jika schoolId ada, tambahkan filter berdasarkan school_id
+  if (schoolId) {
+    query += " AND p.school_id = ?";
+  }
+
+  // Eksekusi query dengan atau tanpa parameter schoolId
+  db.query(query, [schoolId], (err, res) => {
+    if (err) {
+      console.log("Error: ", err);
+      result(null, err);
+      return;
+    }
+
+    // Kembalikan hasil query
+    result(null, res[0]);
+  });
+};
+Dashboard.getTotalTunggakanBulanan = async (schoolId, result) => {
+  // Siapkan query dasar
+  let query = "SELECT SUM(amount) as amount, school_id FROM payment WHERE status in ('Pending', 'Verified')";
+
+  // Jika schoolId ada, tambahkan filter berdasarkan school_id
+  if (schoolId) {
+    query += " AND school_id = ?";
+  }
+
+  // Eksekusi query dengan atau tanpa parameter schoolId
+  db.query(query, [schoolId], (err, res) => {
+    if (err) {
+      console.log("Error: ", err);
+      result(null, err);
+      return;
+    }
+
+    // Kembalikan hasil query
+    result(null, res[0]);
+  });
+};
+Dashboard.getTotalTunggakanBebas = async (schoolId, result) => {
+  // Siapkan query dasar
+  let query = "SELECT SUM(pd.amount) as amount, p.school_id FROM payment_detail pd, payment p WHERE pd.payment_id=p.uid AND pd.status in ('Pending', 'Verified')";
+
+  // Jika schoolId ada, tambahkan filter berdasarkan school_id
+  if (schoolId) {
+    query += " AND p.school_id = ?";
+  }
+
+  // Eksekusi query dengan atau tanpa parameter schoolId
+  db.query(query, [schoolId], (err, res) => {
+    if (err) {
+      console.log("Error: ", err);
+      result(null, err);
+      return;
+    }
+
+    // Kembalikan hasil query
+    result(null, res[0]);
+  });
+};
+Dashboard.getSaldoBySchool = async (schoolId, result) => {
+  // Siapkan query dasar
+  let query = "SELECT balance, id FROM school WHERE status = 'ON' AND id != '0'";
+
+  // Jika schoolId ada, tambahkan filter berdasarkan school_id
+  if (schoolId) {
+    query += " AND id = ?";
+  }
+
+  // Eksekusi query dengan atau tanpa parameter schoolId
+  db.query(query, [schoolId], (err, res) => {
+    if (err) {
+      console.log("Error: ", err);
+      result(null, err);
+      return;
+    }
+
+    // Kembalikan hasil query
+    result(null, res[0]);
   });
 };
 

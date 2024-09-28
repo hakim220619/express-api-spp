@@ -47,6 +47,20 @@ General.getSchool = async (result) => {
     result(null, res);
   });
 };
+General.getUsersAffiliate = async (result) => {
+  let query =
+    "SELECT u.id, u.full_name, s.school_name, u.school_id from users u, school s where u.school_id=s.id AND u.role = '180'";
+  db.query(query, (err, res) => {
+    if (err) {
+      console.log("error: ", err);
+      result(null, err);
+      return;
+    }
+
+    // console.log("role: ", res);
+    result(null, res);
+  });
+};
 General.getRole = async (result) => {
   let query = "SELECT * from role where role_status = 'ON'";
   db.query(query, (err, res) => {
@@ -75,8 +89,8 @@ General.getTypePayment = async (result) => {
 };
 General.cekTransaksiSuccesMidtrans = async (result) => {
   try {
-    const query = `SELECT order_id, status FROM payment WHERE status = 'Verified' AND metode_pembayaran = 'Online' AND redirect_url IS NOT NULL GROUP BY order_id`;
-    
+    const query = `SELECT order_id, status, user_id FROM payment WHERE status = 'Verified' AND metode_pembayaran = 'Online' AND redirect_url IS NOT NULL GROUP BY order_id`;
+
     // Fetch payment records where metode_pembayaran is Midtrans and status is Verified
     db.query(query, async (err, rows) => {
       if (err) {
@@ -84,7 +98,7 @@ General.cekTransaksiSuccesMidtrans = async (result) => {
         result(err, null);
         return;
       }
-      console.log(rows);
+      // console.log(rows);
 
       if (rows.length === 0) {
         console.log("No verified payments found.");
@@ -96,7 +110,9 @@ General.cekTransaksiSuccesMidtrans = async (result) => {
       }
 
       const midtransServerKey = "SB-Mid-server-z5T9WhivZDuXrJxC7w-civ_k";
-      const authHeader = Buffer.from(midtransServerKey + ":").toString("base64");
+      const authHeader = Buffer.from(midtransServerKey + ":").toString(
+        "base64"
+      );
 
       try {
         for (const payment of rows) {
@@ -111,20 +127,48 @@ General.cekTransaksiSuccesMidtrans = async (result) => {
           });
 
           const dataResponse = response.data;
-          console.log(dataResponse);
-
           if (dataResponse.status_code == 200) {
-            console.log(dataResponse);
-
             // If status_code is 200, update the payment status to 'Paid'
             const updateQuery = `UPDATE payment SET status = 'Paid' WHERE order_id = ?`;
-            db.query(updateQuery, [payment.order_id], (updateErr, updateResult) => {
-              if (updateErr) {
-                console.log("Error updating payment status: ", updateErr);
-              } else {
-                console.log(`Payment status updated for order_id: ${payment.order_id}`);
+            db.query(
+              updateQuery,
+              [payment.order_id],
+              (updateErr, updateResult) => {
+                if (updateErr) {
+                  console.log("Error updating payment status: ", updateErr);
+                } else {
+                  console.log(
+                    `Payment status updated for order_id: ${payment.order_id}`
+                  );
+
+                  // Fetch the affiliate amount after updating the payment status
+                  const affiliateQuery = `SELECT amount, user_id FROM affiliate WHERE user_id = ?`;
+                  db.query(
+                    affiliateQuery,
+                    [payment.user_id],
+                    (affiliateErr, affiliateRows) => {
+                      if (affiliateErr) {
+                        console.log(
+                          "Error fetching affiliate amount: ",
+                          affiliateErr
+                        );
+                      } else {
+                        if (affiliateRows.length > 0) {
+                          const affiliateAmount = affiliateRows[0].amount;
+                          console.log(
+                            `Affiliate amount for order_id ${payment.order_id}: ${affiliateAmount}`
+                          );
+                        } else {
+                          console.log(
+                            `No affiliate record found for order_id: ${payment.order_id}`
+                          );
+                        }
+                      }
+                    }
+                  );
+                }
               }
-            });
+            );
           }
 
           // Additional logic for handling different status codes can be added here
@@ -145,15 +189,19 @@ General.cekTransaksiSuccesMidtrans = async (result) => {
   }
 };
 
-const MIDTRANS_SERVER_KEY = process.env.MIDTRANS_SERVER_KEY || "SB-Mid-server-z5T9WhivZDuXrJxC7w-civ_k"; // use environment variable for server key
+const MIDTRANS_SERVER_KEY =
+  process.env.MIDTRANS_SERVER_KEY || "SB-Mid-server-z5T9WhivZDuXrJxC7w-civ_k"; // use environment variable for server key
 
 General.cekTransaksiSuccesMidtransByUserId = async (userId, result) => {
   try {
     if (!userId) {
-      return result({
-        success: false,
-        message: "User ID is required.",
-      }, null);
+      return result(
+        {
+          success: false,
+          message: "User ID is required.",
+        },
+        null
+      );
     }
 
     const query = `
@@ -185,7 +233,9 @@ General.cekTransaksiSuccesMidtransByUserId = async (userId, result) => {
       });
     }
 
-    const authHeader = Buffer.from(`${MIDTRANS_SERVER_KEY}:`).toString("base64");
+    const authHeader = Buffer.from(`${MIDTRANS_SERVER_KEY}:`).toString(
+      "base64"
+    );
 
     for (const payment of rows) {
       const url = `https://api.sandbox.midtrans.com/v2/${payment.order_id}/status`;
@@ -211,14 +261,18 @@ General.cekTransaksiSuccesMidtransByUserId = async (userId, result) => {
                 console.error("Error updating payment status: ", updateErr);
                 return reject(updateErr);
               }
-              console.log(`Payment status updated for order_id: ${payment.order_id}`);
+              console.log(
+                `Payment status updated for order_id: ${payment.order_id}`
+              );
               resolve();
             });
           });
         }
-
       } catch (apiError) {
-        console.error(`Error checking status for order_id ${payment.order_id}:`, apiError);
+        console.error(
+          `Error checking status for order_id ${payment.order_id}:`,
+          apiError
+        );
         // Continue to the next payment if there's an error with Midtrans API
       }
     }
@@ -227,7 +281,6 @@ General.cekTransaksiSuccesMidtransByUserId = async (userId, result) => {
       success: true,
       message: "Transactions checked and updated successfully.",
     });
-
   } catch (error) {
     console.error("Error during transaction check:", error);
     result(error, null);
@@ -237,7 +290,7 @@ General.cekTransaksiSuccesMidtransByUserId = async (userId, result) => {
 General.cekTransaksiSuccesMidtransFree = async (result) => {
   try {
     const query = `SELECT order_id, status FROM payment_detail WHERE status = 'Verified' AND metode_pembayaran = 'Online' AND redirect_url IS NOT NULL GROUP BY order_id`;
-    
+
     // Fetch payment records where metode_pembayaran is Midtrans and status is Verified
     db.query(query, async (err, rows) => {
       if (err) {
@@ -257,7 +310,9 @@ General.cekTransaksiSuccesMidtransFree = async (result) => {
       }
 
       const midtransServerKey = "SB-Mid-server-z5T9WhivZDuXrJxC7w-civ_k";
-      const authHeader = Buffer.from(midtransServerKey + ":").toString("base64");
+      const authHeader = Buffer.from(midtransServerKey + ":").toString(
+        "base64"
+      );
 
       try {
         for (const payment of rows) {
@@ -279,13 +334,19 @@ General.cekTransaksiSuccesMidtransFree = async (result) => {
 
             // If status_code is 200, update the payment status to 'Paid'
             const updateQuery = `UPDATE payment_detail SET status = 'Paid' WHERE order_id = ?`;
-            db.query(updateQuery, [payment.order_id], (updateErr, updateResult) => {
-              if (updateErr) {
-                console.log("Error updating payment status: ", updateErr);
-              } else {
-                console.log(`Payment status updated for order_id: ${payment.order_id}`);
+            db.query(
+              updateQuery,
+              [payment.order_id],
+              (updateErr, updateResult) => {
+                if (updateErr) {
+                  console.log("Error updating payment status: ", updateErr);
+                } else {
+                  console.log(
+                    `Payment status updated for order_id: ${payment.order_id}`
+                  );
+                }
               }
-            });
+            );
           }
 
           // Additional logic for handling different status codes can be added here
@@ -371,6 +432,25 @@ General.getMonths = async (schoolId, result) => {
 
     // Kembalikan hasil query
     result(null, res);
+  });
+};
+General.cekFunction = async (schoolId, result) => {
+  const affiliateQuery = `SELECT SUM(amount) as amount FROM affiliate WHERE user_id = ?`;
+  db.query(affiliateQuery, [20064], (affiliateErr, affiliateRows) => {
+    if (affiliateErr) {
+      console.log("Error fetching affiliate amount: ", affiliateErr);
+    } else {
+      if (affiliateRows.length > 0) {
+        const affiliateAmount = affiliateRows[0].amount;
+        console.log(
+          `Affiliate amount for order_id : ${affiliateAmount}`
+        );
+      } else {
+        console.log(
+          `No affiliate record found for order_id: `
+        );
+      }
+    }
   });
 };
 

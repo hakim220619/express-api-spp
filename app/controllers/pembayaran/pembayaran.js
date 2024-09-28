@@ -54,7 +54,6 @@ exports.listPembayaranPayByFreeDetail = (req, res, next) => {
   const school_id = req.query.school_id;
   const user_id = req.query.user_id;
   const id_payment = req.query.id_payment;
-console.log(req.query);
 
   Pembayaran.listPembayaranPayByFreeDetail(
     sp_name,
@@ -85,7 +84,7 @@ exports.createPaymentPending = [
     }
 
     const { dataUsers, dataPayment, order_id, redirect_url } = req.body;
-    // console.log(req.body);
+    console.log(req.body);
 
     try {
       // Create new admin object

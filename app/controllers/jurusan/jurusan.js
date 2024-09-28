@@ -6,11 +6,11 @@ const upload = multer();
 
 // Retrieve all Admins from the database with conditions
 exports.listJurusan = (req, res, next) => {
-  const major_name = req.query.q;
+  const unit_name = req.query.q;
   const school_id = req.query.school_id;
   const major_status = req.query.major_status;
 
-  Jurusan.listJurusan(major_name, school_id, major_status, (err, data) => {
+  Jurusan.listJurusan(unit_name, school_id, major_status, (err, data) => {
     if (err)
       res.status(500).send({
         message: err.message || "Some error occurred while retrieving Data.",
@@ -30,13 +30,15 @@ exports.createJurusan = [
       });
     }
 
-    const { school_id, major_name, major_status } = req.body;
+    const { school_id, unit_id, major_name, major_desc, major_status } = req.body;
 
     try {
       // Create new admin object
       const jurusan = new Jurusan({
         school_id: school_id,
+        unit_id: unit_id,
         major_name: major_name.toUpperCase(),
+        major_desc: major_desc.toUpperCase(),
         major_status: major_status || "ON",
         created_at: new Date(),
       });
@@ -72,7 +74,9 @@ exports.updateJurusan = [
       const jurusan = new Jurusan({
         uid: req.body.data.uid,
         school_id: req.body.data.school_id,
-        major_name: req.body.data.major_name.toUpperCase(),
+        unit_id: req.body.data.unit_id,
+        major_name: req.body.data.major_name,
+        major_desc: req.body.data.major_desc,
         major_status: req.body.data.major_status,
         updated_at: new Date(),
       }); 

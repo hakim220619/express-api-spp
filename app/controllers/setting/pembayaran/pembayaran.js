@@ -62,15 +62,15 @@ exports.createSettingPembayaran = [
       });
     }
 
-    const { school_id, sp_name, sp_desc, years, sp_type, sp_status } = req.body;
+    const { school_id, sp_name, sp_desc, years, sp_type, sp_status, unit_id } = req.body;
 
     // Create new UID and timestamp
     const uid = `${uuidv4()}-${Date.now()}`;
     const created_at = new Date().toISOString();
 
     const query = `
-      INSERT INTO setting_payment (uid, school_id, sp_name, sp_desc, years, sp_type, sp_status, created_at)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+      INSERT INTO setting_payment (uid, school_id, sp_name, sp_desc, years, sp_type, sp_status, unit_id, created_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
     `;
 
     const values = [
@@ -81,6 +81,7 @@ exports.createSettingPembayaran = [
       years,
       sp_type,
       sp_status || "ON",
+      unit_id,
       created_at,
     ];
 

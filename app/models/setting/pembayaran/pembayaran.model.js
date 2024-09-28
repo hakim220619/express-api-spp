@@ -529,7 +529,7 @@ SettingPembayaran.createPaymentByFreeStudent = (
 };
 
 SettingPembayaran.listSettingPembayaran = (
-  sp_name,
+  unit_name,
   school_id,
   years,
   sp_type,
@@ -537,10 +537,10 @@ SettingPembayaran.listSettingPembayaran = (
   result
 ) => {
   let query =
-    "SELECT ROW_NUMBER() OVER () AS no, sp.*  FROM setting_payment sp WHERE 1=1";
+    "SELECT ROW_NUMBER() OVER () AS no, sp.*, u.unit_name  FROM setting_payment sp, unit u WHERE sp.unit_id=u.id";
 
-  if (sp_name) {
-    query += ` AND sp.sp_name like '%${sp_name}%'`;
+  if (unit_name) {
+    query += ` AND u.unit_name like '%${unit_name}%'`;
   }
   if (school_id) {
     query += ` AND sp.school_id = '${school_id}'`;

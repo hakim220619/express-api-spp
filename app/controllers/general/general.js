@@ -98,6 +98,17 @@ exports.getTypePayment = (req, res, next) => {
     else res.send(data);
   });
 };
+exports.getUnit = (req, res, next) => {
+  // console.log(req);
+  General.getUnit((err, data) => {
+    if (err)
+      res.status(500).send({
+        message:
+          err.message || "Some error occurred while retrieving tutorials.",
+      });
+    else res.send(data);
+  });
+};
 exports.cekTransaksiSuccesMidtrans = (req, res, next) => {
   // console.log(req);
   General.cekTransaksiSuccesMidtrans((err, data) => {

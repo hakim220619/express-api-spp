@@ -4,6 +4,7 @@ const bcrypt = require("bcrypt");
 const Siswa = function (data) {
   this.uid = data.uid;
   this.nisn = data.nisn;
+  this.unit_id = data.unit_id;
   this.school_id = data.school_id || null; // Fallback to null if not provided
 
   // Email, fullName, and other essential fields

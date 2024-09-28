@@ -23,9 +23,9 @@ exports.login = async (req, res) => {
     else res.send(data);
   });
 };
-exports.cheklogin = async (req, res) => {
+exports.checklogin = async (req, res) => {
   const AccessToken = req.headers["authorization"];
-  Login.cheklogin(AccessToken, (err, data) => {
+  Login.checklogin(AccessToken, (err, data) => {
     console.log(err);
     
     if (err != 200)
@@ -37,11 +37,9 @@ exports.cheklogin = async (req, res) => {
   });
 };
 exports.refreshToken = async (req, res) => {
-
-  
   const AccessToken = req.headers["authorization"];
   console.log(AccessToken);
-  Login.cheklogin(AccessToken, (err, data) => {
+  Login.checklogin(AccessToken, (err, data) => {
     console.log(err);
     
     if (err != 200)

@@ -3,6 +3,7 @@ const bcrypt = require("bcrypt");
 // constructor
 const Kelas = function (data) {
   this.id = data.uid;
+  this.unit_id = data.unit_id;
   this.school_id = data.school_id;
   this.class_name = data.class_name;
   this.class_desc = data.class_desc;
@@ -45,12 +46,12 @@ Kelas.update = (newUsers, result) => {
   );
 };
 
-Kelas.listKelas = (class_name, school_id, status, result) => {
+Kelas.listKelas = (unit_name, school_id, status, result) => {
   let query =
-    "SELECT ROW_NUMBER() OVER () AS no, c.*  FROM class c WHERE 1=1";
+    "SELECT ROW_NUMBER() OVER () AS no, c.*, u.unit_name  FROM class c, unit u WHERE c.unit_id=u.id";
 
-  if (class_name) {
-    query += ` AND c.class_name like '%${class_name}%'`;
+  if (unit_name) {
+    query += ` AND u.unit_name like '%${unit_name}%'`;
   }
   if (school_id) {
     query += ` AND c.school_id = '${school_id}'`;

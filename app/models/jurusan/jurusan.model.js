@@ -4,7 +4,9 @@ const bcrypt = require("bcrypt");
 const Jurusan = function (data) {
   this.id = data.uid;
   this.school_id = data.school_id;
+  this.unit_id = data.unit_id;
   this.major_name = data.major_name;
+  this.major_desc = data.major_desc;
   this.major_status = data.major_status || 'ON'; // Fallback to null if not provided
   // Timestamps and created/updated information
   this.created_at = data.created_at || new Date(); // Use current date if not provided
@@ -48,12 +50,12 @@ Jurusan.update = (newJurusan, result) => {
   );
 };
 
-Jurusan.listJurusan = (major_name, school_id, major_status, result) => {
+Jurusan.listJurusan = (unit_name, school_id, major_status, result) => {
   let query =
-    "SELECT ROW_NUMBER() OVER () AS no, m.*  FROM major m WHERE 1=1";
+    "SELECT ROW_NUMBER() OVER () AS no, m.*, u.unit_name FROM major m, unit u WHERE m.unit_id=u.id";
 
-  if (major_name) {
-    query += ` AND m.major_name like '%${major_name}%'`;
+  if (unit_name) {
+    query += ` AND u.unit_name like '%${unit_name}%'`;
   }
   if (school_id) {
     query += ` AND m.school_id = '${school_id}'`;
@@ -86,7 +88,7 @@ Jurusan.delete = (uid, result) => {
 };
 Jurusan.detailJurusan = async (uid, result) => {
   let query =
-    "SELECT * from major where id = '" +
+    "SELECT m.*, u.unit_name from major m, unit u where m.unit_id=u.id and m.id = '" +
     uid +
     "'";
   db.query(query, (err, res) => {

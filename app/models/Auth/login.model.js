@@ -66,7 +66,7 @@ Login.loginAction = async (req, res) => {
     console.log(err);
   }
 };
-Login.cheklogin = async (req, res) => {
+Login.checklogin = async (req, res) => {
   try {
     const token = req.replace("Bearer ", "");
     db.query(

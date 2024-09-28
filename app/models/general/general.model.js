@@ -87,6 +87,19 @@ General.getTypePayment = async (result) => {
     result(null, res);
   });
 };
+General.getUnit = async (result) => {
+  let query = "SELECT * from unit";
+  db.query(query, (err, res) => {
+    if (err) {
+      console.log("error: ", err);
+      result(null, err);
+      return;
+    }
+
+    // console.log("role: ", res);
+    result(null, res);
+  });
+};
 General.cekTransaksiSuccesMidtrans = async (result) => {
   try {
     const query = `SELECT order_id, status, user_id FROM payment WHERE status = 'Verified' AND metode_pembayaran = 'Online' AND redirect_url IS NOT NULL GROUP BY order_id`;

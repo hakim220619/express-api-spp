@@ -3,11 +3,27 @@ const { v4: uuidv4 } = require("uuid");
 const bcrypt = require("bcrypt");
 const multer = require("multer");
 const path = require("path");
+const fs = require("fs");
+
+// Ensure the uploads directory exists
+const baseUploadDir = "uploads/school/siswa";
+if (!fs.existsSync(baseUploadDir)) {
+  fs.mkdirSync(baseUploadDir, { recursive: true });
+}
 
 // Multer setup for file uploads
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
-    cb(null, "uploads/"); // Folder to store uploaded files
+    const schoolId = req.body.school_id; // Get the school ID from the request body
+    const uploadPath = path.join(baseUploadDir, schoolId.toString()); // Construct the folder path
+
+    // Ensure the specific school directory exists
+    if (!fs.existsSync(uploadPath)) {
+      fs.mkdirSync(uploadPath, { recursive: true });
+      console.log(`Directory created: ${uploadPath}`);
+    }
+
+    cb(null, uploadPath); // Callback with the destination folder
   },
   filename: function (req, file, cb) {
     cb(null, `${uuidv4()}${path.extname(file.originalname)}`); // Rename file with a unique identifier
@@ -16,7 +32,7 @@ const storage = multer.diskStorage({
 
 const upload = multer({ storage: storage });
 
-// Retrieve all Admins from the database with conditions
+// Retrieve all Siswa from the database with conditions
 exports.listSiswa = (req, res, next) => {
   const fullName = req.query.q;
   const major = req.query.major;
@@ -25,17 +41,18 @@ exports.listSiswa = (req, res, next) => {
   const status = req.query.status;
 
   Siswa.listSiswa(fullName, school_id, major, clas, status, (err, data) => {
-    if (err)
-      res.status(500).send({
+    if (err) {
+      return res.status(500).send({
         message: err.message || "Some error occurred while retrieving Data.",
       });
-    else res.send(data);
+    }
+    res.send(data);
   });
 };
 
-// Create new Admin
+// Create new Siswa
 exports.createSiswa = [
-  upload.single("image"), // Middleware for handling file upload
+  upload.single("gambar"), // Middleware for handling file upload
   async (req, res) => {
     // Validate request
     if (!req.body) {
@@ -46,6 +63,7 @@ exports.createSiswa = [
 
     const {
       nisn,
+      unit_id,
       full_name,
       email,
       phone,
@@ -59,10 +77,11 @@ exports.createSiswa = [
     } = req.body;
 
     try {
-      // Create new admin object
+      // Create new siswa object
       const siswa = new Siswa({
         uid: uuidv4(),
         nisn: nisn,
+        unit_id,
         school_id: school_id,
         full_name: full_name.toUpperCase(),
         email: email,
@@ -79,24 +98,23 @@ exports.createSiswa = [
         image: req.file ? req.file.filename : null, // Store file name if uploaded
       });
 
-      // Save admin to the database
+      // Save siswa to the database
       Siswa.create(siswa, (err, data) => {
         if (err) {
           return res.status(500).send({
-            message:
-              err.message || "Some error occurred while creating the Admin.",
+            message: err.message || "Some error occurred while creating the Siswa.",
           });
-        } else {
-          res.send(data);
         }
+        res.send(data);
       });
     } catch (error) {
-      res.status(500).send({ message: "Error creating Admin" });
+      console.error("Error creating Siswa:", error);
+      res.status(500).send({ message: "Error creating Siswa" });
     }
   },
 ];
 
-// Update existing Admin
+// Update existing Siswa
 exports.updateSiswa = [
   upload.single("image"), // Middleware for handling file upload during update
   async (req, res) => {
@@ -121,49 +139,49 @@ exports.updateSiswa = [
         status: req.body.data.status,
         updated_by: req.body.data.updated_by,
         updated_at: new Date(),
-        role: 160
+        role: 160,
+        image: req.file ? req.file.filename : null, // Update file if uploaded
       });
 
       Siswa.update(siswa, (err, data) => {
         if (err) {
           return res.status(500).send({
-            message:
-              err.message || "Some error occurred while updating the Admin.",
+            message: err.message || "Some error occurred while updating the Siswa.",
           });
-        } else {
-          res.send(data);
         }
+        res.send(data);
       });
     } catch (error) {
-      res.status(500).send({ message: "Error updating Admin" });
+      console.error("Error updating Siswa:", error);
+      res.status(500).send({ message: "Error updating Siswa" });
     }
   },
 ];
 
-// Delete an Admin
+// Delete a Siswa
 exports.delete = (req, res) => {
   const uid = req.body.data;
 
   Siswa.delete(uid, (err, data) => {
     if (err) {
       return res.status(500).send({
-        message: err.message || "Some error occurred while deleting the Admin.",
+        message: err.message || "Some error occurred while deleting the Siswa.",
       });
-    } else {
-      res.send(data);
     }
+    res.send(data);
   });
 };
 
+// Get details of a specific Siswa
 exports.detailSiswa = (req, res, next) => {
   const uid = req.body.uid;
-  // console.log(req);
+  
   Siswa.detailSiswa(uid, (err, data) => {
-    if (err)
-      res.status(500).send({
-        message:
-          err.message || "Some error occurred while retrieving tutorials.",
+    if (err) {
+      return res.status(500).send({
+        message: err.message || "Some error occurred while retrieving the Siswa details.",
       });
-    else res.send(data);
+    }
+    res.send(data);
   });
 };

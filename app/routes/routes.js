@@ -13,14 +13,15 @@ module.exports = (app) => {
   const Pembayaran = require("../controllers/pembayaran/pembayaran.js");
   const Affiliate = require("../controllers/affiliate/affiliate.js");
   const SettingPembayaran = require("../controllers/setting/pembayaran/pembayaran.js");
+  const Unit = require("../controllers/unit/unit.js");
   const general = require("../controllers/general/general.js");
   const token = require("../../app/config/tokenHandler.js");
   var router = require("express").Router();
   // Create a new Tutorial
   router.post("/login", Login.login);
   router.post("/register", Register.register);
-  router.get("/cheklogin", token.authenticateToken, Login.cheklogin);
-  router.post("/refresh-token", token.authenticateToken, Login.refreshToken);
+  router.get("/checklogin", token.authenticateToken, Login.checklogin);
+  router.get("/refresh-token", token.authenticateToken, Login.refreshToken);
   //Admin
   router.get("/list-admin", token.authenticateToken, Admin.listAdmin);
   router.post("/create-admin", token.authenticateToken, Admin.createAdmin);
@@ -93,7 +94,12 @@ module.exports = (app) => {
   router.post("/create-payment-success-Free", token.authenticateToken, Pembayaran.createPaymentSuccessFree);
   router.post("/create-payment-pending", token.authenticateToken, Pembayaran.createPaymentPending);
   router.post("/create-payment-pending-Free", token.authenticateToken, Pembayaran.createPaymentPendingFree);
-
+  //Sekolah
+  router.get("/list-unit", token.authenticateToken, Unit.listUnit);
+  router.post("/create-unit", token.authenticateToken, Unit.createUnit);
+  router.post("/update-unit", token.authenticateToken, Unit.updateUnit);
+  router.post("/detailUnit", token.authenticateToken, Unit.detailUnit);
+  router.post("/delete-unit", token.authenticateToken, Unit.delete);
 
   //Setting Pembayaran
   router.get("/list-setting-pembayaran", token.authenticateToken, SettingPembayaran.listSettingPembayaran);
@@ -119,6 +125,7 @@ module.exports = (app) => {
   router.get("/getClass", token.authenticateToken, general.getClass);
   router.get("/getMonths", token.authenticateToken, general.getMonths);
   router.get("/getTypePayment", token.authenticateToken, general.getTypePayment);
+  router.get("/getUnit", token.authenticateToken, general.getUnit);
   router.get("/cekTransaksiSuccesMidtransByUserId", general.cekTransaksiSuccesMidtransByUserId);
   router.get("/cekTransaksiSuccesMidtrans", general.cekTransaksiSuccesMidtrans);
   router.get("/cekTransaksiSuccesMidtransFree", general.cekTransaksiSuccesMidtransFree);

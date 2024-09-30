@@ -51,11 +51,12 @@ SettingPembayaran.create = (newSettingPembayaran, result) => {
 
 SettingPembayaran.createPaymentByFree = (newSettingPembayaran, result) => {
   const query =
-    "SELECT id, full_name, major_id, class_id FROM users WHERE major_id = ? AND class_id = ? AND school_id = ? AND role = '160'";
+    "SELECT id, full_name, major_id, class_id FROM users WHERE unit_id = ? and major_id = ? AND class_id = ? AND school_id = ? AND role = '160'";
 
   db.query(
     query,
     [
+      newSettingPembayaran.unit_id,
       newSettingPembayaran.major_id,
       newSettingPembayaran.class_id,
       newSettingPembayaran.school_id,
@@ -73,10 +74,11 @@ SettingPembayaran.createPaymentByFree = (newSettingPembayaran, result) => {
 
       users.forEach((user) => {
         const checkQuery =
-          "SELECT id FROM payment WHERE user_id = ? AND school_id = ? AND setting_payment_uid = ? AND class_id = ? AND major_id = ?";
+          "SELECT id FROM payment WHERE unit_id = ? and user_id = ? AND school_id = ? AND setting_payment_uid = ? AND class_id = ? AND major_id = ?";
         db.query(
           checkQuery,
           [
+            newSettingPembayaran.unit_id,
             user.id,
             newSettingPembayaran.school_id,
             newSettingPembayaran.setting_payment_uid,
@@ -98,6 +100,7 @@ SettingPembayaran.createPaymentByFree = (newSettingPembayaran, result) => {
               const paymentData = {
                 uid: uniqueUid, // Gunakan UID unik di sini
                 setting_payment_uid: newSettingPembayaran.setting_payment_uid,
+                unit_id: newSettingPembayaran.unit_id,
                 school_id: newSettingPembayaran.school_id,
                 user_id: user.id,
                 years: newSettingPembayaran.years,
@@ -147,11 +150,12 @@ SettingPembayaran.createPaymentByFree = (newSettingPembayaran, result) => {
 
 SettingPembayaran.createPaymentByMonth = (newSettingPembayaran, result) => {
   const query =
-    "SELECT id, full_name, major_id, class_id FROM users WHERE major_id = ? AND class_id = ? AND school_id = ? AND role = '160'";
+    "SELECT id, full_name, major_id, class_id, unit_id FROM users WHERE unit_id = ? and major_id = ? AND class_id = ? AND school_id = ? AND role = '160'";
 
   db.query(
     query,
     [
+      newSettingPembayaran.unit_id,
       newSettingPembayaran.major_id,
       newSettingPembayaran.class_id,
       newSettingPembayaran.school_id,
@@ -171,10 +175,11 @@ SettingPembayaran.createPaymentByMonth = (newSettingPembayaran, result) => {
       users.forEach((user) => {
         for (let i = 0; i < monthsCount; i++) {
           const checkQuery =
-            "SELECT id FROM payment WHERE user_id = ? AND school_id = ? AND setting_payment_uid = ? AND class_id = ? AND major_id = ?";
+            "SELECT id FROM payment WHERE unit_id = ? and user_id = ? AND school_id = ? AND setting_payment_uid = ? AND class_id = ? AND major_id = ?";
           db.query(
             checkQuery,
             [
+              newSettingPembayaran.unit_id,
               user.id,
               newSettingPembayaran.school_id,
               newSettingPembayaran.setting_payment_uid,
@@ -192,6 +197,7 @@ SettingPembayaran.createPaymentByMonth = (newSettingPembayaran, result) => {
               if (existingPayments.length === 0) {
                 const uniqueUid = `${user.id}${newSettingPembayaran.school_id}${newSettingPembayaran.setting_payment_uid}`; // Membuat UID dari kombinasi data
                 const paymentData = {
+                  unit_id: newSettingPembayaran.unit_id,
                   uid: uniqueUid,
                   setting_payment_uid: newSettingPembayaran.setting_payment_uid,
                   school_id: newSettingPembayaran.school_id,
@@ -244,11 +250,12 @@ SettingPembayaran.createPaymentByMonth = (newSettingPembayaran, result) => {
 };
 SettingPembayaran.createPaymentByStudent = (newSettingPembayaran, result) => {
   const query =
-    "SELECT id, full_name, major_id, class_id FROM users WHERE id = ? AND major_id = ? AND class_id = ? AND school_id = ? AND role = '160'";
+    "SELECT id, full_name, major_id, class_id FROM users WHERE unit_id = ? and id = ? AND major_id = ? AND class_id = ? AND school_id = ? AND role = '160'";
 
   db.query(
     query,
     [
+      newSettingPembayaran.unit_id,
       newSettingPembayaran.user_id,
       newSettingPembayaran.major_id,
       newSettingPembayaran.class_id,
@@ -269,10 +276,11 @@ SettingPembayaran.createPaymentByStudent = (newSettingPembayaran, result) => {
       users.forEach((user) => {
         for (let i = 0; i < monthsCount; i++) {
           const checkQuery =
-            "SELECT id FROM payment WHERE user_id = ? AND school_id = ? AND setting_payment_uid = ? AND class_id = ? AND major_id = ?";
+            "SELECT id FROM payment WHERE unit_id = ? and user_id = ? AND school_id = ? AND setting_payment_uid = ? AND class_id = ? AND major_id = ?";
           db.query(
             checkQuery,
             [
+              newSettingPembayaran.unit_id,
               user.id,
               newSettingPembayaran.school_id,
               newSettingPembayaran.setting_payment_uid,
@@ -289,6 +297,7 @@ SettingPembayaran.createPaymentByStudent = (newSettingPembayaran, result) => {
               }
               if (existingPayments.length === 0) {
                 const paymentData = {
+                  unit_id: newSettingPembayaran.unit_id,
                   uid: newSettingPembayaran.uid,
                   setting_payment_uid: newSettingPembayaran.setting_payment_uid,
                   school_id: newSettingPembayaran.school_id,
@@ -533,7 +542,7 @@ SettingPembayaran.listSettingPembayaran = (
   school_id,
   years,
   sp_type,
-  sp_status,
+  unit_id,
   result
 ) => {
   let query =
@@ -551,9 +560,11 @@ SettingPembayaran.listSettingPembayaran = (
   if (sp_type) {
     query += ` AND sp.sp_type = '${sp_type}'`;
   }
-  if (sp_status) {
-    query += ` AND sp.sp_status = '${sp_status}'`;
+  if (unit_id) {
+    query += ` AND sp.unit_id = '${unit_id}'`;
   }
+  console.log(query);
+  
 
   db.query(query, (err, res) => {
     if (err) {
@@ -571,10 +582,11 @@ SettingPembayaran.listSettingPembayaranDetail = (
   clas,
   major,
   setting_payment_uid,
+  unit_id,
   result
 ) => {
   let query =
-    "SELECT ROW_NUMBER() OVER () AS no, p.*, SUM(p.amount) as jumlah, u.full_name, c.class_name, m.major_name  FROM payment p, users u, class c, major m WHERE p.user_id=u.id AND p.class_id=c.id AND p.major_id=m.id AND p.status = 'Pending'";
+    "SELECT ROW_NUMBER() OVER () AS no, p.*, SUM(p.amount) as jumlah, u.full_name, c.class_name, m.major_name, ut.unit_name  FROM payment p, users u, class c, major m, unit ut WHERE p.user_id=u.id AND p.class_id=c.id AND p.major_id=m.id AND p.unit_id=ut.id AND p.status = 'Pending'";
 
   if (full_name) {
     query += ` AND u.full_name like '%${full_name}%'`;
@@ -590,6 +602,9 @@ SettingPembayaran.listSettingPembayaranDetail = (
   }
   if (major) {
     query += ` AND p.major_id = '${major}'`;
+  }
+  if (unit_id) {
+    query += ` AND p.unit_id = '${unit_id}'`;
   }
 
   query += ` GROUP BY p.user_id, p.setting_payment_uid`;

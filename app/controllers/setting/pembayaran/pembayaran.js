@@ -11,14 +11,14 @@ exports.listSettingPembayaran = (req, res, next) => {
   const school_id = req.query.school_id;
   const years = req.query.year;
   const sp_type = req.query.sp_type;
-  const sp_status = req.query.sp_status;
+  const unit_id = req.query.unit_id;
 
   SettingPembayaran.listSettingPembayaran(
     sp_name,
     school_id,
     years,
     sp_type,
-    sp_status,
+    unit_id,
     (err, data) => {
       if (err)
         res.status(500).send({
@@ -34,6 +34,7 @@ exports.listSettingPembayaranDetail = (req, res, next) => {
   const clas = req.query.clas;
   const major = req.query.major;
   const setting_payment_uid = req.query.setting_payment_uid;
+  const unit_id = req.query.unit_id;
 
   SettingPembayaran.listSettingPembayaranDetail(
     full_name,
@@ -41,6 +42,7 @@ exports.listSettingPembayaranDetail = (req, res, next) => {
     clas,
     major,
     setting_payment_uid,
+    unit_id,
     (err, data) => {
       if (err)
         res.status(500).send({
@@ -62,7 +64,8 @@ exports.createSettingPembayaran = [
       });
     }
 
-    const { school_id, sp_name, sp_desc, years, sp_type, sp_status, unit_id } = req.body;
+    const { school_id, sp_name, sp_desc, years, sp_type, sp_status, unit_id } =
+      req.body;
 
     // Create new UID and timestamp
     const uid = `${uuidv4()}-${Date.now()}`;
@@ -115,6 +118,7 @@ exports.createPaymentByFree = [
     }
 
     const {
+      unit_id,
       school_id,
       sp_name,
       years,
@@ -122,11 +126,12 @@ exports.createPaymentByFree = [
       sp_status,
       class_id,
       major_id,
-      amount
+      amount,
     } = req.body;
 
     try {
-      const st_pembayaran = new SettingPembayaran({
+      const st_pembayaran = {
+        unit_id,
         uid: `${uuidv4()}-${Date.now()}`,
         setting_payment_uid: req.body.uid,
         school_id,
@@ -137,8 +142,8 @@ exports.createPaymentByFree = [
         created_at: new Date(),
         class_id,
         major_id,
-        amount
-      });
+        amount,
+      };
 
       SettingPembayaran.createPaymentByFree(st_pembayaran, (err, data) => {
         if (err) {
@@ -164,6 +169,7 @@ exports.createPaymentByMonth = [
     }
 
     const {
+      unit_id,
       school_id,
       sp_name,
       years,
@@ -176,7 +182,8 @@ exports.createPaymentByMonth = [
     } = req.body;
 
     try {
-      const st_pembayaran = new SettingPembayaran({
+      const st_pembayaran = {
+        unit_id,
         uid: `${uuidv4()}-${Date.now()}`,
         setting_payment_uid: req.body.uid,
         school_id,
@@ -189,7 +196,7 @@ exports.createPaymentByMonth = [
         major_id,
         amount,
         months,
-      });
+      };
 
       SettingPembayaran.createPaymentByMonth(st_pembayaran, (err, data) => {
         if (err) {
@@ -215,6 +222,7 @@ exports.createPaymentByStudent = [
     }
 
     const {
+      unit_id,
       user_id,
       school_id,
       sp_name,
@@ -228,7 +236,8 @@ exports.createPaymentByStudent = [
     } = req.body;
 
     try {
-      const st_pembayaran = new SettingPembayaran({
+      const st_pembayaran = {
+        unit_id,
         uid: `${uuidv4()}-${Date.now()}`,
         user_id,
         setting_payment_uid: req.body.uid,
@@ -242,25 +251,36 @@ exports.createPaymentByStudent = [
         major_id,
         amount,
         months,
-      });
-      // console.log(st_pembayaran);
+      };
 
       SettingPembayaran.createPaymentByStudent(st_pembayaran, (err, data) => {
+        // Log the data received for debugging
+
         if (err) {
-          return res.status(500).send({
+          console.error("Error in createPaymentByStudent: ", err);
+          res.status(500).send({
             message:
               err.message || "Some error occurred while creating the payment.",
           });
         }
-        res.send(data);
+
+        // Check if data is empty or invalid
+        if (!data) {
+          res.status(404).send({ message: "No data returned." });
+        }
+        if (data != null) {
+          res.send(data);
+        }
       });
     } catch (error) {
+      console.error("Error creating payment: ", error);
       res
         .status(500)
         .send({ message: "Error creating payment: " + error.message });
     }
   },
 ];
+
 exports.updateSettingPaymentByMonth = [
   upload.none(),
   async (req, res) => {
@@ -268,14 +288,8 @@ exports.updateSettingPaymentByMonth = [
       return res.status(400).send({ message: "Content cannot be empty!" });
     }
 
-    const {
-      uid,
-      setting_payment_uid,
-      school_id,
-      years,
-      sp_type,
-      months,
-    } = req.body;
+    const { uid, setting_payment_uid, school_id, years, sp_type, months } =
+      req.body;
 
     try {
       const st_pembayaran = new SettingPembayaran({
@@ -289,15 +303,19 @@ exports.updateSettingPaymentByMonth = [
       });
       // console.log(st_pembayaran);
 
-      SettingPembayaran.updateSettingPaymentByMonth(st_pembayaran, (err, data) => {
-        if (err) {
-          return res.status(500).send({
-            message:
-              err.message || "Some error occurred while creating the payment.",
-          });
+      SettingPembayaran.updateSettingPaymentByMonth(
+        st_pembayaran,
+        (err, data) => {
+          if (err) {
+            return res.status(500).send({
+              message:
+                err.message ||
+                "Some error occurred while creating the payment.",
+            });
+          }
+          res.send(data);
         }
-        res.send(data);
-      });
+      );
     } catch (error) {
       res
         .status(500)
@@ -312,14 +330,8 @@ exports.updateSettingPaymentByFree = [
       return res.status(400).send({ message: "Content cannot be empty!" });
     }
 
-    const {
-      uid,
-      setting_payment_uid,
-      school_id,
-      years,
-      sp_type,
-      amount,
-    } = req.body;
+    const { uid, setting_payment_uid, school_id, years, sp_type, amount } =
+      req.body;
 
     try {
       const st_pembayaran = new SettingPembayaran({
@@ -329,19 +341,23 @@ exports.updateSettingPaymentByFree = [
         years,
         sp_type,
         created_at: new Date(),
-        amount,  
+        amount,
       });
       // console.log(st_pembayaran);
 
-      SettingPembayaran.updateSettingPaymentByFree(st_pembayaran, (err, data) => {
-        if (err) {
-          return res.status(500).send({
-            message:
-              err.message || "Some error occurred while creating the payment.",
-          });
+      SettingPembayaran.updateSettingPaymentByFree(
+        st_pembayaran,
+        (err, data) => {
+          if (err) {
+            return res.status(500).send({
+              message:
+                err.message ||
+                "Some error occurred while creating the payment.",
+            });
+          }
+          res.send(data);
         }
-        res.send(data);
-      });
+      );
     } catch (error) {
       res
         .status(500)
@@ -365,7 +381,7 @@ exports.createPaymentByFreeStudent = [
       sp_status,
       class_id,
       major_id,
-      amount
+      amount,
     } = req.body;
 
     try {
@@ -385,15 +401,19 @@ exports.createPaymentByFreeStudent = [
       });
       // console.log(st_pembayaran);
 
-      SettingPembayaran.createPaymentByFreeStudent(st_pembayaran, (err, data) => {
-        if (err) {
-          return res.status(500).send({
-            message:
-              err.message || "Some error occurred while creating the payment.",
-          });
+      SettingPembayaran.createPaymentByFreeStudent(
+        st_pembayaran,
+        (err, data) => {
+          if (err) {
+            return res.status(500).send({
+              message:
+                err.message ||
+                "Some error occurred while creating the payment.",
+            });
+          }
+          res.send(data);
         }
-        res.send(data);
-      });
+      );
     } catch (error) {
       res
         .status(500)
@@ -427,14 +447,14 @@ exports.deleteDetail = (req, res) => {
     user_id,
     (err, data) => {
       // console.log(data);
-      
+
       if (err) {
         return res.status(500).send({
           message:
             err.message || "Some error occurred while deleting the Admin.",
         });
       } else {
-       return res.status(200).send({data});
+        return res.status(200).send({ data });
       }
     }
   );

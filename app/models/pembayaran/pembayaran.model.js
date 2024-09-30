@@ -59,8 +59,8 @@ JOIN
   if (id_payment) {
     query += ` AND p.uid = '${id_payment}'`;
   }
-  query += 'ORDER BY mt.month_number ASC'
-  console.log(query);
+  query += "ORDER BY mt.month_number ASC";
+  // console.log(query);
 
   db.query(query, (err, res) => {
     if (err) {
@@ -99,6 +99,7 @@ Pembayaran.listPembayaranPayByFree = (
     u.phone,
     p.redirect_url,
     sp.sp_name,
+    s.school_name,
     (SELECT SUM(amount) as amount FROM affiliate WHERE school_id = p.school_id ) as affiliate
 FROM 
     payment p
@@ -108,6 +109,8 @@ JOIN
     class c ON p.class_id = c.id
 JOIN 
     major m ON p.major_id = m.id
+JOIN 
+    school s ON p.school_id = s.id
 JOIN 
     setting_payment sp ON p.setting_payment_uid = sp.uid`;
 
@@ -123,7 +126,7 @@ JOIN
   if (setting_payment_uid) {
     query += ` AND p.setting_payment_uid = '${setting_payment_uid}'`;
   }
-  console.log(query);
+  // console.log(query);
 
   db.query(query, (err, res) => {
     if (err) {
@@ -177,8 +180,8 @@ JOIN
   if (id_payment) {
     query += ` AND p.payment_id = '${id_payment}'`;
   }
-  query += 'order by p.created_at asc'
-  console.log(query);
+  query += "order by p.created_at asc";
+  // console.log(query);
 
   db.query(query, (err, res) => {
     if (err) {
@@ -191,7 +194,6 @@ JOIN
   });
 };
 
-
 Pembayaran.update = (newPayment, result) => {
   const { dataPayment } = newPayment; // Ekstrak dataPayment dari newPayment
   let completedUpdates = 0; // Untuk menghitung jumlah update yang sudah selesai
@@ -201,7 +203,14 @@ Pembayaran.update = (newPayment, result) => {
   dataPayment.forEach((paymentData) => {
     db.query(
       "UPDATE payment SET order_id = ?, metode_pembayaran = ?, redirect_url = ?, status = ?, updated_at = ? WHERE id = ?",
-      [newPayment.order_id, 'Online', newPayment.redirect_url, 'Verified', new Date(),  paymentData.id],
+      [
+        newPayment.order_id,
+        "Online",
+        newPayment.redirect_url,
+        "Verified",
+        new Date(),
+        paymentData.id,
+      ],
       (err, res) => {
         if (err) {
           console.error("Error: ", err);
@@ -210,7 +219,10 @@ Pembayaran.update = (newPayment, result) => {
           // Tidak ditemukan payment dengan id tersebut
           errors.push({ id: paymentData.id, error: "not_found" });
         } else {
-          console.log("Updated Payment: ", { id: paymentData.id, ...paymentData });
+          console.log("Updated Payment: ", {
+            id: paymentData.id,
+            ...paymentData,
+          });
         }
 
         // Periksa apakah semua update sudah selesai
@@ -227,6 +239,143 @@ Pembayaran.update = (newPayment, result) => {
     );
   });
 };
+
+const mysql = require("mysql2/promise"); // Import mysql2/promise
+require("dotenv").config();
+
+// Update payment pending by admin
+Pembayaran.updatePaymentPendingByAdmin = async (newPayment, result) => {
+  const { dataPayment, dataUsers, total_affiliate } = newPayment;
+  const errors = [];
+  const { DB_HOST, DB_NAME, DB_USER, DB_PASSWORD } = process.env;
+
+  // Create MySQL connection pool
+  const pool = mysql.createPool({
+    host: DB_HOST,
+    user: DB_USER,
+    password: DB_PASSWORD,
+    database: DB_NAME,
+    waitForConnections: true,
+    connectionLimit: 10,
+    queueLimit: 0,
+  });
+
+  // Get a connection from the pool
+  const connection = await pool.getConnection();
+
+  try {
+    // Check school balance
+    const [schoolRes] = await connection.query(
+      "SELECT * FROM school WHERE id = ?",
+      [dataUsers.school_id]
+    );
+
+    if (schoolRes.length === 0) {
+      throw new Error("School not found");
+    }
+
+    const balance = schoolRes[0].balance;
+    console.log(balance);
+
+    if (balance <= 10000) {
+      throw new Error("Saldo tidak cukup");
+    }
+
+    if (balance < total_affiliate) {
+      throw new Error("Saldo tidak cukup aff");
+    }
+
+    // Get affiliate data
+    const [affiliateRes] = await connection.query(
+      "SELECT * FROM affiliate WHERE school_id = ?",
+      [dataUsers.school_id]
+    );
+
+    if (affiliateRes.length === 0) {
+      throw new Error("No affiliates found");
+    }
+
+    const newBalance = balance - total_affiliate;
+    console.log(newBalance);
+
+    // Update school balance
+    await connection.query("UPDATE school SET balance = ? WHERE id = ?", [
+      newBalance,
+      dataUsers.school_id,
+    ]);
+
+    // Promise to handle each payment
+    const paymentPromises = dataPayment.map(async (paymentData) => {
+      let paymentConnection;
+      try {
+        // Get a new connection for each payment processing
+        paymentConnection = await pool.getConnection();
+
+        // Start a transaction
+        await paymentConnection.beginTransaction();
+
+        // Execute the query to update payment
+        await paymentConnection.query(
+          "UPDATE payment SET metode_pembayaran = ?, status = ?, updated_at = ?, updated_by = ? WHERE id = ?",
+          ["Manual", "Paid", new Date(), newPayment.admin_id, paymentData.id]
+        );
+
+        // Handle affiliate transactions
+        const transactionPromises = affiliateRes.map(async (affiliate) => {
+          const totalByAff =
+            affiliate.debit + affiliate.amount * dataPayment.length; // Updated debit calculation
+
+          // Update the debit in the database
+          await paymentConnection.query(
+            "UPDATE affiliate SET debit = ? WHERE id = ?",
+            [totalByAff, affiliate.id]
+          );
+
+          // Insert the payment transaction
+          await paymentConnection.query(
+            "INSERT INTO payment_transactions (user_id, school_id, payment_id, amount, type, state, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)",
+            [
+              affiliate.user_id,
+              dataUsers.school_id,
+              paymentData.id,
+              affiliate.amount,
+              "BULANAN",
+              "IN",
+              new Date(),
+            ]
+          );
+        });
+
+        // Wait for all affiliate transactions to complete
+        await Promise.all(transactionPromises);
+
+        // Commit the transaction
+        await paymentConnection.commit();
+      } catch (error) {
+        // Rollback the transaction in case of error
+        if (paymentConnection) await paymentConnection.rollback();
+        errors.push({ id: paymentData.id, error: error.message });
+      } finally {
+        if (paymentConnection) paymentConnection.release(); // Release the connection back to the pool
+      }
+    });
+
+    // Wait for all payment promises to complete
+    await Promise.all(paymentPromises);
+
+    // Check results
+    if (errors.length > 0) {
+      return result(errors, null);
+    }
+    return result(null, { message: "All payments updated successfully" });
+  } catch (error) {
+    // Handle any error that occurred during the process
+    return result([{ error: error.message }], null);
+  } finally {
+    if (connection) connection.release(); // Release the initial connection
+  }
+};
+
 Pembayaran.updateSuccess = (newPayment, result) => {
   const { dataPayment } = newPayment; // Ekstrak dataPayment dari newPayment
   let completedUpdates = 0; // Untuk menghitung jumlah update yang sudah selesai
@@ -236,7 +385,14 @@ Pembayaran.updateSuccess = (newPayment, result) => {
   dataPayment.forEach((paymentData) => {
     db.query(
       "UPDATE payment SET order_id = ?, metode_pembayaran = ?, redirect_url = ?, status = ?, updated_at = ? WHERE id = ?",
-      [newPayment.order_id, 'Online', newPayment.redirect_url, 'Paid', new Date(),  paymentData.id],
+      [
+        newPayment.order_id,
+        "Online",
+        newPayment.redirect_url,
+        "Paid",
+        new Date(),
+        paymentData.id,
+      ],
       (err, res) => {
         if (err) {
           console.error("Error: ", err);
@@ -245,7 +401,10 @@ Pembayaran.updateSuccess = (newPayment, result) => {
           // Tidak ditemukan payment dengan id tersebut
           errors.push({ id: paymentData.id, error: "not_found" });
         } else {
-          console.log("Updated Payment: ", { id: paymentData.id, ...paymentData });
+          console.log("Updated Payment: ", {
+            id: paymentData.id,
+            ...paymentData,
+          });
         }
 
         // Periksa apakah semua update sudah selesai
@@ -263,69 +422,207 @@ Pembayaran.updateSuccess = (newPayment, result) => {
   });
 };
 
-Pembayaran.updateFree = (newPayment, result) => {
-
-  const data = newPayment.dataPayment
+Pembayaran.updatePaymentPendingByAdminFree = async (newPayment, result) => {
+  const data = newPayment.dataPayment;
   const uid = `${uuidv4()}-${Date.now()}`;
-  
+  const { DB_HOST, DB_NAME, DB_USER, DB_PASSWORD } = process.env;
+
+  // Create MySQL connection pool
+  const pool = mysql.createPool({
+    host: DB_HOST, // Ganti dengan host Anda
+    user: DB_USER, // Ganti dengan username Anda
+    password: DB_PASSWORD, // Ganti dengan password Anda
+    database: DB_NAME, // Ganti dengan nama database Anda
+    waitForConnections: true,
+    connectionLimit: 10,
+    queueLimit: 0,
+  });
+
+  let connection;
+
+  try {
+    // Mendapatkan koneksi dari pool
+    connection = await pool.getConnection();
+    // Memulai transaksi
+    await connection.beginTransaction();
+
+    // Query untuk mengecek balance di tabel school berdasarkan school_id
+    const [schoolRes] = await connection.query(
+      "SELECT balance FROM school WHERE id = ?",
+      [data.school_id]
+    );
+
+    if (schoolRes.length === 0) {
+      throw new Error("School not found"); // Rollback jika school tidak ditemukan
+    }
+
+    const balance = schoolRes[0].balance;
+
+    // Pengecekan balance
+    if (balance <= 10000) {
+      throw new Error("Saldo tidak cukup"); // Jika balance kurang dari 10000
+    }
+
+    if (balance < data["affiliate"]) {
+      throw new Error("Insufficient balance"); // Jika balance tidak mencukupi
+    }
+
+    // Query untuk mengambil affiliate berdasarkan school_id
+    const [affiliateRes] = await connection.query(
+      "SELECT * FROM affiliate WHERE school_id = ?",
+      [data.school_id]
+    );
+
+    if (affiliateRes.length === 0) {
+      throw new Error("No affiliates found"); // Rollback jika tidak ada affiliate
+    }
+
+    // Update balance di tabel school
+    const newBalance = balance - data["affiliate"];
+    await connection.query("UPDATE school SET balance = ? WHERE id = ?", [
+      newBalance,
+      data.school_id,
+    ]);
+
+    // Insert ke tabel payment_transactions untuk setiap affiliate
+    const insertPromises = affiliateRes.map(async (affiliate) => {
+      const totalByAff = affiliate.debit + affiliate.amount;
+
+      // Update affiliate's debit
+      await connection.query("UPDATE affiliate SET debit = ? WHERE id = ?", [
+        totalByAff,
+        affiliate.id,
+      ]);
+
+      // Insert into payment_transactions
+      return connection.query(
+        "INSERT INTO payment_transactions (user_id, school_id, payment_id, amount, type, state, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)",
+        [
+          data.user_id, // user_id
+          data.school_id, // school_id
+          data.setting_payment_uid, // payment_id
+          affiliate.amount, // amount dari affiliate
+          "BEBAS", // type
+          "IN", // state
+          new Date(), // created_at
+        ]
+      );
+    });
+
+    // Tunggu semua transaksi selesai
+    await Promise.all(insertPromises);
+
+    // Tunggu semua transaksi selesai
+    await Promise.all(insertPromises);
+
+    // Insert ke payment_detail
+    const [insertRes] = await connection.query(
+      "INSERT INTO payment_detail (metode_pembayaran, status, created_at, uid, user_id, payment_id, setting_payment_uid, type, amount) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+      [
+        "Manual", // metode_pembayaran
+        "Paid", // status
+        new Date(), // created_at
+        uid, // new field uid
+        data.user_id, // new field user_id
+        data.uid, // new field payment_id
+        data.setting_payment_uid, // new field setting_payment_uid
+        data.type, // new field type
+        newPayment.total_amount, // new field amount
+      ]
+    );
+
+    // Commit transaksi jika semua query berhasil
+    await connection.commit();
+
+    console.log("Payment inserted successfully", {
+      id: insertRes.insertId,
+      ...newPayment,
+    });
+    result(null, {
+      message: "Payment inserted successfully",
+      id: insertRes.insertId,
+      total_affiliate: data["affiliate"], // Menyertakan total affiliate di hasil
+    });
+  } catch (error) {
+    console.error("Error during transaction: ", error);
+    if (connection) await connection.rollback(); // Rollback jika ada error
+    result({ message: error.message }, null); // Kembalikan pesan error
+  } finally {
+    if (connection) connection.release(); // Kembali ke pool koneksi
+  }
+};
+
+Pembayaran.updateFree = (newPayment, result) => {
+  const data = newPayment.dataPayment;
+  const uid = `${uuidv4()}-${Date.now()}`;
+
   db.query(
     "INSERT INTO payment_detail (order_id, metode_pembayaran, redirect_url, status, created_at, uid, user_id, payment_id, setting_payment_uid, type, amount) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
     [
-      newPayment.order_id,           // order_id
-      'Online',                      // metode_pembayaran
-      newPayment.redirect_url,        // redirect_url
-      'Verified',                    // status
-      new Date(),                    // updated_at
-      uid,                // new field uid
-      data.user_id,            // new field user_id
-      data.uid,         // new field payment_id
-      data.setting_payment_uid,// new field setting_payment_uid
-      data.type,               // new field type
-      newPayment.total_amount            // new field amount
+      newPayment.order_id, // order_id
+      "Online", // metode_pembayaran
+      newPayment.redirect_url, // redirect_url
+      "Verified", // status
+      new Date(), // updated_at
+      uid, // new field uid
+      data.user_id, // new field user_id
+      data.uid, // new field payment_id
+      data.setting_payment_uid, // new field setting_payment_uid
+      data.type, // new field type
+      newPayment.total_amount, // new field amount
     ],
     (err, res) => {
       if (err) {
         console.error("Error: ", err);
         result(err, null); // Return error if there is one
       } else {
-        console.log("Payment inserted successfully", { id: res.insertId, ...newPayment });
-        result(null, { message: "Payment inserted successfully", id: res.insertId });
+        console.log("Payment inserted successfully", {
+          id: res.insertId,
+          ...newPayment,
+        });
+        result(null, {
+          message: "Payment inserted successfully",
+          id: res.insertId,
+        });
       }
     }
   );
 };
 Pembayaran.updateSuccessFree = (newPayment, result) => {
-
-  const data = newPayment.dataPayment
+  const data = newPayment.dataPayment;
   const uid = `${uuidv4()}-${Date.now()}`;
-  
+
   db.query(
     "INSERT INTO payment_detail (order_id, metode_pembayaran, redirect_url, status, created_at, uid, user_id, payment_id, setting_payment_uid, type, amount) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
     [
-      newPayment.order_id,           // order_id
-      'Online',                      // metode_pembayaran
-      newPayment.redirect_url,        // redirect_url
-      'Paid',                    // status
-      new Date(),                    // updated_at
-      uid,                // new field uid
-      data.user_id,            // new field user_id
-      data.uid,         // new field payment_id
-      data.setting_payment_uid,// new field setting_payment_uid
-      data.type,               // new field type
-      newPayment.total_amount            // new field amount
+      newPayment.order_id, // order_id
+      "Online", // metode_pembayaran
+      newPayment.redirect_url, // redirect_url
+      "Paid", // status
+      new Date(), // updated_at
+      uid, // new field uid
+      data.user_id, // new field user_id
+      data.uid, // new field payment_id
+      data.setting_payment_uid, // new field setting_payment_uid
+      data.type, // new field type
+      newPayment.total_amount, // new field amount
     ],
     (err, res) => {
       if (err) {
         console.error("Error: ", err);
         result(err, null); // Return error if there is one
       } else {
-        console.log("Payment inserted successfully", { id: res.insertId, ...newPayment });
-        result(null, { message: "Payment inserted successfully", id: res.insertId });
+        console.log("Payment inserted successfully", {
+          id: res.insertId,
+          ...newPayment,
+        });
+        result(null, {
+          message: "Payment inserted successfully",
+          id: res.insertId,
+        });
       }
     }
   );
 };
-
-
 
 module.exports = Pembayaran;

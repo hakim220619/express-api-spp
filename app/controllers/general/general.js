@@ -109,6 +109,17 @@ exports.getUnit = (req, res, next) => {
     else res.send(data);
   });
 };
+exports.getListPayment = (req, res, next) => {
+  // console.log(req);
+  General.getListPayment((err, data) => {
+    if (err)
+      res.status(500).send({
+        message:
+          err.message || "Some error occurred while retrieving tutorials.",
+      });
+    else res.send(data);
+  });
+};
 exports.cekTransaksiSuccesMidtrans = (req, res, next) => {
   // console.log(req);
   General.cekTransaksiSuccesMidtrans((err, data) => {
@@ -120,7 +131,7 @@ exports.cekTransaksiSuccesMidtrans = (req, res, next) => {
     else res.send(data);
   });
 };
-exports.cekTransaksiSuccesMidtransByUserId = (req, res, next) => {
+exports.cekTransaksiSuccesMidtransByUserIdFree = (req, res, next) => {
   const userId = req.query.user_id;
   console.log(userId);
 
@@ -130,14 +141,35 @@ exports.cekTransaksiSuccesMidtransByUserId = (req, res, next) => {
     });
   }
 
-  General.cekTransaksiSuccesMidtransByUserId(userId, (err, data) => {
+  General.cekTransaksiSuccesMidtransByUserIdFree(userId, (err, data) => {
     if (err) {
       res.status(500).send({
         message:
           err.message || "Some error occurred while retrieving transactions.",
       });
     } else {
-      res.send(data);
+      res.status(200).send(data);
+    }
+  });
+};
+exports.cekTransaksiSuccesMidtransByUserIdByMonth = (req, res, next) => {
+  const userId = req.query.user_id;
+  console.log(userId);
+
+  if (!userId) {
+    return res.status(400).send({
+      message: "User ID is required",
+    });
+  }
+
+  General.cekTransaksiSuccesMidtransByUserIdByMonth(userId, (err, data) => {
+    if (err) {
+      res.status(500).send({
+        message:
+          err.message || "Some error occurred while retrieving transactions.",
+      });
+    } else {
+      res.status(200).send(data);
     }
   });
 };

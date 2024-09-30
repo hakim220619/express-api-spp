@@ -25,6 +25,27 @@ exports.listPaymentByMonths = (req, res, next) => {
     }
   );
 };
+exports.listPaymentByMonthsByAdmin = (req, res, next) => {
+  const sp_name = req.query.q;
+  const unit_id = req.query.unit_id;
+  const school_id = req.query.school_id;
+  const user_id = req.query.user_id;
+
+  Dashboard.listPaymentByMonthsByAdmin(
+    sp_name,
+    unit_id,
+    school_id,
+    user_id,
+    (err, data) => {
+
+      if (err)
+        res.status(500).send({
+          message: err.message || "Some error occurred while retrieving Data.",
+        });
+      else res.send(data);
+    }
+  );
+};
 exports.getTotalPembayaranBulanan = (req, res, next) => {
   const school_id = req.query.school_id;
 

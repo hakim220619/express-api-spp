@@ -38,9 +38,9 @@ exports.listSiswa = (req, res, next) => {
   const major = req.query.major;
   const clas = req.query.clas;
   const school_id = req.query.school_id;
-  const status = req.query.status;
+  const unit_id = req.query.unit_id;
 
-  Siswa.listSiswa(fullName, school_id, major, clas, status, (err, data) => {
+  Siswa.listSiswa(fullName, school_id, major, clas, unit_id, (err, data) => {
     if (err) {
       return res.status(500).send({
         message: err.message || "Some error occurred while retrieving Data.",
@@ -115,6 +115,7 @@ exports.createSiswa = [
 ];
 
 // Update existing Siswa
+// Update existing Siswa
 exports.updateSiswa = [
   upload.single("image"), // Middleware for handling file upload during update
   async (req, res) => {
@@ -125,31 +126,55 @@ exports.updateSiswa = [
     }
 
     try {
-      const siswa = new Siswa({
-        uid: req.body.data.uid,
-        nisn: req.body.data.nisn,
-        full_name: req.body.data.full_name.toUpperCase(),
-        email: req.body.data.email,
-        date_of_birth: req.body.data.date_of_birth,
-        address: req.body.data.address,
-        phone: req.body.data.phone,
-        class_id: req.body.data.class_id,
-        major_id: req.body.data.major_id,
-        school_id: req.body.data.school,
-        status: req.body.data.status,
-        updated_by: req.body.data.updated_by,
-        updated_at: new Date(),
-        role: 160,
-        image: req.file ? req.file.filename : null, // Update file if uploaded
-      });
-
-      Siswa.update(siswa, (err, data) => {
+      // Retrieve the existing siswa details to get the previous image
+      Siswa.detailSiswa(req.body.uid, async (err, existingSiswa) => {
         if (err) {
           return res.status(500).send({
-            message: err.message || "Some error occurred while updating the Siswa.",
+            message: err.message || "Some error occurred while retrieving the Siswa details.",
           });
         }
-        res.send(data);
+
+        // Prepare the updated siswa data
+        const siswa = {
+          uid: req.body.uid,
+          nisn: req.body.nisn,
+          full_name: req.body.full_name.toUpperCase(),
+          email: req.body.email,
+          date_of_birth: req.body.date_of_birth,
+          address: req.body.address,
+          phone: req.body.phone,
+          unit_id: req.body.unit_id,
+          class_id: req.body.class_id,
+          major_id: req.body.major_id,
+          school_id: req.body.school_id,
+          status: req.body.status,
+          updated_by: req.body.updated_by,
+          updated_at: new Date(),
+          role: 160,
+          image: req.file ? req.file.filename : existingSiswa.image, // Use new file or retain the old one
+        };
+
+        // If a new image is uploaded, delete the old image from storage
+        if (req.file && existingSiswa.image) {
+          const previousImagePath = path.join(baseUploadDir, existingSiswa.school_id.toString(), existingSiswa.image);
+          fs.unlink(previousImagePath, (err) => {
+            if (err) {
+              console.error(`Failed to delete old image file: ${previousImagePath}`, err);
+            } else {
+              console.log(`Successfully deleted old image file: ${previousImagePath}`);
+            }
+          });
+        }
+
+        // Update the siswa in the database
+        Siswa.update(siswa, (err, data) => {
+          if (err) {
+            return res.status(500).send({
+              message: err.message || "Some error occurred while updating the Siswa.",
+            });
+          }
+          res.send({ message: "Siswa updated successfully!", data });
+        });
       });
     } catch (error) {
       console.error("Error updating Siswa:", error);
@@ -158,19 +183,46 @@ exports.updateSiswa = [
   },
 ];
 
+
+// Delete a Siswa
 // Delete a Siswa
 exports.delete = (req, res) => {
   const uid = req.body.data;
 
-  Siswa.delete(uid, (err, data) => {
+  // Retrieve the siswa details to get the image filename before deletion
+  Siswa.detailSiswa(uid, (err, siswaData) => {
     if (err) {
       return res.status(500).send({
-        message: err.message || "Some error occurred while deleting the Siswa.",
+        message: err.message || "Some error occurred while retrieving the Siswa details for deletion.",
       });
     }
-    res.send(data);
+
+    const imagePath = path.join(baseUploadDir, siswaData.school_id.toString(), siswaData.image);
+
+    // Delete the siswa from the database
+    Siswa.delete(uid, (err, data) => {
+      if (err) {
+        return res.status(500).send({
+          message: err.message || "Some error occurred while deleting the Siswa.",
+        });
+      }
+
+      // If the siswa has an image, attempt to delete it from the filesystem
+      if (siswaData.image) {
+        fs.unlink(imagePath, (err) => {
+          if (err) {
+            console.error(`Failed to delete image file: ${imagePath}`, err);
+          } else {
+            console.log(`Successfully deleted image file: ${imagePath}`);
+          }
+        });
+      }
+
+      res.send({ message: "Siswa deleted successfully!", data });
+    });
   });
 };
+
 
 // Get details of a specific Siswa
 exports.detailSiswa = (req, res, next) => {

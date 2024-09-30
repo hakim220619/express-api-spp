@@ -12,6 +12,7 @@ module.exports = (app) => {
   const Dashboard = require("../controllers/dashboard/dashboard.js");
   const Pembayaran = require("../controllers/pembayaran/pembayaran.js");
   const Affiliate = require("../controllers/affiliate/affiliate.js");
+  const Report = require("../controllers/report/report.js");
   const SettingPembayaran = require("../controllers/setting/pembayaran/pembayaran.js");
   const Unit = require("../controllers/unit/unit.js");
   const general = require("../controllers/general/general.js");
@@ -79,6 +80,7 @@ module.exports = (app) => {
   // router.post("/delete-sekolah", token.authenticateToken, Sekolah.delete);
   //Dashboard List Payment
   router.get("/dashboard-list-payment-month", token.authenticateToken, Dashboard.listPaymentByMonths);
+  router.get("/dashboard-list-payment-month-byAdmin", token.authenticateToken, Dashboard.listPaymentByMonthsByAdmin);
   router.get("/get-total-pembayaran-bulanan", token.authenticateToken, Dashboard.getTotalPembayaranBulanan);
   router.get("/get-total-pembayaran-bebas", token.authenticateToken, Dashboard.getTotalPembayaranBebas);
   router.get("/get-total-tunggakan-bulanan", token.authenticateToken, Dashboard.getTotalTunggakanBulanan);
@@ -93,6 +95,8 @@ module.exports = (app) => {
   router.post("/create-payment-success", token.authenticateToken, Pembayaran.createPaymentSuccess);
   router.post("/create-payment-success-Free", token.authenticateToken, Pembayaran.createPaymentSuccessFree);
   router.post("/create-payment-pending", token.authenticateToken, Pembayaran.createPaymentPending);
+  router.post("/create-payment-pending-byAdmin", token.authenticateToken, Pembayaran.createPaymentPendingByAdmin);
+  router.post("/create-payment-pending-byAdmin-free", token.authenticateToken, Pembayaran.createPaymentPendingByAdminFree);
   router.post("/create-payment-pending-Free", token.authenticateToken, Pembayaran.createPaymentPendingFree);
   //Sekolah
   router.get("/list-unit", token.authenticateToken, Unit.listUnit);
@@ -100,6 +104,9 @@ module.exports = (app) => {
   router.post("/update-unit", token.authenticateToken, Unit.updateUnit);
   router.post("/detailUnit", token.authenticateToken, Unit.detailUnit);
   router.post("/delete-unit", token.authenticateToken, Unit.delete);
+  //Sekolah
+  router.get("/list-report", token.authenticateToken, Report.listReport);
+  router.get("/list-report-free", token.authenticateToken, Report.listReportFree);
 
   //Setting Pembayaran
   router.get("/list-setting-pembayaran", token.authenticateToken, SettingPembayaran.listSettingPembayaran);
@@ -126,7 +133,9 @@ module.exports = (app) => {
   router.get("/getMonths", token.authenticateToken, general.getMonths);
   router.get("/getTypePayment", token.authenticateToken, general.getTypePayment);
   router.get("/getUnit", token.authenticateToken, general.getUnit);
-  router.get("/cekTransaksiSuccesMidtransByUserId", general.cekTransaksiSuccesMidtransByUserId);
+  router.get("/getListPayment", token.authenticateToken, general.getListPayment);
+  router.get("/cekTransaksiSuccesMidtransByUserIdFree", general.cekTransaksiSuccesMidtransByUserIdFree);
+  router.get("/cekTransaksiSuccesMidtransByUserIdByMonth", general.cekTransaksiSuccesMidtransByUserIdByMonth);
   router.get("/cekTransaksiSuccesMidtrans", general.cekTransaksiSuccesMidtrans);
   router.get("/cekTransaksiSuccesMidtransFree", general.cekTransaksiSuccesMidtransFree);
 

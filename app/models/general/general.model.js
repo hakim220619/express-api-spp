@@ -113,6 +113,76 @@ General.getListPayment = async (result) => {
     result(null, res);
   });
 };
+General.getDetailClassMajorUsers = async (school_id, result) => {
+  let query = `
+    -- Fetch data for classes and count the number of users in each class
+    SELECT
+      'Total Siswa per Kelas' AS header,
+      'Siswa Tahun Ini' AS onetitle,
+      'Jumlah Siswa & Kelas' AS title,
+      '/images/cards/apple-watch-green-lg.png' AS img,
+      JSON_OBJECTAGG(c.class_name, CAST(c.class_count AS CHAR)) AS details
+    FROM (
+      SELECT 
+        class.class_name, 
+        COUNT(u.id) AS class_count
+      FROM class
+      LEFT JOIN users u ON u.class_id = class.id AND u.role = '160'
+      WHERE class.school_id = ?
+      GROUP BY class.class_name
+    ) c
+
+    UNION ALL
+
+    -- Fetch data for majors and count the number of users in each major
+    SELECT
+      'Total Siswa per Jurusan' AS header,
+      'Siswa Tahun Ini' AS onetitle,
+      'Jumlah Siswa & Jurusan' AS title,
+      '/images/cards/apple-iphone-x-lg.png' AS img,
+      JSON_OBJECTAGG(m.major_name, CAST(m.major_count AS CHAR)) AS details
+    FROM (
+      SELECT 
+        major.major_name, 
+        COUNT(u.id) AS major_count
+      FROM major
+      LEFT JOIN users u ON u.major_id = major.id AND u.role = '160'
+      WHERE major.school_id = ?
+      GROUP BY major.major_name
+    ) m
+
+    UNION ALL
+
+    -- Fetch data for all users with role = 160
+    SELECT
+      'Total Seluruh Siswa' AS header,
+      'Siswa Tahun Ini' AS onetitle,
+      'Seluruh Siswa' AS title,
+      '/images/cards/ps4-joystick-lg.png' AS img,
+      JSON_OBJECTAGG('Total Users', CAST(u.users_count AS CHAR)) AS details
+    FROM (
+      SELECT COUNT(id) AS users_count
+      FROM users
+      WHERE role = '160'
+      AND school_id = ?
+    ) u;
+  `;
+
+  // Execute the query, passing the school_id in three places (for the three queries)
+  db.query(query, [school_id, school_id, school_id], (err, res) => {
+    if (err) {
+      console.log("error: ", err);
+      result(null, err);
+      return;
+    }
+
+    console.log(res);
+    result(null, res);
+  });
+};
+
+
+
 const mysql = require("mysql2/promise"); // Ensure mysql2/promise is imported
 require("dotenv").config();
 General.cekTransaksiSuccesMidtrans = async (result) => {

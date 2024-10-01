@@ -134,6 +134,7 @@ module.exports = (app) => {
   router.get("/getTypePayment", token.authenticateToken, general.getTypePayment);
   router.get("/getUnit", token.authenticateToken, general.getUnit);
   router.get("/getListPayment", token.authenticateToken, general.getListPayment);
+  router.get("/getDetailClassMajorUsers", token.authenticateToken, general.getDetailClassMajorUsers);
   router.get("/cekTransaksiSuccesMidtransByUserIdFree", general.cekTransaksiSuccesMidtransByUserIdFree);
   router.get("/cekTransaksiSuccesMidtransByUserIdByMonth", general.cekTransaksiSuccesMidtransByUserIdByMonth);
   router.get("/cekTransaksiSuccesMidtrans", general.cekTransaksiSuccesMidtrans);

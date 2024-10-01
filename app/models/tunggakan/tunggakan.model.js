@@ -1,13 +1,12 @@
 const db = require("../../config/db.config");
 const bcrypt = require("bcrypt");
+const { sendMessage, formatRupiah } = require("../../helpers/helper");
 // constructor
-const Dashboard = function (data) {
+const Tunggakan = function (data) {
   this.id = data.uid;
-  this.school_id = data.school_id;
-  this.user_id = data.user_id;
 };
 
-Dashboard.listPaymentByMonths = (sp_name, school_id, user_id, result) => {
+Tunggakan.listTunggakan = (dataAll, result) => {
   let query = `SELECT
     ROW_NUMBER() OVER () AS no,
     p.id,
@@ -119,14 +118,17 @@ JOIN
 JOIN
     setting_payment sp ON p.setting_payment_uid = sp.uid `;
 
-  if (sp_name) {
-    query += ` AND sp.sp_name like '%${sp_name}%'`;
+  if (dataAll.sp_name) {
+    query += ` AND sp.sp_name like '%${dataAll.sp_name}%'`;
   }
-  if (school_id) {
-    query += ` AND p.school_id = '${school_id}'`;
+  if (dataAll.school_id) {
+    query += ` AND p.school_id = '${dataAll.school_id}'`;
   }
-  if (user_id) {
-    query += ` AND p.user_id = '${user_id}'`;
+  if (dataAll.user_id) {
+    query += ` AND p.user_id = '${dataAll.user_id}'`;
+  }
+  if (dataAll.unit_id) {
+    query += ` AND p.unit_id = '${dataAll.unit_id}'`;
   }
 
   query += `GROUP BY p.setting_payment_uid ORDER BY p.type DESC`;
@@ -141,8 +143,7 @@ JOIN
     result(null, res);
   });
 };
-
-Dashboard.listPaymentByMonthsByAdmin = (sp_name, unit_id, school_id, user_id, result) => {
+Tunggakan.sendTunggakanSiswa = (dataAll, result) => {
   let query = `SELECT
     ROW_NUMBER() OVER () AS no,
     p.id,
@@ -155,11 +156,13 @@ Dashboard.listPaymentByMonthsByAdmin = (sp_name, unit_id, school_id, user_id, re
     p.status,
     p.amount,
     u.full_name,
+    u.phone,
     c.class_name,
     m.major_name,
     sp.sp_name,
     ut.unit_name,
     p.unit_id,
+    s.school_name,
 
     -- Aggregating amounts from the payment table
     SUM(CASE WHEN p.status = 'Pending' THEN p.amount ELSE 0 END) AS pending,
@@ -252,201 +255,58 @@ JOIN
 JOIN
     unit ut ON p.unit_id = ut.id
 JOIN
+    school s ON s.id = p.school_id
+JOIN
     setting_payment sp ON p.setting_payment_uid = sp.uid `;
 
-  if (sp_name) {
-    query += ` AND sp.sp_name like '%${sp_name}%'`;
+  if (dataAll.sp_name) {
+    query += ` AND sp.sp_name like '%${dataAll.sp_name}%'`;
   }
-  if (school_id) {
-    query += ` AND p.school_id = '${school_id}'`;
+  if (dataAll.school_id) {
+    query += ` AND p.school_id = '${dataAll.school_id}'`;
   }
-  if (user_id) {
-    query += ` AND p.user_id = '${user_id}'`;
+  if (dataAll.user_id) {
+    query += ` AND p.user_id = '${dataAll.user_id}'`;
   }
-  if (unit_id) {
-    query += ` AND p.unit_id = '${unit_id}'`;
+  if (dataAll.unit_id) {
+    query += ` AND p.unit_id = '${dataAll.unit_id}'`;
   }
 
   query += `GROUP BY p.setting_payment_uid ORDER BY p.type DESC`;
+//   console.log(query);
 
-  db.query(query, (err, res) => {
+db.query(query, (err, res) => {
     if (err) {
       console.log("error: ", err);
       result(null, err);
       return;
     }
-    // console.log("users: ", res);
-    result(null, res);
+  
+    let totalTunggakan = 0;  // Initialize totalTunggakan with let to accumulate the values
+  
+    // Loop through each row in the result set
+    res.forEach(row => {
+      totalTunggakan += row.pending - (row.detail_verified + row.detail_paid);  // Accumulate the value
+    });
+    const message = `
+Assalamu'alaikum,
+
+Kami informasikan bahwa terdapat *tunggakan* pembayaran sebesar *${formatRupiah(totalTunggakan)}* atas nama Ananda ${res[0].full_name}, Kelas ${res[0].class_name}.
+
+Mohon segera melakukan pembayaran secara tunai di kasir YPPH Banjarbaru, atau melalui metode pembayaran lain seperti QRIS, Virtual Account (BRI, BCA, BNI, dll.), Alfamart, Indomaret, DANA, dan OVO sebelum tanggal 20 Januari 2024.
+
+(Abaikan pesan ini jika Anda telah melakukan pembayaran.)
+
+Terima kasih atas perhatian dan kerjasamanya. Semoga Allah SWT senantiasa memberikan kesehatan dan kesuksesan kepada kita semua.
+
+Tim Keuangan ${res[0].school_name}
+    `
+  sendMessage(res[0].phone, message)
+    console.log('Total Tunggakan:', totalTunggakan);  // Log the total after processing all rows
+  
+    // Return the result after processing
+    result(null, { res, totalTunggakan });  // Optionally return totalTunggakan with the result
   });
-};
+}  
 
-Dashboard.getTotalPembayaranBulanan = async (schoolId, result) => {
-  // Siapkan query dasar
-  let query =
-    "SELECT SUM(amount) as amount, school_id FROM payment WHERE status = 'Paid'";
-
-  // Jika schoolId ada, tambahkan filter berdasarkan school_id
-  if (schoolId) {
-    query += " AND school_id = ?";
-  }
-
-  // Eksekusi query dengan atau tanpa parameter schoolId
-  db.query(query, [schoolId], (err, res) => {
-    if (err) {
-      console.log("Error: ", err);
-      result(null, err);
-      return;
-    }
-
-    // Kembalikan hasil query
-    result(null, res[0]);
-  });
-};
-Dashboard.getTotalTunggakanBulananBySiswa = async (
-  schoolId,
-  user_id,
-  result
-) => {
-  // Siapkan query dasar
-  let query =
-    "SELECT SUM(amount) as amount, school_id, user_id FROM payment WHERE status IN ('Pending', 'Verified') and type = 'BULANAN'";
-
-  // Jika schoolId ada, tambahkan filter berdasarkan school_id
-  if (schoolId) {
-    query += ` AND school_id = '${schoolId}'`;
-  }
-  if (user_id) {
-    query += ` AND user_id = '${user_id}'`;
-  }
-  console.log(query);
-
-  // Eksekusi query dengan atau tanpa parameter schoolId
-  db.query(query, [schoolId], (err, res) => {
-    if (err) {
-      console.log("Error: ", err);
-      result(null, err);
-      return;
-    }
-
-    // Kembalikan hasil query
-    result(null, res[0]);
-  });
-};
-Dashboard.getTotalTunggakanFreeBySiswa = async (schoolId, user_id, result) => {
-  // Siapkan query dasar
-  let query = `SELECT 
-    pd.user_id,
-    (  COALESCE((SELECT SUM(amount) FROM payment WHERE type='BEBAS' AND status='Pending' AND user_id = pd.user_id), 0) - SUM(pd.amount)) AS total_amount
-FROM 
-    payment_detail pd
-WHERE 
-    pd.status IN ('Pending', 'Verified')`;
-
-  if (user_id) {
-    query += ` AND pd.user_id = '${user_id}'`;
-  }
-  query += `GROUP BY pd.user_id`;
-  console.log(query);
-
-  // Eksekusi query dengan atau tanpa parameter schoolId
-  db.query(query, [schoolId], (err, res) => {
-    if (err) {
-      console.log("Error: ", err);
-      result(null, err);
-      return;
-    }
-
-    // Kembalikan hasil query
-    result(null, res[0]);
-  });
-};
-Dashboard.getTotalPembayaranBebas = async (schoolId, result) => {
-  // Siapkan query dasar
-  let query =
-    "SELECT SUM(pd.amount) as amount, p.school_id FROM payment_detail pd, payment p WHERE pd.payment_id=p.uid AND pd.status = 'Paid'";
-
-  // Jika schoolId ada, tambahkan filter berdasarkan school_id
-  if (schoolId) {
-    query += " AND p.school_id = ?";
-  }
-
-  // Eksekusi query dengan atau tanpa parameter schoolId
-  db.query(query, [schoolId], (err, res) => {
-    if (err) {
-      console.log("Error: ", err);
-      result(null, err);
-      return;
-    }
-
-    // Kembalikan hasil query
-    result(null, res[0]);
-  });
-};
-Dashboard.getTotalTunggakanBulanan = async (schoolId, result) => {
-  // Siapkan query dasar
-  let query =
-    "SELECT SUM(amount) as amount, school_id FROM payment WHERE status in ('Pending', 'Verified')";
-
-  // Jika schoolId ada, tambahkan filter berdasarkan school_id
-  if (schoolId) {
-    query += " AND school_id = ?";
-  }
-
-  // Eksekusi query dengan atau tanpa parameter schoolId
-  db.query(query, [schoolId], (err, res) => {
-    if (err) {
-      console.log("Error: ", err);
-      result(null, err);
-      return;
-    }
-
-    // Kembalikan hasil query
-    result(null, res[0]);
-  });
-};
-Dashboard.getTotalTunggakanBebas = async (schoolId, result) => {
-  // Siapkan query dasar
-  let query =
-    "SELECT SUM(pd.amount) as amount, p.school_id FROM payment_detail pd, payment p WHERE pd.payment_id=p.uid AND pd.status in ('Pending', 'Verified')";
-
-  // Jika schoolId ada, tambahkan filter berdasarkan school_id
-  if (schoolId) {
-    query += " AND p.school_id = ?";
-  }
-
-  // Eksekusi query dengan atau tanpa parameter schoolId
-  db.query(query, [schoolId], (err, res) => {
-    if (err) {
-      console.log("Error: ", err);
-      result(null, err);
-      return;
-    }
-
-    // Kembalikan hasil query
-    result(null, res[0]);
-  });
-};
-Dashboard.getSaldoBySchool = async (schoolId, result) => {
-  // Siapkan query dasar
-  let query =
-    "SELECT balance, id FROM school WHERE status = 'ON' AND id != '0'";
-
-  // Jika schoolId ada, tambahkan filter berdasarkan school_id
-  if (schoolId) {
-    query += " AND id = ?";
-  }
-
-  // Eksekusi query dengan atau tanpa parameter schoolId
-  db.query(query, [schoolId], (err, res) => {
-    if (err) {
-      console.log("Error: ", err);
-      result(null, err);
-      return;
-    }
-
-    // Kembalikan hasil query
-    result(null, res[0]);
-  });
-};
-
-module.exports = Dashboard;
+module.exports = Tunggakan;

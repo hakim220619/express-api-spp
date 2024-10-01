@@ -1,5 +1,6 @@
 const db = require("../../config/db.config");
 const axios = require("axios");
+const { sendMessage, formatRupiah } = require("../../helpers/helper");
 
 const General = function (data) {};
 
@@ -113,6 +114,35 @@ General.getListPayment = async (result) => {
     result(null, res);
   });
 };
+General.sendMessageBroadcast = async (dataUsers, message, result) => {
+  try {
+    await Promise.all(
+      dataUsers.map(async (user) => {
+        try {
+          // Asumsikan sendMessage adalah fungsi async untuk mengirim pesan
+          await sendMessage(user.phone, message);
+
+          console.log(`Pesan berhasil dikirim ke: ${user.phone}, Message: ${message}`);
+          
+        } catch (error) {
+          console.error(`Gagal mengirim pesan ke: ${user.phone}, Error: ${error.message}`);
+          result(null, error); // Memanggil callback dengan error
+          return; // Keluar dari fungsi jika error
+        }
+      })
+    );
+
+    // Jika semua pengiriman berhasil, kembalikan callback dengan null error
+    result(null, { message: 'Semua pesan berhasil terkirim!' });
+  } catch (err) {
+    // Jika ada kesalahan global
+    console.error('Terjadi kesalahan:', err);
+    result(null, err); // Memanggil callback dengan error global
+  }
+};
+
+
+
 General.getDetailClassMajorUsers = async (school_id, result) => {
   let query = `
     -- Fetch data for classes and count the number of users in each class
@@ -175,8 +205,6 @@ General.getDetailClassMajorUsers = async (school_id, result) => {
       result(null, err);
       return;
     }
-
-    console.log(res);
     result(null, res);
   });
 };
@@ -379,7 +407,7 @@ General.cekTransaksiSuccesMidtrans = async (result) => {
 };
 General.cekTransaksiSuccesMidtransByUserIdByMonth = async (userId, result) => {
   try {
-    const query = `SELECT * FROM payment WHERE status = 'Verified' AND metode_pembayaran = 'Online' AND redirect_url IS NOT NULL and user_id = ${userId} GROUP BY order_id`;
+    const query = `SELECT p.*, u.full_name, u.phone, s.school_name FROM payment p, users u, school s WHERE p.user_id=u.id AND p.school_id=s.id AND p.status = 'Verified' AND p.metode_pembayaran = 'Online' AND p.redirect_url IS NOT NULL and p.user_id = '${userId}' GROUP BY p.order_id`;
 
     // Fetch payment records where metode_pembayaran is Midtrans and status is Verified
     db.query(query, async (err, rows) => {
@@ -533,8 +561,16 @@ General.cekTransaksiSuccesMidtransByUserIdByMonth = async (userId, result) => {
                 }
               );
               // Wait for all affiliate transactions to complete
-              // await Promise.all(transactionPromises);
-              // Commit the transaction
+              sendMessage(
+                payment.phone,
+                `*Halo ${payment.full_name},*
+    
+Pembayaran dengan ID Pesanan *${payment.order_id}* Berhasil.
+Terima kasih telah melakukan pembayaran. Semoga Anda selalu sehat dan sukses!
+    
+*Salam hormat,*
+*Tim Keuangan Sekolah ${payment.school_name}*`
+              );
               await paymentConnection.commit();
               console.log(
                 `Payment processed and status updated for order_id: ${payment.order_id}`
@@ -575,7 +611,7 @@ const MIDTRANS_SERVER_KEY =
 
 General.cekTransaksiSuccesMidtransByUserIdFree = async (userId, result) => {
   try {
-    const query = `SELECT pd.*, p.school_id FROM payment_detail pd, payment p WHERE pd.payment_id=p.uid AND pd.status = 'Verified' AND pd.metode_pembayaran = 'Online' AND pd.redirect_url IS NOT NULL and pd.user_id = '${userId}'`;
+    const query = `SELECT pd.*, p.school_id, u.full_name, u.phone, s.school_name FROM payment_detail pd, payment p, users u, school s WHERE pd.payment_id=p.uid AND pd.user_id=u.id AND p.school_id=s.id AND pd.status = 'Verified' AND pd.metode_pembayaran = 'Online' AND pd.redirect_url IS NOT NULL and pd.user_id = '${userId}'`;
 
     // Fetch payment records where metode_pembayaran is Midtrans and status is Verified
     db.query(query, async (err, rows) => {
@@ -716,7 +752,16 @@ General.cekTransaksiSuccesMidtransByUserIdFree = async (userId, result) => {
                 "UPDATE payment_detail SET status = ?, updated_at = ? WHERE order_id = ?",
                 ["Paid", new Date(), payment.order_id] // Use payment.order_id here
               );
-
+              sendMessage(
+                payment.phone,
+                `*Halo ${payment.full_name},*
+    
+Pembayaran dengan ID Pesanan *${payment.order_id}* Berhasil.
+Terima kasih telah melakukan pembayaran. Semoga Anda selalu sehat dan sukses!
+    
+*Salam hormat,*
+*Tim Keuangan Sekolah ${payment.school_name}*`
+              );
               // Commit the transaction
               await paymentConnection.commit();
               console.log(
@@ -751,7 +796,7 @@ General.cekTransaksiSuccesMidtransByUserIdFree = async (userId, result) => {
 
 General.cekTransaksiSuccesMidtransFree = async (result) => {
   try {
-    const query = `SELECT pd.*, p.school_id FROM payment_detail pd, payment p WHERE pd.payment_id=p.uid AND pd.status = 'Verified' AND pd.metode_pembayaran = 'Online' AND pd.redirect_url IS NOT NULL`;
+    const query = `SELECT pd.*, p.school_id, u.full_name, u.phone, s.school_name FROM payment_detail pd, payment p, users u, school s WHERE pd.payment_id=p.uid AND pd.user_id=u.id AND p.school_id=s.id AND pd.status = 'Verified' AND pd.metode_pembayaran = 'Online' AND pd.redirect_url IS NOT NULL`;
 
     // Fetch payment records where metode_pembayaran is Midtrans and status is Verified
     db.query(query, async (err, rows) => {
@@ -808,7 +853,6 @@ General.cekTransaksiSuccesMidtransFree = async (result) => {
             try {
               // Start a transaction
               await paymentConnection.beginTransaction();
-              console.log(payment);
 
               // Check school balance
               const [schoolRes] = await paymentConnection.query(
@@ -892,7 +936,15 @@ General.cekTransaksiSuccesMidtransFree = async (result) => {
                 "UPDATE payment_detail SET status = ?, updated_at = ? WHERE order_id = ?",
                 ["Paid", new Date(), payment.order_id] // Use payment.order_id here
               );
-
+              sendMessage(
+                payment.phone,
+                `*Halo ${payment.full_name},*
+    
+Pembayaran dengan ID Pesanan *${payment.order_id}* Berhasil.
+Terima kasih telah melakukan pembayaran. Semoga Anda selalu sehat dan sukses!
+    
+*Salam hormat,*
+*Tim Keuangan Sekolah ${payment.school_name}*`)
               // Commit the transaction
               await paymentConnection.commit();
               console.log(

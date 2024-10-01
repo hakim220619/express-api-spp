@@ -84,7 +84,6 @@ exports.createPaymentPending = [
     }
 
     const { dataUsers, dataPayment, order_id, redirect_url } = req.body;
-    console.log(req.body);
 
     try {
       // Create new admin object

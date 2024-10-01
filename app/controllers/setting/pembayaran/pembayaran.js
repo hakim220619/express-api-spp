@@ -373,6 +373,7 @@ exports.createPaymentByFreeStudent = [
     }
 
     const {
+      unit_id,
       user_id,
       school_id,
       sp_name,
@@ -385,7 +386,8 @@ exports.createPaymentByFreeStudent = [
     } = req.body;
 
     try {
-      const st_pembayaran = new SettingPembayaran({
+      const st_pembayaran = {
+        unit_id,
         uid: `${uuidv4()}-${Date.now()}`,
         user_id,
         setting_payment_uid: req.body.uid,
@@ -398,8 +400,9 @@ exports.createPaymentByFreeStudent = [
         class_id,
         major_id,
         amount,
-      });
-      // console.log(st_pembayaran);
+      };
+      // console.log('asd');
+      
 
       SettingPembayaran.createPaymentByFreeStudent(
         st_pembayaran,

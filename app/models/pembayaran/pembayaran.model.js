@@ -1,9 +1,11 @@
 const db = require("../../config/db.config");
 const { v4: uuidv4 } = require("uuid");
+const { sendMessage, formatRupiah } = require("../../helpers/helper");
 
 const Pembayaran = function (data) {
   this.user_id = data.user_id; // Generate UID if not provided
 };
+
 Pembayaran.listPembayaranPayByMonth = (
   month_name,
   school_id,
@@ -32,6 +34,7 @@ Pembayaran.listPembayaranPayByMonth = (
     u.nisn,
     u.phone,
     p.redirect_url,
+    s.school_name,
     (select sum(af.amount) FROM affiliate af WHERE af.school_id = p.school_id) as affiliate,
     (p.amount +  (select sum(af.amount) FROM affiliate af WHERE af.school_id = p.school_id)) as total_payment
 FROM 
@@ -45,7 +48,9 @@ JOIN
 JOIN 
     setting_payment sp ON p.setting_payment_uid = sp.uid
 JOIN 
-    months mt ON mt.id = p.month_id`;
+    months mt ON mt.id = p.month_id
+JOIN 
+    school s ON s.id = p.school_id`;
 
   if (month_name) {
     query += ` AND u.month like '%${month_name}%'`;
@@ -195,9 +200,12 @@ JOIN
 };
 
 Pembayaran.update = (newPayment, result) => {
-  const { dataPayment } = newPayment; // Ekstrak dataPayment dari newPayment
+  const { dataPayment, dataUsers } = newPayment; // Ekstrak dataPayment dari newPayment
   let completedUpdates = 0; // Untuk menghitung jumlah update yang sudah selesai
   let errors = []; // Untuk menyimpan error jika ada
+  let totalMonth = ""; // Untuk menjumlahkan bulan dari dataPayment
+  let totalPayment = 0; // Untuk menjumlahkan total pembayaran dari dataPayment
+  console.log(newPayment);
 
   // Iterasi melalui setiap item dalam dataPayment
   dataPayment.forEach((paymentData) => {
@@ -223,6 +231,10 @@ Pembayaran.update = (newPayment, result) => {
             id: paymentData.id,
             ...paymentData,
           });
+
+          // Tambahkan bulan dan total pembayaran
+          totalMonth += `${paymentData.month}, `;
+          totalPayment += paymentData.total_payment;
         }
 
         // Periksa apakah semua update sudah selesai
@@ -234,11 +246,28 @@ Pembayaran.update = (newPayment, result) => {
           } else {
             result(null, { message: "All payments updated successfully" });
           }
+
+          // Hapus koma di akhir dari totalMonth jika ada
+          totalMonth = totalMonth.replace(/,\s*$/, '');
+
+          // Kirim pesan setelah semua pembayaran diperbarui
+          sendMessage(
+            dataUsers.phone,
+            `*Halo ${dataUsers.full_name},*
+
+Pembayaran dengan ID Pesanan ${newPayment.order_id} untuk ${dataUsers.sp_name} pada bulan ${totalMonth} ${dataPayment[0].years} sebesar ${formatRupiah(totalPayment)} telah berhasil.
+Silakan klik tautan berikut untuk melanjutkan proses transaksi: ${newPayment.redirect_url}
+Terima kasih telah melakukan pembayaran. Semoga Anda selalu sehat dan sukses!
+
+*Salam hormat,*
+*Tim Keuangan Sekolah ${dataUsers.school_name}*`
+          );
         }
       }
     );
   });
 };
+
 
 const mysql = require("mysql2/promise"); // Import mysql2/promise
 require("dotenv").config();
@@ -318,6 +347,17 @@ Pembayaran.updatePaymentPendingByAdmin = async (newPayment, result) => {
         await paymentConnection.query(
           "UPDATE payment SET metode_pembayaran = ?, status = ?, updated_at = ?, updated_by = ? WHERE id = ?",
           ["Manual", "Paid", new Date(), newPayment.admin_id, paymentData.id]
+        );
+
+        sendMessage(
+          dataUsers.phone,
+          `*Halo ${dataUsers.full_name},*
+          
+Pembayaran ${dataUsers.sp_name} untuk bulan ${paymentData.month} ${paymentData.years} sebesar ${formatRupiah(paymentData.total_payment)}  telah berhasil.
+Terima kasih telah melakukan pembayaran. Semoga Anda selalu sehat dan sukses!
+          
+*Salam hormat,*
+*Tim Keuangan Sekolah ${dataUsers.school_name}*`
         );
 
         // Handle affiliate transactions
@@ -531,6 +571,16 @@ Pembayaran.updatePaymentPendingByAdminFree = async (newPayment, result) => {
       ]
     );
 
+    sendMessage(
+      data.phone,
+      `*Halo ${data.full_name},*
+      
+Pembayaran ${data.sp_name} ${data.years} sebesar ${formatRupiah(newPayment.total_amount + data.affiliate)} telah berhasil.
+Terima kasih telah melakukan pembayaran. Semoga Anda selalu sehat dan sukses!
+      
+*Salam hormat,*
+*Tim Keuangan Sekolah ${data.school_name}*`
+    );
     // Commit transaksi jika semua query berhasil
     await connection.commit();
 
@@ -580,6 +630,17 @@ Pembayaran.updateFree = (newPayment, result) => {
           id: res.insertId,
           ...newPayment,
         });
+        sendMessage(
+          data.phone,
+          `*Halo ${data.full_name},*
+          
+Pembayaran dengan ID Pesanan ${newPayment.order_id} untuk ${data.sp_name} ${data.years} sebesar ${formatRupiah(newPayment.total_amount + data.affiliate)} telah berhasil.
+Silakan klik tautan berikut untuk melanjutkan proses transaksi: ${newPayment.redirect_url}
+Terima kasih telah melakukan pembayaran. Semoga Anda selalu sehat dan sukses!
+          
+*Salam hormat,*
+*Tim Keuangan Sekolah ${data.school_name}*`
+        );
         result(null, {
           message: "Payment inserted successfully",
           id: res.insertId,
@@ -608,6 +669,9 @@ Pembayaran.updateSuccessFree = (newPayment, result) => {
       newPayment.total_amount, // new field amount
     ],
     (err, res) => {
+      console.log(res);
+      
+    
       if (err) {
         console.error("Error: ", err);
         result(err, null); // Return error if there is one
@@ -616,6 +680,16 @@ Pembayaran.updateSuccessFree = (newPayment, result) => {
           id: res.insertId,
           ...newPayment,
         });
+        sendMessage(
+          data.phone,
+          `*Halo ${data.full_name},*
+          
+Pembayaran dengan ID Pesanan ${newPayment.order_id} untuk ${data.sp_name} ${data.years} sebesar ${formatRupiah(newPayment.total_amount + data.affiliate)} telah berhasil.
+Terima kasih telah melakukan pembayaran. Semoga Anda selalu sehat dan sukses!
+          
+*Salam hormat,*
+*Tim Keuangan Sekolah ${data.school_name}*`
+        );
         result(null, {
           message: "Payment inserted successfully",
           id: res.insertId,

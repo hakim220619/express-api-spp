@@ -120,6 +120,20 @@ exports.getListPayment = (req, res, next) => {
     else res.send(data);
   });
 };
+exports.sendMessageBroadcast = (req, res, next) => {
+  const dataUsers = req.body.dataUsers
+  const message = req.body.message
+
+  // console.log(req);
+  General.sendMessageBroadcast(dataUsers, message, (err, data) => {
+    if (err)
+      res.status(500).send({
+        message:
+          err.message || "Some error occurred while retrieving tutorials.",
+      });
+    else res.send(data);
+  });
+};
 exports.getDetailClassMajorUsers = (req, res, next) => {
   const school_id = req.query.school_id
   // console.log(req);
@@ -166,7 +180,6 @@ exports.cekTransaksiSuccesMidtransByUserIdFree = (req, res, next) => {
 };
 exports.cekTransaksiSuccesMidtransByUserIdByMonth = (req, res, next) => {
   const userId = req.query.user_id;
-  console.log(userId);
 
   if (!userId) {
     return res.status(400).send({

@@ -16,6 +16,7 @@ module.exports = (app) => {
   const SettingPembayaran = require("../controllers/setting/pembayaran/pembayaran.js");
   const Unit = require("../controllers/unit/unit.js");
   const general = require("../controllers/general/general.js");
+  const Tunggakan = require("../controllers/tunggakan/tunggakan.js");
   const token = require("../../app/config/tokenHandler.js");
   var router = require("express").Router();
   // Create a new Tutorial
@@ -107,6 +108,10 @@ module.exports = (app) => {
   //Sekolah
   router.get("/list-report", token.authenticateToken, Report.listReport);
   router.get("/list-report-free", token.authenticateToken, Report.listReportFree);
+  //Tunggakan
+  router.get("/list-tunggakan", token.authenticateToken, Tunggakan.listTunggakan);
+  router.post("/sendTunggakanSiswa", token.authenticateToken, Tunggakan.sendTunggakanSiswa);
+  // router.get("/list-report-free", token.authenticateToken, Report.listReportFree);
 
   //Setting Pembayaran
   router.get("/list-setting-pembayaran", token.authenticateToken, SettingPembayaran.listSettingPembayaran);
@@ -134,6 +139,7 @@ module.exports = (app) => {
   router.get("/getTypePayment", token.authenticateToken, general.getTypePayment);
   router.get("/getUnit", token.authenticateToken, general.getUnit);
   router.get("/getListPayment", token.authenticateToken, general.getListPayment);
+  router.post("/sendMessageBroadcast", token.authenticateToken, general.sendMessageBroadcast);
   router.get("/getDetailClassMajorUsers", token.authenticateToken, general.getDetailClassMajorUsers);
   router.get("/cekTransaksiSuccesMidtransByUserIdFree", general.cekTransaksiSuccesMidtransByUserIdFree);
   router.get("/cekTransaksiSuccesMidtransByUserIdByMonth", general.cekTransaksiSuccesMidtransByUserIdByMonth);

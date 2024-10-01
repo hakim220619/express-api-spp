@@ -485,8 +485,11 @@ SettingPembayaran.createPaymentByFreeStudent = (
                 null
               );
             }
+            console.log(existingPayments.length);
+            
             if (existingPayments.length === 0) {
               const paymentData = {
+                unit_id: newSettingPembayaran.unit_id,
                 uid: newSettingPembayaran.uid,
                 setting_payment_uid: newSettingPembayaran.setting_payment_uid,
                 school_id: newSettingPembayaran.school_id,

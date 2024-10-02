@@ -566,7 +566,7 @@ SettingPembayaran.listSettingPembayaran = (
   if (unit_id) {
     query += ` AND sp.unit_id = '${unit_id}'`;
   }
-  console.log(query);
+  // console.log(query);
   
 
   db.query(query, (err, res) => {
@@ -589,7 +589,17 @@ SettingPembayaran.listSettingPembayaranDetail = (
   result
 ) => {
   let query =
-    "SELECT ROW_NUMBER() OVER () AS no, p.*, SUM(p.amount) as jumlah, u.full_name, c.class_name, m.major_name, ut.unit_name  FROM payment p, users u, class c, major m, unit ut WHERE p.user_id=u.id AND p.class_id=c.id AND p.major_id=m.id AND p.unit_id=ut.id AND p.status = 'Pending'";
+    `SELECT ROW_NUMBER() OVER () AS no, p.*, SUM(p.amount) as jumlah, u.full_name, c.class_name, m.major_name, ut.unit_name, COUNT(p.id) as total_pembayaran, 
+        CASE 
+        WHEN p.type = 'BEBAS' THEN 
+            (SELECT SUM(pd.amount) 
+             FROM payment_detail pd 
+             WHERE pd.status IN ('Paid', 'Verified') 
+               AND pd.user_id = p.user_id 
+             AND pd.payment_id=p.uid
+               AND pd.setting_payment_uid = p.setting_payment_uid)
+        ELSE 0 
+    END as jml_paydetail  FROM payment p, users u, class c, major m, unit ut WHERE p.user_id=u.id AND p.class_id=c.id AND p.major_id=m.id AND p.unit_id=ut.id AND p.status = 'Pending'`;
 
   if (full_name) {
     query += ` AND u.full_name like '%${full_name}%'`;
@@ -611,7 +621,7 @@ SettingPembayaran.listSettingPembayaranDetail = (
   }
 
   query += ` GROUP BY p.user_id, p.setting_payment_uid`;
-  // console.log(query);
+  console.log(query);
 
   db.query(query, (err, res) => {
     if (err) {

@@ -14,6 +14,8 @@ if (!fs.existsSync(baseUploadDir)) {
 // Multer setup for file uploads
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
+    console.log(req.body);
+
     const schoolId = req.body.school_id; // Get the school ID from the request body
     const uploadPath = path.join(baseUploadDir, schoolId.toString()); // Construct the folder path
 
@@ -102,7 +104,8 @@ exports.createSiswa = [
       Siswa.create(siswa, (err, data) => {
         if (err) {
           return res.status(500).send({
-            message: err.message || "Some error occurred while creating the Siswa.",
+            message:
+              err.message || "Some error occurred while creating the Siswa.",
           });
         }
         res.send(data);
@@ -130,7 +133,9 @@ exports.updateSiswa = [
       Siswa.detailSiswa(req.body.uid, async (err, existingSiswa) => {
         if (err) {
           return res.status(500).send({
-            message: err.message || "Some error occurred while retrieving the Siswa details.",
+            message:
+              err.message ||
+              "Some error occurred while retrieving the Siswa details.",
           });
         }
 
@@ -156,12 +161,21 @@ exports.updateSiswa = [
 
         // If a new image is uploaded, delete the old image from storage
         if (req.file && existingSiswa.image) {
-          const previousImagePath = path.join(baseUploadDir, existingSiswa.school_id.toString(), existingSiswa.image);
+          const previousImagePath = path.join(
+            baseUploadDir,
+            existingSiswa.school_id.toString(),
+            existingSiswa.image
+          );
           fs.unlink(previousImagePath, (err) => {
             if (err) {
-              console.error(`Failed to delete old image file: ${previousImagePath}`, err);
+              console.error(
+                `Failed to delete old image file: ${previousImagePath}`,
+                err
+              );
             } else {
-              console.log(`Successfully deleted old image file: ${previousImagePath}`);
+              console.log(
+                `Successfully deleted old image file: ${previousImagePath}`
+              );
             }
           });
         }
@@ -170,7 +184,8 @@ exports.updateSiswa = [
         Siswa.update(siswa, (err, data) => {
           if (err) {
             return res.status(500).send({
-              message: err.message || "Some error occurred while updating the Siswa.",
+              message:
+                err.message || "Some error occurred while updating the Siswa.",
             });
           }
           res.send({ message: "Siswa updated successfully!", data });
@@ -183,7 +198,6 @@ exports.updateSiswa = [
   },
 ];
 
-
 // Delete a Siswa
 // Delete a Siswa
 exports.delete = (req, res) => {
@@ -193,22 +207,29 @@ exports.delete = (req, res) => {
   Siswa.detailSiswa(uid, (err, siswaData) => {
     if (err) {
       return res.status(500).send({
-        message: err.message || "Some error occurred while retrieving the Siswa details for deletion.",
+        message:
+          err.message ||
+          "Some error occurred while retrieving the Siswa details for deletion.",
       });
     }
-
-    const imagePath = path.join(baseUploadDir, siswaData.school_id.toString(), siswaData.image);
 
     // Delete the siswa from the database
     Siswa.delete(uid, (err, data) => {
       if (err) {
         return res.status(500).send({
-          message: err.message || "Some error occurred while deleting the Siswa.",
+          message:
+            err.message || "Some error occurred while deleting the Siswa.",
         });
       }
 
       // If the siswa has an image, attempt to delete it from the filesystem
       if (siswaData.image) {
+        const imagePath = path.join(
+          baseUploadDir,
+          siswaData.school_id.toString(),
+          siswaData.image
+        );
+
         fs.unlink(imagePath, (err) => {
           if (err) {
             console.error(`Failed to delete image file: ${imagePath}`, err);
@@ -223,17 +244,95 @@ exports.delete = (req, res) => {
   });
 };
 
-
 // Get details of a specific Siswa
 exports.detailSiswa = (req, res, next) => {
   const uid = req.body.uid;
-  
+
   Siswa.detailSiswa(uid, (err, data) => {
     if (err) {
       return res.status(500).send({
-        message: err.message || "Some error occurred while retrieving the Siswa details.",
+        message:
+          err.message ||
+          "Some error occurred while retrieving the Siswa details.",
       });
     }
     res.send(data);
   });
 };
+const XLSX = require("xlsx");
+const { log } = require("util");
+const dataupload = multer({ dest: "uploads/" });
+exports.uploadSiswa = [
+  dataupload.single("file"), // Middleware for handling file upload
+  async (req, res, next) => {
+    // Check if a file was uploaded
+    if (!req.file) {
+      return res.status(400).send({
+        status: 'error',
+        message: "No file uploaded. Please upload an Excel file.",
+      });
+    }
+
+    const school_id = req.body.school_id;
+
+    // Validate school_id
+    if (!school_id) {
+      return res.status(400).send({
+        status: 'error',
+        message: "school_id is required.",
+      });
+    }
+
+    try {
+      // Read the uploaded Excel file
+      const workbook = XLSX.readFile(req.file.path);
+      const sheetName = workbook.SheetNames[0]; // Get the first sheet name
+      const sheet = workbook.Sheets[sheetName];
+
+      // Convert the sheet to JSON
+      const dataRows = XLSX.utils.sheet_to_json(sheet);
+
+      // Initialize a counter for successfully processed records
+      let successfulRecords = 0;
+      let failedRecords = [];
+
+      // Loop through each row of data and save to the database
+      for (const row of dataRows) {
+        try {
+          await Siswa.uploadSiswa({
+            school_id,
+            ...row,
+          });
+          successfulRecords++; // Increment success count
+        } catch (error) {
+          // Capture failed record and the error message
+          failedRecords.push({
+            row: row,
+            error: error.message
+          });
+        }
+      }
+
+      // Construct the response message
+      const responseMessage = {
+        status: 'success',
+        message: "File uploaded successfully.",
+        totalRecords: dataRows.length,
+        successfulRecords: successfulRecords,
+        failedRecords: failedRecords.length,
+        failedDetails: failedRecords.length > 0 ? failedRecords : undefined, // Only include if there are failures
+      };
+
+      // Send success response
+      res.status(200).send(responseMessage);
+    } catch (err) {
+      // Handle errors from the upload function
+      res.status(500).send({
+        status: 'error',
+        message:
+          err.message ||
+          "Some error occurred while processing the Siswa details.",
+      });
+    }
+  },
+];

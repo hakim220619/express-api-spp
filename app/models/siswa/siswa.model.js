@@ -1,5 +1,6 @@
 const db = require("../../config/db.config");
 const bcrypt = require("bcrypt");
+const { v4: uuidv4 } = require("uuid");
 // constructor
 const Siswa = function (data) {
   this.uid = data.uid;
@@ -43,8 +44,8 @@ Siswa.create = (newUsers, result) => {
 };
 
 Siswa.update = (newUsers, result) => {
-    console.log(newUsers);
-    
+  console.log(newUsers);
+
   db.query(
     "UPDATE users SET ? WHERE uid = ?",
     [newUsers, newUsers.uid],
@@ -125,6 +126,136 @@ Siswa.detailSiswa = async (uid, result) => {
     console.log("users: ", res);
     result(null, res[0]);
   });
+};
+
+const moment = require("moment");
+
+Siswa.uploadSiswa = async (dataAll, callback) => {
+  try {
+    const {
+      school_id,
+      "NAMA YAYASAN": namaYayasan,
+      UNIT: unit,
+      NISN: nisn,
+      "NAMA LENGKAP": namaLengkap,
+      EMAIL: email,
+      "NO WA": noWa,
+      "TANGGAL LAHIR": tanggalLahir,
+      ALAMAT: alamat,
+      KELAS: kelas,
+      JURUSAN: jurusan,
+    } = dataAll;
+
+    const checkSchoolQuery = `SELECT * FROM unit WHERE school_id = ? AND unit_name LIKE ?`;
+    const likeNamaYayasan = `%${unit}%`;
+
+    const unitResult = await new Promise((resolve, reject) => {
+      db.query(
+        checkSchoolQuery,
+        [school_id, likeNamaYayasan],
+        (err, results) => {
+          if (err) {
+            console.error("Error checking school: ", err);
+            return reject(err);
+          }
+          resolve(results);
+        }
+      );
+    });
+
+    if (unitResult.length > 0) {
+      const classQuery = `SELECT * FROM class WHERE school_id = ? AND class_name = ?`;
+      const classResult = await new Promise((resolve, reject) => {
+        db.query(classQuery, [school_id, kelas], (err, results) => {
+          if (err) {
+            console.error("Error checking class: ", err);
+            return reject(err);
+          }
+          resolve(results);
+        });
+      });
+
+      const majorQuery = `SELECT * FROM major WHERE school_id = ? AND major_name LIKE ?`;
+      const likeJurusan = `%${jurusan}%`;
+      const majorResult = await new Promise((resolve, reject) => {
+        db.query(majorQuery, [school_id, likeJurusan], (err, results) => {
+          if (err) {
+            console.error("Error checking major: ", err);
+            return reject(err);
+          }
+          resolve(results);
+        });
+      });
+
+      const hashedPassword = await bcrypt.hash("12345678", 10); // Hash the password
+      // const formattedDate = new Date(tanggalLahir).toLocaleDateString('en-CA');
+      const formattedDate = moment(tanggalLahir).format("YYYY-MM-DD");
+      console.log(formattedDate);
+
+      const insertQuery = `INSERT INTO users (uid, school_id, unit_id, nisn, full_name, email, phone, date_of_birth, address, class_id, major_id, status, password, role) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
+      await new Promise((resolve, reject) => {
+        db.query(
+          insertQuery,
+          [
+            uuidv4(),
+            school_id,
+            unitResult[0].id,
+            nisn,
+            namaLengkap,
+            email,
+            noWa,
+            tanggalLahir,
+            alamat,
+            classResult.length > 0 ? classResult[0].id : null,
+            majorResult.length > 0 ? majorResult[0].id : null,
+            "ON",
+            hashedPassword,
+            160,
+          ],
+          (err, result) => {
+            if (err) {
+              console.error("Error inserting data: ", err);
+              return reject(err);
+            }
+            resolve(result);
+          }
+        );
+      });
+
+      // Successful insertion response
+      callback(null, {
+        status: "success",
+        message: "Data inserted successfully",
+        data: {
+          uid: uuidv4(),
+          school_id,
+          unit_id: unitResult[0].id,
+          nisn,
+          full_name: namaLengkap,
+          email,
+          phone: noWa,
+          date_of_birth: tanggalLahir,
+          address: alamat,
+          class_id: classResult.length > 0 ? classResult[0].id : null,
+          major_id: majorResult.length > 0 ? majorResult[0].id : null,
+        },
+      });
+    } else {
+      // No matching school found response
+      callback(null, {
+        status: "error",
+        message: "No matching school found.",
+      });
+    }
+  } catch (error) {
+    console.error("Unexpected error:", error);
+    // Error response
+    callback(null, {
+      status: "error",
+      message: "Unexpected error occurred",
+      error: error.message,
+    });
+  }
 };
 
 module.exports = Siswa;

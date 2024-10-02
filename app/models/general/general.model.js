@@ -122,10 +122,13 @@ General.sendMessageBroadcast = async (dataUsers, message, result) => {
           // Asumsikan sendMessage adalah fungsi async untuk mengirim pesan
           await sendMessage(user.phone, message);
 
-          console.log(`Pesan berhasil dikirim ke: ${user.phone}, Message: ${message}`);
-          
+          console.log(
+            `Pesan berhasil dikirim ke: ${user.phone}, Message: ${message}`
+          );
         } catch (error) {
-          console.error(`Gagal mengirim pesan ke: ${user.phone}, Error: ${error.message}`);
+          console.error(
+            `Gagal mengirim pesan ke: ${user.phone}, Error: ${error.message}`
+          );
           result(null, error); // Memanggil callback dengan error
           return; // Keluar dari fungsi jika error
         }
@@ -133,15 +136,13 @@ General.sendMessageBroadcast = async (dataUsers, message, result) => {
     );
 
     // Jika semua pengiriman berhasil, kembalikan callback dengan null error
-    result(null, { message: 'Semua pesan berhasil terkirim!' });
+    result(null, { message: "Semua pesan berhasil terkirim!" });
   } catch (err) {
     // Jika ada kesalahan global
-    console.error('Terjadi kesalahan:', err);
+    console.error("Terjadi kesalahan:", err);
     result(null, err); // Memanggil callback dengan error global
   }
 };
-
-
 
 General.getDetailClassMajorUsers = async (school_id, result) => {
   let query = `
@@ -208,8 +209,6 @@ General.getDetailClassMajorUsers = async (school_id, result) => {
     result(null, res);
   });
 };
-
-
 
 const mysql = require("mysql2/promise"); // Ensure mysql2/promise is imported
 require("dotenv").config();
@@ -719,8 +718,7 @@ General.cekTransaksiSuccesMidtransByUserIdFree = async (userId, result) => {
               // Handle affiliate transactions
               const transactionPromises = affiliateRes.map(
                 async (affiliate) => {
-                  const totalByAff =
-                    affiliate.debit + affiliate.amount; // Adjust as necessary
+                  const totalByAff = affiliate.debit + affiliate.amount; // Adjust as necessary
 
                   // Update the debit in the database
                   await paymentConnection.query(
@@ -903,8 +901,7 @@ General.cekTransaksiSuccesMidtransFree = async (result) => {
               // Handle affiliate transactions
               const transactionPromises = affiliateRes.map(
                 async (affiliate) => {
-                  const totalByAff =
-                    affiliate.debit + affiliate.amount; // Adjust as necessary
+                  const totalByAff = affiliate.debit + affiliate.amount; // Adjust as necessary
 
                   // Update the debit in the database
                   await paymentConnection.query(
@@ -944,7 +941,8 @@ Pembayaran dengan ID Pesanan *${payment.order_id}* Berhasil.
 Terima kasih telah melakukan pembayaran. Semoga Anda selalu sehat dan sukses!
     
 *Salam hormat,*
-*Tim Keuangan Sekolah ${payment.school_name}*`)
+*Tim Keuangan Sekolah ${payment.school_name}*`
+              );
               // Commit the transaction
               await paymentConnection.commit();
               console.log(
@@ -1045,6 +1043,42 @@ General.getMonths = async (schoolId, result) => {
     result(null, res);
   });
 };
+General.rolePermissions = async (school_id, result) => {
+  // Siapkan query dasar
+  let query = "SELECT * FROM role_permission WHERE status = 'ON'";
+  if (school_id) {
+    query += ` and school_id = '${school_id}'`;
+  }
+  // Eksekusi query
+  db.query(query, (err, res) => {
+    if (err) {
+      console.log("Error: ", err);
+      result(null, err);
+      return;
+    }
+
+    // Siapkan objek untuk menyimpan role permissions
+    const rolePermissions = {};
+
+    // Loop melalui hasil query untuk membangun rolePermissions
+    res.forEach((row) => {
+      const path = row.path; // Assuming 'path' is the column name for the route
+      const roleId = row.role; // Assuming 'role' is the column name for role identifier
+
+      // Masukkan ke dalam rolePermissions
+      // Gunakan array untuk mendukung beberapa role di masa depan
+      if (!rolePermissions[path]) {
+        rolePermissions[path] = [];
+      }
+      rolePermissions[path].push(roleId); // Push roleId into the array
+    });
+    console.log(JSON.stringify(rolePermissions));
+
+    // Kembalikan hasil query dalam format JSON
+    result(null, JSON.stringify(rolePermissions)); // Convert to JSON string
+  });
+};
+
 General.cekFunction = async (schoolId, result) => {
   const affiliateQuery = `SELECT SUM(amount) as amount FROM affiliate WHERE user_id = ?`;
   db.query(affiliateQuery, [20064], (affiliateErr, affiliateRows) => {

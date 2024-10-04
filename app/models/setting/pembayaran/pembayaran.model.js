@@ -270,14 +270,10 @@ SettingPembayaran.createPaymentByStudent = (newSettingPembayaran, result) => {
         );
       }
 
-      const paymentQueries = [];
-
-      // Ubah dari forEach ke map untuk pengguna
-      users.map((user) => {
+      users.forEach((user) => {
         const checkQuery =
           "SELECT id FROM payment WHERE unit_id = ? and user_id = ? AND school_id = ? AND setting_payment_uid = ? AND class_id = ? AND major_id = ?";
 
-        // Pindahkan query check di sini untuk dijalankan sekali per user
         db.query(
           checkQuery,
           [
@@ -297,8 +293,8 @@ SettingPembayaran.createPaymentByStudent = (newSettingPembayaran, result) => {
               );
             }
 
-            // Jika tidak ada pembayaran yang sudah ada, baru lakukan loop per bulan
             if (existingPayments.length === 0) {
+              // Loop untuk setiap bulan
               for (let i = 0; i < monthsCount; i++) {
                 const paymentData = {
                   unit_id: newSettingPembayaran.unit_id,
@@ -316,43 +312,29 @@ SettingPembayaran.createPaymentByStudent = (newSettingPembayaran, result) => {
                   amount: newSettingPembayaran.months[i].payment,
                 };
 
-                paymentQueries.push(
-                  new Promise((resolve, reject) => {
-                    db.query(
-                      "INSERT INTO payment SET ?",
-                      paymentData,
-                      (insertErr, res) => {
-                        if (insertErr) {
-                          console.log("error inserting payment: ", insertErr);
-                          reject(insertErr);
-                        } else {
-                          console.log("created payment: ", {
-                            id: res.insertId,
-                            user_id: user.id, // Include user_id in the result log
-                            ...paymentData,
-                          });
-                          resolve({ id: res.insertId, user_id: user.id }); // Return user_id along with insertId
-                        }
-                      }
-                    );
-                  })
-                );
+                db.query("INSERT INTO payment SET ?", paymentData, (insertErr, res) => {
+                  if (insertErr) {
+                    console.log("error inserting payment: ", insertErr);
+                    return result(insertErr, null);
+                  } else {
+                    console.log("created payment: ", {
+                      id: res.insertId,
+                      user_id: user.id, // Include user_id in the result log
+                      ...paymentData,
+                    });
+                  }
+                });
               }
             }
           }
         );
       });
 
-      Promise.all(paymentQueries)
-        .then((insertIds) => {
-          result(null, insertIds);
-        })
-        .catch((err) => {
-          result(err, null);
-        });
+      result(null, { message: "Payments are being processed" });
     }
   );
 };
+
 
 SettingPembayaran.updateSettingPaymentByMonth = (
   newSettingPembayaran,

@@ -1,26 +1,26 @@
 const db = require("../../config/db.config");
 const bcrypt = require("bcrypt");
 // constructor
-const Permission = function (data) {
+const TemplateMessage = function (data) {
   this.id = data.uid;
 };
 
-Permission.create = (newUsers, result) => {
-  db.query("INSERT INTO role_permission SET ?", newUsers, (err, res) => {
+TemplateMessage.create = (newData, result) => {
+  db.query("INSERT INTO template_message SET ?", newData, (err, res) => {
     if (err) {
       console.log("error: ", err);
       result(err, null);
       return;
     }
 
-    console.log("created Permission: ", { id: res.insertId, ...newUsers });
-    result(null, { id: res.insertId, ...newUsers });
+    console.log("created TemplateMessage: ", { id: res.insertId, ...newData });
+    result(null, { id: res.insertId, ...newData });
   });
 };
 
-Permission.update = (newUsers, result) => {
+TemplateMessage.update = (newUsers, result) => {
   db.query(
-    "UPDATE role_permission SET ? WHERE id = ?",
+    "UPDATE template_message SET ? WHERE id = ?",
     [newUsers, newUsers.id],
     (err, res) => {
       if (err) {
@@ -39,15 +39,15 @@ Permission.update = (newUsers, result) => {
   );
 };
 
-Permission.listPermission = (title, school_id, result) => {
+TemplateMessage.listTemplateMessage = (template_name, school_id, result) => {
   let query =
-    "SELECT ROW_NUMBER() OVER () AS no, a.*, s.school_name, r.role_name  FROM role_permission a, school s, role r WHERE a.school_id=s.id AND a.role=r.id";
+    "SELECT ROW_NUMBER() OVER () AS no, tm.* FROM template_message tm WHERE 1=1";
 
-  if (title) {
-    query += ` AND a.title like '%${title}%'`;
+  if (template_name) {
+    query += ` AND tm.template_name like '%${template_name}%'`;
   }
   if (school_id != 1) {
-    query += ` AND a.school_id = '${school_id}'`;
+    query += ` AND tm.school_id = '${school_id}'`;
   }
 
   db.query(query, (err, res) => {
@@ -60,21 +60,21 @@ Permission.listPermission = (title, school_id, result) => {
     result(null, res);
   });
 };
-Permission.delete = (uid, result) => {
-  let query = `DELETE FROM role_permission WHERE id = '${uid}'`;
+TemplateMessage.delete = (uid, result) => {
+  let query = `DELETE FROM template_message WHERE id = '${uid}'`;
   db.query(query, (err, res) => {
     if (err) {
       console.log("error: ", err);
       result(err, null);
       return;
     }
-    console.log(`Deleted user with ID ${uid}`);
+    console.log(`Deleted Data with ID ${uid}`);
     result(null, res);
   });
 };
-Permission.detailPermission = async (id, result) => {
+TemplateMessage.detailTemplateMessage = async (id, result) => {
   let query =
-    "SELECT * from role_permission where id = '" +
+    "SELECT * from template_message where id = '" +
     id +
     "'";
   db.query(query, (err, res) => {
@@ -89,4 +89,4 @@ Permission.detailPermission = async (id, result) => {
   });
 };
 
-module.exports = Permission;
+module.exports = TemplateMessage;

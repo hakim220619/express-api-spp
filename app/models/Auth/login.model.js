@@ -72,7 +72,7 @@ Login.checklogin = async (req, res) => {
   try {
     const token = req.replace("Bearer ", "");
     db.query(
-      `SELECT u.id, u.uid, u.full_name, u.email, u.date_of_birth, u.address, u.phone, u.status, u.role FROM personal_access_tokens pat, users u, role r WHERE pat.tokenable_id=u.id and u.role=r.id and pat.token = '${token}'`,
+      `SELECT u.id, u.full_name, u.password, u.image, u.role, u.school_id, r.role_name, a.owner, a.title, a.aplikasi_name,a.logo, a.copy_right, s.school_name FROM personal_access_tokens pat, users u, role r, aplikasi a, school s WHERE pat.tokenable_id=u.id and u.role=r.id AND u.school_id=a.school_id AND u.school_id=s.id and pat.token = '${token}'`,
       async (err, respons) => {
         if (respons.length == 0) {
           res(err, {

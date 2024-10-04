@@ -1,36 +1,41 @@
 // /helpers/messageHelper.js
 const axios = require("axios");
 
-const sendMessage = async (receiver, message) => {
-  try {
-    const response = await axios.post(
-      "https://wa.sppapp.com/api/send-message",
-      {
-        api_key: "ea5273ea688aa6e84a437e847809837a452c33b1",
-        receiver: receiver,
-        data: {
-          message: message,
-        },
+const sendMessage = async (url, token, receiver, message, maxRetries = 5) => {
+  let attempts = 0;
+
+  while (attempts < maxRetries) {
+    try {
+      const response = await axios.post(
+        url,
+        {
+          api_key: token,
+          receiver: receiver,
+          data: {
+            message: message,
+          },
+        }
+      );
+
+      // Jika berhasil, kirimkan respons sukses dalam format JSON
+      return {
+        status: "success",
+        message: "Message sent successfully",
+        data: response.data,
+      };
+    } catch (error) {
+      console.error(`Error sending message on attempt ${attempts + 1}:`, error.message);
+      attempts++;
+
+      // Jika gagal dan sudah mencapai batas maksimum percobaan, kirimkan respons error
+      if (attempts >= maxRetries) {
+        return {
+          status: "error",
+          message: "Failed to send message after multiple attempts",
+          error: error.message,
+        };
       }
-    );
-    console.log(response.data);
-
-    // Jika berhasil, kirimkan respons sukses dalam format JSON
-    return {
-      status: "success",
-      message: "Message sent successfully",
-      data: response.data,
-    };
-  } catch (error) {
-    console.error("Error sending message:", error.message);
-    console.log(error)
-
-    // Jika gagal, kirimkan respons error dalam format JSON
-    return {
-      status: "error",
-      message: "Failed to send message",
-      error: error.message,
-    };
+    }
   }
 };
 

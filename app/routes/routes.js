@@ -18,6 +18,7 @@ module.exports = (app) => {
   const general = require("../controllers/general/general.js");
   const Permission = require("../controllers/permission/permission.js");
   const Tunggakan = require("../controllers/tunggakan/tunggakan.js");
+  const TemplateMessage = require("../controllers/templateMessage/templateMessage.js");
   const token = require("../../app/config/tokenHandler.js");
   var router = require("express").Router();
   // Create a new Tutorial
@@ -53,9 +54,16 @@ module.exports = (app) => {
   //permission
   router.get("/list-permission", token.authenticateToken, Permission.listPermission);
   router.post("/create-permission", token.authenticateToken, Permission.createPermission);
-  // router.post("/update-kelas", token.authenticateToken, Kelas.updateKelas);
-  // router.post("/delete-kelas", token.authenticateToken, Kelas.delete);
-  // router.post("/detailKelas", token.authenticateToken, Kelas.detailKelas);
+  router.post("/update-permission", token.authenticateToken, Permission.updatePermission);
+  router.post("/delete-permission", token.authenticateToken, Permission.delete);
+  router.post("/detailPermission", token.authenticateToken, Permission.detailPermission);
+  //permission
+  router.get("/list-templateMessage", token.authenticateToken, TemplateMessage.listTemplateMessage);
+  router.post("/create-templateMessage", token.authenticateToken, TemplateMessage.createTemplateMessage);
+  router.post("/update-templateMessage", token.authenticateToken, TemplateMessage.updateTemplateMessage);
+  router.post("/delete-templateMessage", token.authenticateToken, TemplateMessage.delete);
+  router.post("/detailTemplateMessage", token.authenticateToken, TemplateMessage.detailTemplateMessage);
+  
   //Jurusan
   router.get("/list-jurusan", token.authenticateToken, Jurusan.listJurusan);
   router.post(
@@ -154,6 +162,7 @@ module.exports = (app) => {
   router.get("/cekTransaksiSuccesMidtrans", general.cekTransaksiSuccesMidtrans);
   router.get("/cekTransaksiSuccesMidtransFree", general.cekTransaksiSuccesMidtransFree);
   router.get("/rolePermissions", general.rolePermissions);
+  router.get("/getMenuActive", token.authenticateToken, general.getMenuActive);
 
 
   router.get("/cekFunction", general.cekFunction);

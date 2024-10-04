@@ -1,15 +1,15 @@
-const Permission = require("../../models/permission/permission.model.js");
+const TemplateMessage = require("../../models/templateMessage/templateMessage.model.js");
 const { v4: uuidv4 } = require("uuid");
 const bcrypt = require("bcrypt");
 const multer = require("multer");
 const upload = multer();
 
 // Retrieve all Admins from the database with conditions
-exports.listPermission = (req, res, next) => {
-  const title = req.query.q;
+exports.listTemplateMessage = (req, res, next) => {
+  const template_name = req.query.q;
   const school_id = req.query.school_id;
 
-  Permission.listPermission(title, school_id, (err, data) => {
+  TemplateMessage.listTemplateMessage(template_name, school_id, (err, data) => {
     if (err)
       res.status(500).send({
         message: err.message || "Some error occurred while retrieving Data.",
@@ -19,7 +19,7 @@ exports.listPermission = (req, res, next) => {
 };
 
 // Create new Admin
-exports.createPermission = [
+exports.createTemplateMessage = [
   upload.none(),
   async (req, res) => {
     // Validate request
@@ -32,18 +32,18 @@ console.log(req.body);
 
     try {
       // Create new admin object
-      const permissionData = {
+      const dataALl = {
         school_id: req.body.school_id,
-        title: req.body.title,
-        icon: req.body.icon,
-        path: req.body.path,
-        role: req.body.role,
+        template_name: req.body.template_name,
+        deskripsi: req.body.deskripsi,
+        message: req.body.message,
         status: req.body.status || "ON",
         created_at: new Date(),
       };
+      
 
       // Save admin to the database
-      Permission.create(permissionData, (err, data) => {
+      TemplateMessage.create(dataALl, (err, data) => {
         if (err) {
           return res.status(500).send({
             message:
@@ -60,7 +60,7 @@ console.log(req.body);
 ];
 
 // Update existing Admin
-exports.updatePermission = [
+exports.updateTemplateMessage = [
   upload.none(),
   async (req, res) => {
     if (!req.body) {
@@ -70,28 +70,27 @@ exports.updatePermission = [
     }
 
     try {
-      const dataAll = {
-        id: req.body.data.id,
-
-        school_id: req.body.data.school_id,
-        title: req.body.data.title,
-        icon: req.body.data.icon,
-        path: req.body.data.path,
-        role: req.body.data.role,
-        updated_at: new Date(),
-      }; 
-      Permission.update(dataAll, (err, data) => {
+        const dataAll = {
+            id: req.body.data.id,
+            school_id: req.body.data.school_id,
+            template_name: req.body.data.template_name,  // Mengganti title menjadi template_name
+            deskripsi: req.body.data.deskripsi,          // Mengganti icon menjadi deskripsi
+            message: req.body.data.message,              // Mengganti path menjadi message
+            updated_at: new Date(),
+          };
+          
+      TemplateMessage.update(dataAll, (err, data) => {
         if (err) {
           return res.status(500).send({
             message:
-              err.message || "Some error occurred while updating the Permission.",
+              err.message || "Some error occurred while updating the TemplateMessage.",
           });
         } else {
           res.send(data);
         }
       });
     } catch (error) {
-      res.status(500).send({ message: "Error updating Permissions" });
+      res.status(500).send({ message: "Error updating TemplateMessages" });
     }
   },
 ];
@@ -100,7 +99,7 @@ exports.updatePermission = [
 exports.delete = (req, res) => {
   const id = req.body.data;
 
-  Permission.delete(id, (err, data) => {
+  TemplateMessage.delete(id, (err, data) => {
     if (err) {
       return res.status(500).send({
         message: err.message || "Some error occurred while deleting the Admin.",
@@ -111,10 +110,9 @@ exports.delete = (req, res) => {
   });
 };
 
-exports.detailPermission = (req, res, next) => {
+exports.detailTemplateMessage = (req, res, next) => {
   const id = req.body.id;
-  console.log(req.body);
-  Permission.detailPermission(id, (err, data) => {
+  TemplateMessage.detailTemplateMessage(id, (err, data) => {
     if (err)
       res.status(500).send({
         message:

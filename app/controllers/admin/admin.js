@@ -3,11 +3,27 @@ const { v4: uuidv4 } = require("uuid");
 const bcrypt = require("bcrypt");
 const multer = require("multer");
 const path = require("path");
+const fs = require("fs");
+
+const baseUploadDir = "uploads/school/admin";
+if (!fs.existsSync(baseUploadDir)) {
+  fs.mkdirSync(baseUploadDir, { recursive: true });
+}
 
 // Multer setup for file uploads
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
-    cb(null, "uploads/"); // Folder to store uploaded files
+    const schoolId = req.body.school_id; // Get the school ID from the request body
+    const uploadPath = path.join(baseUploadDir, schoolId.toString()); // Construct the folder path
+    console.log(schoolId);
+
+    // Ensure the specific school directory exists
+    if (!fs.existsSync(uploadPath)) {
+      fs.mkdirSync(uploadPath, { recursive: true });
+      console.log(`Directory created: ${uploadPath}`);
+    }
+
+    cb(null, uploadPath); // Callback with the destination folder
   },
   filename: function (req, file, cb) {
     cb(null, `${uuidv4()}${path.extname(file.originalname)}`); // Rename file with a unique identifier
@@ -48,7 +64,7 @@ exports.createAdmin = [
       email,
       phone,
       password,
-      school,
+      school_id,
       status,
       role,
       address,
@@ -59,7 +75,7 @@ exports.createAdmin = [
       // Create new admin object
       const admin = new Admin({
         uid: uuidv4(),
-        school_id: school,
+        school_id,
         full_name: full_name.toUpperCase(),
         email: email,
         address: address,
@@ -90,7 +106,6 @@ exports.createAdmin = [
   },
 ];
 
-// Update existing Admin
 exports.updateAdmin = [
   upload.single("image"), // Middleware for handling file upload during update
   async (req, res) => {
@@ -99,37 +114,64 @@ exports.updateAdmin = [
         message: "Content cannot be empty!",
       });
     }
+    console.log(req.body);
 
-    try {
-      const admin = new Admin({
-        uid: req.body.data.uid,
-        full_name: req.body.data.full_name.toUpperCase(),
-        email: req.body.data.email,
-        date_of_birth: req.body.data.date_of_birth,
-        address: req.body.data.address,
-        phone: req.body.data.phone,
-        role: req.body.data.role,
-        school_id: req.body.data.school,
-        status: req.body.data.status,
-        updated_by: req.body.data.updated_by,
-        updated_at: new Date(),
-      });
+    Admin.detailAdmin(req.body.uid, async (err, existingAdmin) => {
+      if (err) {
+        return res.status(500).send({
+          message: "Error retrieving existing admin details",
+        });
+      }
 
-      Admin.update(admin, (err, data) => {
-        if (err) {
-          return res.status(500).send({
-            message:
-              err.message || "Some error occurred while updating the Admin.",
+      try {
+        const admin = new Admin({
+          uid: req.body.uid,
+          full_name: req.body.full_name.toUpperCase(),
+          email: req.body.email,
+          date_of_birth: req.body.date_of_birth,
+          address: req.body.address,
+          phone: req.body.phone,
+          role: req.body.role,
+          school_id: req.body.school_id,
+          status: req.body.status,
+          // Jika ada file baru, gunakan file baru. Jika tidak ada, pertahankan gambar lama
+          image: req.file ? req.file.filename : existingAdmin.image, 
+          updated_by: req.body.updated_by,
+          updated_at: new Date(),
+        });
+
+        // Hapus gambar lama jika ada file baru
+        if (req.file && existingAdmin.image) {
+          const oldImagePath = path.join(
+            __dirname,
+            `../uploads/school/admin/${existingAdmin.school_id}/${existingAdmin.image}`
+          );
+          fs.unlink(oldImagePath, (err) => {
+            if (err) {
+              console.log("Error deleting old image:", err);
+            } else {
+              console.log("Old image deleted:", existingAdmin.image);
+            }
           });
-        } else {
-          res.send(data);
         }
-      });
-    } catch (error) {
-      res.status(500).send({ message: "Error updating Admin" });
-    }
+
+        Admin.update(admin, (err, data) => {
+          if (err) {
+            return res.status(500).send({
+              message:
+                err.message || "Some error occurred while updating the Admin.",
+            });
+          } else {
+            res.send(data);
+          }
+        });
+      } catch (error) {
+        res.status(500).send({ message: "Error updating Admin" });
+      }
+    });
   },
 ];
+
 
 // Delete an Admin
 exports.delete = (req, res) => {

@@ -190,7 +190,6 @@ Siswa.uploadSiswa = async (dataAll, callback) => {
       const hashedPassword = await bcrypt.hash("12345678", 10); // Hash the password
       // const formattedDate = new Date(tanggalLahir).toLocaleDateString('en-CA');
       const formattedDate = moment(tanggalLahir).format("YYYY-MM-DD");
-      console.log(formattedDate);
 
       const insertQuery = `INSERT INTO users (uid, school_id, unit_id, nisn, full_name, email, phone, date_of_birth, address, class_id, major_id, status, password, role) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
       await new Promise((resolve, reject) => {

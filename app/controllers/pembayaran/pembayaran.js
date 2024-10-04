@@ -95,7 +95,7 @@ exports.createPaymentPending = [
       };
 
       // Save admin to the database
-      Pembayaran.update(pembayaran, (err, data) => {
+      Pembayaran.updatePaymentPendingAdmin(pembayaran, (err, data) => {
         if (err) {
           return res.status(500).send({
             message:
@@ -248,7 +248,7 @@ exports.createPaymentPendingFree = [
       };
 
       // Save admin to the database
-      Pembayaran.updateFree(pembayaran, (err, data) => {
+      Pembayaran.updateSiswaFree(pembayaran, (err, data) => {
         if (err) {
           return res.status(500).send({
             message:

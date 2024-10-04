@@ -123,10 +123,10 @@ SettingPembayaran.createPaymentByFree = (newSettingPembayaran, result) => {
                         reject(insertErr);
                       } else {
                         console.log("created payment: ", {
-                          id: res.id,
+                          id: res.insertId,
                           ...paymentData,
                         });
-                        resolve(res.id);
+                        resolve(res.insertId);
                       }
                     }
                   );
@@ -201,46 +201,45 @@ SettingPembayaran.createPaymentByMonth = (newSettingPembayaran, result) => {
               );
             }
             // Hanya melanjutkan jika pembayaran belum ada
-            if (existingPayments.length === 0) {
-              for (let i = 0; i < monthsCount; i++) {
-                const uniqueUid = `${user.id}${newSettingPembayaran.school_id}${newSettingPembayaran.setting_payment_uid}`; // Membuat UID dari kombinasi data
-                const paymentData = {
-                  unit_id: newSettingPembayaran.unit_id,
-                  uid: uniqueUid,
-                  setting_payment_uid: newSettingPembayaran.setting_payment_uid,
-                  school_id: newSettingPembayaran.school_id,
-                  user_id: user.id,
-                  years: newSettingPembayaran.years,
-                  type: newSettingPembayaran.sp_type,
-                  major_id: newSettingPembayaran.major_id,
-                  class_id: newSettingPembayaran.class_id,
-                  status: "Pending",
-                  created_at: newSettingPembayaran.created_at,
-                  month_id: newSettingPembayaran.months[i].id,
-                  amount: newSettingPembayaran.months[i].payment,
-                };
 
-                paymentQueries.push(
-                  new Promise((resolve, reject) => {
-                    db.query(
-                      "INSERT INTO payment SET ?",
-                      paymentData,
-                      (insertErr, res) => {
-                        if (insertErr) {
-                          console.log("error inserting payment: ", insertErr);
-                          reject(insertErr);
-                        } else {
-                          console.log("created payment: ", {
-                            id: res.insertId,
-                            ...paymentData,
-                          });
-                          resolve(res.insertId);
-                        }
+            for (let i = 0; i < monthsCount; i++) {
+              const uniqueUid = `${user.id}${newSettingPembayaran.school_id}${newSettingPembayaran.setting_payment_uid}`; // Membuat UID dari kombinasi data
+              const paymentData = {
+                unit_id: newSettingPembayaran.unit_id,
+                uid: uniqueUid,
+                setting_payment_uid: newSettingPembayaran.setting_payment_uid,
+                school_id: newSettingPembayaran.school_id,
+                user_id: user.id,
+                years: newSettingPembayaran.years,
+                type: newSettingPembayaran.sp_type,
+                major_id: newSettingPembayaran.major_id,
+                class_id: newSettingPembayaran.class_id,
+                status: "Pending",
+                created_at: newSettingPembayaran.created_at,
+                month_id: newSettingPembayaran.months[i].id,
+                amount: newSettingPembayaran.months[i].payment,
+              };
+
+              paymentQueries.push(
+                new Promise((resolve, reject) => {
+                  db.query(
+                    "INSERT INTO payment SET ?",
+                    paymentData,
+                    (insertErr, res) => {
+                      if (insertErr) {
+                        console.log("error inserting payment: ", insertErr);
+                        reject(insertErr);
+                      } else {
+                        console.log("created payment: ", {
+                          id: res.insertId,
+                          ...paymentData,
+                        });
+                        resolve(res.insertId);
                       }
-                    );
-                  })
-                );
-              }
+                    }
+                  );
+                })
+              );
             }
           }
         );
@@ -283,7 +282,10 @@ SettingPembayaran.createPaymentByStudent = (newSettingPembayaran, result) => {
 
       // Tambahkan pengecekan jika monthsCount tidak sama dengan 12
       if (monthsCount !== 12) {
-        return result({ message: "Jumlah bulan tidak valid. Harus 12 bulan." }, null);
+        return result(
+          { message: "Jumlah bulan tidak valid. Harus 12 bulan." },
+          null
+        );
       }
 
       const paymentQueries = [];
@@ -370,7 +372,6 @@ SettingPembayaran.createPaymentByStudent = (newSettingPembayaran, result) => {
   );
 };
 
-
 SettingPembayaran.updateSettingPaymentByMonth = (
   newSettingPembayaran,
   result
@@ -425,7 +426,10 @@ SettingPembayaran.updateSettingPaymentByMonth = (
       result(err, null); // Return error if any promise is rejected
     });
 };
-SettingPembayaran.updateSettingPaymentByFree = (newSettingPembayaran, result) => {
+SettingPembayaran.updateSettingPaymentByFree = (
+  newSettingPembayaran,
+  result
+) => {
   const updateQuery =
     "UPDATE payment SET amount = ? WHERE uid = ? AND setting_payment_uid = ? AND school_id = ?";
 
@@ -460,7 +464,6 @@ SettingPembayaran.updateSettingPaymentByFree = (newSettingPembayaran, result) =>
       result(err, null); // Jika ada error, kembalikan error
     });
 };
-
 
 SettingPembayaran.createPaymentByFreeStudent = (
   newSettingPembayaran,
@@ -508,7 +511,7 @@ SettingPembayaran.createPaymentByFreeStudent = (
               );
             }
             console.log(existingPayments.length);
-            
+
             if (existingPayments.length === 0) {
               const paymentData = {
                 unit_id: newSettingPembayaran.unit_id,
@@ -589,7 +592,6 @@ SettingPembayaran.listSettingPembayaran = (
     query += ` AND sp.unit_id = '${unit_id}'`;
   }
   // console.log(query);
-  
 
   db.query(query, (err, res) => {
     if (err) {
@@ -610,8 +612,7 @@ SettingPembayaran.listSettingPembayaranDetail = (
   unit_id,
   result
 ) => {
-  let query =
-    `SELECT ROW_NUMBER() OVER () AS no, p.*, SUM(p.amount) as jumlah, u.full_name, c.class_name, m.major_name, ut.unit_name, COUNT(p.id) as total_pembayaran, 
+  let query = `SELECT ROW_NUMBER() OVER () AS no, p.*, SUM(p.amount) as jumlah, u.full_name, c.class_name, m.major_name, ut.unit_name, COUNT(p.id) as total_pembayaran, 
         CASE 
         WHEN p.type = 'BEBAS' THEN 
             (SELECT SUM(pd.amount) 

@@ -123,10 +123,10 @@ SettingPembayaran.createPaymentByFree = (newSettingPembayaran, result) => {
                         reject(insertErr);
                       } else {
                         console.log("created payment: ", {
-                          id: res.insertId,
+                          id: res.id,
                           ...paymentData,
                         });
-                        resolve(res.insertId);
+                        resolve(res.id);
                       }
                     }
                   );

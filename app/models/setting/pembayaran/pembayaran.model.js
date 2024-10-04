@@ -150,6 +150,7 @@ SettingPembayaran.createPaymentByFree = (newSettingPembayaran, result) => {
 
 SettingPembayaran.createPaymentByMonth = (newSettingPembayaran, result) => {
   const monthsCount = newSettingPembayaran.months.length;
+  console.log(monthsCount);
 
   // Menambahkan pengecekan jika jumlah bulan tidak sama dengan 12
   if (monthsCount !== 12) {
@@ -176,8 +177,6 @@ SettingPembayaran.createPaymentByMonth = (newSettingPembayaran, result) => {
         return result({ message: "User tidak ada" }, null);
       }
 
-      const paymentQueries = [];
-
       users.forEach((user) => {
         // Pengecekan pembayaran sebelum loop `for`
         const checkQuery =
@@ -200,61 +199,44 @@ SettingPembayaran.createPaymentByMonth = (newSettingPembayaran, result) => {
                 null
               );
             }
-            // Hanya melanjutkan jika pembayaran belum ada
+            if (!existingPayments || existingPayments.length === 0) {
+              for (let i = 0; i < monthsCount; i++) {
+                const uniqueUid = `${user.id}${newSettingPembayaran.school_id}${newSettingPembayaran.setting_payment_uid}`; // Membuat UID dari kombinasi data
+                const paymentData = {
+                  unit_id: newSettingPembayaran.unit_id,
+                  uid: uniqueUid,
+                  setting_payment_uid: newSettingPembayaran.setting_payment_uid,
+                  school_id: newSettingPembayaran.school_id,
+                  user_id: user.id,
+                  years: newSettingPembayaran.years,
+                  type: newSettingPembayaran.sp_type,
+                  major_id: newSettingPembayaran.major_id,
+                  class_id: newSettingPembayaran.class_id,
+                  status: "Pending",
+                  created_at: newSettingPembayaran.created_at,
+                  month_id: newSettingPembayaran.months[i].id,
+                  amount: newSettingPembayaran.months[i].payment,
+                };
 
-            for (let i = 0; i < monthsCount; i++) {
-              const uniqueUid = `${user.id}${newSettingPembayaran.school_id}${newSettingPembayaran.setting_payment_uid}`; // Membuat UID dari kombinasi data
-              const paymentData = {
-                unit_id: newSettingPembayaran.unit_id,
-                uid: uniqueUid,
-                setting_payment_uid: newSettingPembayaran.setting_payment_uid,
-                school_id: newSettingPembayaran.school_id,
-                user_id: user.id,
-                years: newSettingPembayaran.years,
-                type: newSettingPembayaran.sp_type,
-                major_id: newSettingPembayaran.major_id,
-                class_id: newSettingPembayaran.class_id,
-                status: "Pending",
-                created_at: newSettingPembayaran.created_at,
-                month_id: newSettingPembayaran.months[i].id,
-                amount: newSettingPembayaran.months[i].payment,
-              };
-
-              paymentQueries.push(
-                new Promise((resolve, reject) => {
-                  db.query(
-                    "INSERT INTO payment SET ?",
-                    paymentData,
-                    (insertErr, res) => {
-                      if (insertErr) {
-                        console.log("error inserting payment: ", insertErr);
-                        reject(insertErr);
-                      } else {
-                        console.log("created payment: ", {
-                          id: res.insertId,
-                          ...paymentData,
-                        });
-                        resolve(res.insertId);
-                      }
-                    }
-                  );
-                })
-              );
+                db.query("INSERT INTO payment SET ?", paymentData, (insertErr, res) => {
+                  if (insertErr) {
+                    console.log("error inserting payment: ", insertErr);
+                    return result(insertErr, null);
+                  } else {
+                    console.log("created payment: ", { id: res.insertId, ...paymentData });
+                  }
+                });
+              }
             }
           }
         );
       });
 
-      Promise.all(paymentQueries)
-        .then((insertIds) => {
-          result(null, insertIds);
-        })
-        .catch((err) => {
-          result(err, null);
-        });
+      result(null, { message: "Payments processed successfully" });
     }
   );
 };
+
 
 SettingPembayaran.createPaymentByStudent = (newSettingPembayaran, result) => {
   const query =

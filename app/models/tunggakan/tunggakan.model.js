@@ -293,7 +293,7 @@ db.query(query, (err, res) => {
        FROM template_message tm, aplikasi a 
        WHERE tm.school_id=a.school_id 
        AND tm.deskripsi like '%sendTunggakanSiswa%'  
-       AND tm.school_id = '${dataUsers.school_id}'`,
+       AND tm.school_id = '${dataAll.school_id}'`,
       (err, queryRes) => {
         if (err) {
           console.error(
@@ -327,7 +327,7 @@ db.query(query, (err, res) => {
 
           console.log(formattedMessage);
           // Kirim pesan setelah semua pembayaran diperbarui
-          sendMessage(url, token, dataUsers.phone, formattedMessage);
+          sendMessage(url, token, res[0].phone, formattedMessage);
         }
       }
     );

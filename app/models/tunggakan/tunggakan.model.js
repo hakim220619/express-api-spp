@@ -288,20 +288,50 @@ db.query(query, (err, res) => {
     res.forEach(row => {
       totalTunggakan += row.pending - (row.detail_verified + row.detail_paid);  // Accumulate the value
     });
-    const message = `
-Assalamu'alaikum,
+    db.query(
+      `SELECT tm.*, a.urlWa, a.token_whatsapp, a.sender 
+       FROM template_message tm, aplikasi a 
+       WHERE tm.school_id=a.school_id 
+       AND tm.deskripsi like '%sendTunggakanSiswa%'  
+       AND tm.school_id = '${dataUsers.school_id}'`,
+      (err, queryRes) => {
+        if (err) {
+          console.error(
+            "Error fetching template and WhatsApp details: ",
+            err
+          );
+        } else {
+          // Ambil url, token dan informasi pengirim dari query result
+          const {
+            urlWa: url,
+            token_whatsapp: token,
+            sender,
+            message: template_message,
+          } = queryRes[0];
 
-Kami informasikan bahwa terdapat *tunggakan* pembayaran sebesar *${formatRupiah(totalTunggakan)}* atas nama Ananda ${res[0].full_name}, Kelas ${res[0].class_name}.
+          // Data yang ingin diganti dalam template_message
+          const replacements = {
+            nama_lengkap: res[0].full_name,
+            kelas: res[0].class_name,
+            total_pembayaran: formatRupiah(totalTunggakan),
+            nama_sekolah: res[0].school_name,
+          };
 
-Mohon segera melakukan pembayaran secara tunai di kasir YPPH Banjarbaru, atau melalui metode pembayaran lain seperti QRIS, Virtual Account (BRI, BCA, BNI, dll.), Alfamart, Indomaret, DANA, dan OVO sebelum tanggal 20 Januari 2024.
+          // Fungsi untuk menggantikan setiap placeholder di template
+          const formattedMessage = template_message.replace(
+            /\$\{(\w+)\}/g,
+            (_, key) => {
+              return replacements[key] || "";
+            }
+          );
 
-(Abaikan pesan ini jika Anda telah melakukan pembayaran.)
-
-Terima kasih atas perhatian dan kerjasamanya. Semoga Allah SWT senantiasa memberikan kesehatan dan kesuksesan kepada kita semua.
-
-Tim Keuangan ${res[0].school_name}
-    `
-  sendMessage(res[0].phone, message)
+          console.log(formattedMessage);
+          // Kirim pesan setelah semua pembayaran diperbarui
+          sendMessage(url, token, dataUsers.phone, formattedMessage);
+        }
+      }
+    );
+    
     console.log('Total Tunggakan:', totalTunggakan);  // Log the total after processing all rows
   
     // Return the result after processing

@@ -200,7 +200,7 @@ JOIN
 };
 
 Pembayaran.updatePaymentPendingAdmin = (newPayment, result) => {
-  const { dataPayment, dataUsers } = newPayment; // Ekstrak dataPayment dari newPayment
+  const { dataPayment, dataUsers, redirect_url } = newPayment; // Ekstrak dataPayment dari newPayment
   let completedUpdates = 0; // Untuk menghitung jumlah update yang sudah selesai
   let errors = []; // Untuk menyimpan error jika ada
   let totalMonth = ""; // Untuk menjumlahkan bulan dari dataPayment
@@ -250,8 +250,13 @@ Pembayaran.updatePaymentPendingAdmin = (newPayment, result) => {
           totalMonth = totalMonth.replace(/,\s*$/, "");
 
           // Lakukan query SELECT sebelum mengirim pesan
+
           db.query(
-            "SELECT tm.*, a.urlWa, a.token_whatsapp, a.sender FROM template_message tm, aplikasi a WHERE tm.school_id=a.school_id AND tm.school_id = 530",
+            `SELECT tm.*, a.urlWa, a.token_whatsapp, a.sender 
+                   FROM template_message tm, aplikasi a 
+                   WHERE tm.school_id=a.school_id 
+                   AND tm.deskripsi like '%updatePaymentPendingAdmin%'  
+                   AND tm.school_id = '${dataUsers.school_id}'`,
             (err, queryRes) => {
               if (err) {
                 console.error(
@@ -264,48 +269,33 @@ Pembayaran.updatePaymentPendingAdmin = (newPayment, result) => {
                   urlWa: url,
                   token_whatsapp: token,
                   sender,
+                  message: template_message,
                 } = queryRes[0];
-                db.query(
-                  `SELECT tm.*, a.urlWa, a.token_whatsapp, a.sender 
-                   FROM template_message tm, aplikasi a 
-                   WHERE tm.school_id=a.school_id 
-                   AND tm.deskripsi like '%updatePaymentPendingAdmin%'  
-                   AND tm.school_id = '${dataUsers.school_id}'`,
-                  (err, queryRes) => {
-                    if (err) {
-                      console.error("Error fetching template and WhatsApp details: ", err);
-                    } else {
-                      // Ambil url, token dan informasi pengirim dari query result
-                      const {
-                        urlWa: url,
-                        token_whatsapp: token,
-                        sender,
-                        message: template_message,
-                      } = queryRes[0];
-                      
-                      // Data yang ingin diganti dalam template_message
-                      const replacements = {
-                        nama_lengkap: dataUsers.full_name,
-                        nama_pembayaran: dataUsers.sp_name,
-                        bulan: paymentData.month,
-                        tahun: paymentData.years,
-                        total_pembayaran: formatRupiah(paymentData.total_payment),
-                        nama_sekolah: dataUsers.school_name,
-                      };
-                
-                      // Fungsi untuk menggantikan setiap placeholder di template
-                      const formattedMessage = template_message.replace(/\$\{(\w+)\}/g, (_, key) => {
-                        return replacements[key] || '';
-                      });
-                      // Kirim pesan setelah semua pembayaran diperbarui
-                      sendMessage(url, token, dataUsers.phone, formattedMessage);
-                    }
+
+                // Data yang ingin diganti dalam template_message
+                const replacements = {
+                  nama_lengkap: dataUsers.full_name,
+                  nama_pembayaran: dataUsers.sp_name,
+                  bulan: totalMonth,
+                  tahun: paymentData.years,
+                  total_pembayaran: formatRupiah(totalPayment),
+                  nama_sekolah: dataUsers.school_name,
+                  url_pembayaran: redirect_url
+                };
+
+                // Fungsi untuk menggantikan setiap placeholder di template
+                const formattedMessage = template_message.replace(
+                  /\$\{(\w+)\}/g,
+                  (_, key) => {
+                    return replacements[key] || "";
                   }
                 );
                 // Kirim pesan setelah semua pembayaran diperbarui
+                sendMessage(url, token, dataUsers.phone, formattedMessage);
               }
             }
           );
+          // Kirim pesan setelah semua pembayaran diperbarui
         }
       }
     );
@@ -397,7 +387,10 @@ Pembayaran.updatePaymentPendingByAdmin = async (newPayment, result) => {
            AND tm.school_id = '${dataUsers.school_id}'`,
           (err, queryRes) => {
             if (err) {
-              console.error("Error fetching template and WhatsApp details: ", err);
+              console.error(
+                "Error fetching template and WhatsApp details: ",
+                err
+              );
             } else {
               // Ambil url, token dan informasi pengirim dari query result
               const {
@@ -406,7 +399,7 @@ Pembayaran.updatePaymentPendingByAdmin = async (newPayment, result) => {
                 sender,
                 message: template_message,
               } = queryRes[0];
-              
+
               // Data yang ingin diganti dalam template_message
               const replacements = {
                 nama_lengkap: dataUsers.full_name,
@@ -416,19 +409,22 @@ Pembayaran.updatePaymentPendingByAdmin = async (newPayment, result) => {
                 total_pembayaran: formatRupiah(paymentData.total_payment),
                 nama_sekolah: dataUsers.school_name,
               };
-        
+
               // Fungsi untuk menggantikan setiap placeholder di template
-              const formattedMessage = template_message.replace(/\$\{(\w+)\}/g, (_, key) => {
-                return replacements[key] || '';
-              });
-        
+              const formattedMessage = template_message.replace(
+                /\$\{(\w+)\}/g,
+                (_, key) => {
+                  return replacements[key] || "";
+                }
+              );
+
               console.log(formattedMessage);
               // Kirim pesan setelah semua pembayaran diperbarui
               sendMessage(url, token, dataUsers.phone, formattedMessage);
             }
           }
         );
-        
+
         // Handle affiliate transactions
         const transactionPromises = affiliateRes.map(async (affiliate) => {
           const totalByAff =
@@ -656,28 +652,33 @@ Pembayaran.updatePaymentPendingByAdminFree = async (newPayment, result) => {
             sender,
             message: template_message,
           } = queryRes[0];
-          
+
           // Data yang ingin diganti dalam template_message
           const replacements = {
             nama_lengkap: data.full_name,
             nama_pembayaran: data.sp_name,
             tahun: data.years,
-            total_pembayaran: formatRupiah(newPayment.total_amount + data.affiliate),
+            total_pembayaran: formatRupiah(
+              newPayment.total_amount + data.affiliate
+            ),
             nama_sekolah: data.school_name,
           };
-    
+
           // Fungsi untuk menggantikan setiap placeholder di template
-          const formattedMessage = template_message.replace(/\$\{(\w+)\}/g, (_, key) => {
-            return replacements[key] || '';
-          });
-    
+          const formattedMessage = template_message.replace(
+            /\$\{(\w+)\}/g,
+            (_, key) => {
+              return replacements[key] || "";
+            }
+          );
+
           console.log(formattedMessage);
           // Kirim pesan setelah semua pembayaran diperbarui
           sendMessage(url, token, data.phone, formattedMessage);
         }
       }
     );
-    
+
     // Commit transaksi jika semua query berhasil
     await connection.commit();
 
@@ -735,7 +736,10 @@ Pembayaran.updateSiswaFree = (newPayment, result) => {
            AND tm.school_id = '${data.school_id}'`,
           (err, queryRes) => {
             if (err) {
-              console.error("Error fetching template and WhatsApp details: ", err);
+              console.error(
+                "Error fetching template and WhatsApp details: ",
+                err
+              );
             } else {
               // Ambil url, token dan informasi pengirim dari query result
               const {
@@ -744,30 +748,35 @@ Pembayaran.updateSiswaFree = (newPayment, result) => {
                 sender,
                 message: template_message,
               } = queryRes[0];
-              
+
               // Data yang ingin diganti dalam template_message
               const replacements = {
                 nama_lengkap: data.full_name,
                 id_pembayaran: newPayment.order_id,
                 nama_pembayaran: data.sp_name,
                 tahun: data.years,
-                total_pembayaran: formatRupiah(newPayment.total_amount + data.affiliate),
+                total_pembayaran: formatRupiah(
+                  newPayment.total_amount + data.affiliate
+                ),
                 nama_sekolah: data.school_name,
-                url_pembayaran: newPayment.redirect_url
+                url_pembayaran: newPayment.redirect_url,
               };
-        
+
               // Fungsi untuk menggantikan setiap placeholder di template
-              const formattedMessage = template_message.replace(/\$\{(\w+)\}/g, (_, key) => {
-                return replacements[key] || '';
-              });
-        
+              const formattedMessage = template_message.replace(
+                /\$\{(\w+)\}/g,
+                (_, key) => {
+                  return replacements[key] || "";
+                }
+              );
+
               console.log(formattedMessage);
               // Kirim pesan setelah semua pembayaran diperbarui
               sendMessage(url, token, data.phone, formattedMessage);
             }
           }
         );
-        
+
         result(null, {
           message: "Payment inserted successfully",
           id: res.insertId,

@@ -1,22 +1,8 @@
 // /helpers/messageHelper.js
 const axios = require("axios");
-const db = require("../config/db.config");
 
-const sendMessage = async (
-  url,
-  token,
-  receiver,
-  message,
-  maxRetries = 5,
-  delay = 1000,
-  schoolId,
-  userId = "2342",
-  ipAddress = "1231312"
-) => {
+const sendMessage = async (url, token, receiver, message, maxRetries = 5, delay = 1000) => {
   let attempts = 0;
-  let activity = "Sending Message";
-  let action = "Message Sending";
-  let detail = `Attempting to send message to ${receiver}`;
 
   while (attempts < maxRetries) {
     try {
@@ -29,73 +15,27 @@ const sendMessage = async (
         },
         {
           headers: {
-            "Content-Type": "application/json", // Set header content-type JSON
+            'Content-Type': 'application/json', // Set header content-type JSON
           },
         }
       );
-      console.log(response.data);
 
-      // Log the successful attempt to the mm_logs table
-      await db.query(
-        `INSERT INTO mm_logs (school_id, user_id, activity, detail, action, ip)
-        VALUES (?, ?, ?, ?, ?, ?)`,
-        [
-          "530",
-          "34234",
-          activity,
-          `Message sent successfully to ${receiver} and ${response}`,
-          "Insert",
-          "12312312",
-        ]
-      );
-
-      // If the message is sent successfully, return a success response
+      // Jika berhasil, kirimkan respons sukses dalam format JSON
       return {
         status: "success",
         message: "Message sent successfully",
         data: response.data,
       };
     } catch (error) {
-      console.error(
-        `Error sending message on attempt ${attempts + 1}: ${error.message}`
-      );
+      console.error(`Error sending message on attempt ${attempts + 1}: ${error.message}`);
       attempts++;
 
-      // Log the failed attempt to the mm_logs table
-      await db.query(
-        `INSERT INTO mm_logs (school_id, user_id, activity, detail, action, ip)
-        VALUES (?, ?, ?, ?, ?, ?)`,
-        [
-          '530',
-          '32434',
-          activity,
-          `Failed to send message to ${receiver} on attempt ${attempts}`,
-          'INSERT',
-          '123123123',
-        ]
-      );
-
-      // Retry if maximum attempts haven't been reached
+      // Retry jika jumlah maksimal percobaan belum tercapai
       if (attempts < maxRetries) {
         console.log(`Retrying in ${delay / 1000} seconds...`);
-        await new Promise((resolve) => setTimeout(resolve, delay)); // Wait between attempts
+        await new Promise((resolve) => setTimeout(resolve, delay)); // Jeda antar percobaan
       } else {
-        // If all attempts fail, log the failure
-        await db.query(
-          `INSERT INTO mm_logs (school_id, user_id, activity, detail, action, ip)
-          VALUES (?, ?, ?, ?, ?, ?)`,
-          
-          [
-            '530',
-            '32434',
-            activity,
-           `Failed to send message after ${maxRetries} attempts`,
-            'INSERT',
-            '123123123',
-          ]
-        );
-
-        // Return an error response
+        // Jika gagal setelah percobaan maksimum, kirimkan respons error
         return {
           status: "error",
           message: "Failed to send message after multiple attempts",

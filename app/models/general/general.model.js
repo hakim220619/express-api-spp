@@ -116,58 +116,50 @@ General.getListPayment = async (result) => {
 };
 General.sendMessageBroadcast = async (dataUsers, message, result) => {
   try {
-    await Promise.all(
-      dataUsers.map(async (user) => {
-        try {
-          // Asumsikan sendMessage adalah fungsi async untuk mengirim pesan
-          db.query(
-            `SELECT tm.*, a.urlWa, a.token_whatsapp, a.sender 
-                 FROM template_message tm, aplikasi a 
-                 WHERE tm.school_id=a.school_id 
-                 AND tm.deskripsi like '%cekTransaksiSuccesMidtrans%'  
-                 AND tm.school_id = '${payment.school_id}'`,
-            (err, queryRes) => {
-              if (err) {
-                console.error(
-                  "Error fetching template and WhatsApp details: ",
-                  err
-                );
-              } else {
-                // Ambil url, token dan informasi pengirim dari query result
-                const {
-                  urlWa: url,
-                  token_whatsapp: token,
-                  sender,
-                } = queryRes[0];
+    for (const user of dataUsers) {
+      try {
+        // Asumsikan sendMessage adalah fungsi async untuk mengirim pesan
+        const query = `
+          SELECT a.urlWa, a.token_whatsapp, a.sender 
+          FROM aplikasi a 
+          WHERE a.school_id = '${user.school_id}'`;
 
-                // Mengirim pesan setelah semua data pembayaran diperbarui
-                sendMessage(url, token, user.phone, message);
-              }
-            }
-          );
-          await sendMessage(user.phone, message);
+        // console.log(query);
+        db.query(query, (err, queryRes) => {
 
-          console.log(
-            `Pesan berhasil dikirim ke: ${user.phone}, Message: ${message}`
-          );
-        } catch (error) {
-          console.error(
-            `Gagal mengirim pesan ke: ${user.phone}, Error: ${error.message}`
-          );
-          result(null, error); // Memanggil callback dengan error
-          return; // Keluar dari fungsi jika error
-        }
-      })
-    );
+          if (queryRes && queryRes.length > 0) {
+            // Ambil url, token, dan informasi pengirim dari query result
+            const { urlWa: url, token_whatsapp: token, sender } = queryRes[0];
+            // Mengirim pesan setelah semua data pembayaran diperbarui
+             sendMessage(url, token, user.phone, message);
+  
+            console.log(
+              `Pesan berhasil dikirim ke: ${user.phone}, Message: ${message}`
+            );
+          } else {
+            console.error(
+              "Tidak ada template pesan atau data WhatsApp yang ditemukan."
+            );
+          }
+        })
+      } catch (error) {
+        console.error(
+          `Gagal mengirim pesan ke: ${user.phone}, Error: ${error.message}`
+        );
+        result(error); // Memanggil callback dengan error
+        return; // Keluar dari fungsi jika terjadi error
+      }
+    }
 
     // Jika semua pengiriman berhasil, kembalikan callback dengan null error
     result(null, { message: "Semua pesan berhasil terkirim!" });
   } catch (err) {
     // Jika ada kesalahan global
     console.error("Terjadi kesalahan:", err);
-    result(null, err); // Memanggil callback dengan error global
+    result(err); // Memanggil callback dengan error global
   }
 };
+
 
 General.getDetailClassMajorUsers = async (school_id, result) => {
   let query = `
@@ -236,6 +228,7 @@ General.getDetailClassMajorUsers = async (school_id, result) => {
 };
 
 const mysql = require("mysql2/promise"); // Ensure mysql2/promise is imported
+const { ur } = require("@faker-js/faker");
 require("dotenv").config();
 General.cekTransaksiSuccesMidtrans = async (result) => {
   try {
@@ -702,41 +695,41 @@ General.cekTransaksiSuccesMidtransByUserIdByMonth = async (userId, result) => {
                       message: template_message,
                     } = queryRes[0];
 
-                   // Data yang ingin diganti dalam template_message
-                   let replacements = {
-                    nama_lengkap: payment.full_name,
-                    nama_pembayaran: payment.sp_name,
-                    tahun: payment.years,
-                    kelas: payment.class_name,
-                    id_pembayaran: payment.order_id,
-                    nama_sekolah: payment.school_name,
-                    jenis_pembayaran_midtrans: "",
-                    total_midtrans: formatRupiah(dataResponse.gross_amount),
-                  };
+                    // Data yang ingin diganti dalam template_message
+                    let replacements = {
+                      nama_lengkap: payment.full_name,
+                      nama_pembayaran: payment.sp_name,
+                      tahun: payment.years,
+                      kelas: payment.class_name,
+                      id_pembayaran: payment.order_id,
+                      nama_sekolah: payment.school_name,
+                      jenis_pembayaran_midtrans: "",
+                      total_midtrans: formatRupiah(dataResponse.gross_amount),
+                    };
 
-                  if (dataResponse.payment_type == "bank_transfer") {
-                    replacements.jenis_pembayaran_midtrans =
-                      dataResponse.va_numbers
-                        ? dataResponse.va_numbers[0].bank
-                        : "";
-                  } else if (dataResponse.payment_type == "echannel") {
-                    replacements.jenis_pembayaran_midtrans = "Mandiri";
-                  } else if (dataResponse.payment_type == "qris") {
-                    replacements.jenis_pembayaran_midtrans =
-                      dataResponse.acquirer || "";
-                  }
+                    if (dataResponse.payment_type == "bank_transfer") {
+                      replacements.jenis_pembayaran_midtrans =
+                        dataResponse.va_numbers
+                          ? dataResponse.va_numbers[0].bank
+                          : "";
+                    } else if (dataResponse.payment_type == "echannel") {
+                      replacements.jenis_pembayaran_midtrans = "Mandiri";
+                    } else if (dataResponse.payment_type == "qris") {
+                      replacements.jenis_pembayaran_midtrans =
+                        dataResponse.acquirer || "";
+                    }
 
-                  // Fungsi untuk menggantikan setiap placeholder di template
-                  const formattedMessage = template_message.replace(
-                    /\$\{(\w+)\}/g,
-                    (_, key) => replacements[key] || ""
-                  );
+                    // Fungsi untuk menggantikan setiap placeholder di template
+                    const formattedMessage = template_message.replace(
+                      /\$\{(\w+)\}/g,
+                      (_, key) => replacements[key] || ""
+                    );
 
-                  // Output hasil format pesan untuk debugging
-                  console.log(formattedMessage);
+                    // Output hasil format pesan untuk debugging
+                    console.log(formattedMessage);
 
-                  // Mengirim pesan setelah semua data pembayaran diperbarui
-                  sendMessage(url, token, payment.phone, formattedMessage);
+                    // Mengirim pesan setelah semua data pembayaran diperbarui
+                    sendMessage(url, token, payment.phone, formattedMessage);
                   }
                 }
               );

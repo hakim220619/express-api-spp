@@ -1,5 +1,6 @@
 // /helpers/messageHelper.js
 const axios = require("axios");
+const db = require("../config/db.config");
 
 const sendMessage = async (
   url,
@@ -7,66 +8,103 @@ const sendMessage = async (
   receiver,
   message,
   maxRetries = 5,
-  delay = 1000
+  delay = 1000,
+  schoolId,
+  userId = "2342",
+  ipAddress = "1231312"
 ) => {
   let attempts = 0;
-  console.log(url);
+  let activity = "Sending Message";
+  let action = "Message Sending";
+  let detail = `Attempting to send message to ${receiver}`;
 
-  // Keep track if response was sent to avoid multiple responses
-  let responseSent = false;
-
-  while (attempts < maxRetries && !responseSent) {
+  while (attempts < maxRetries) {
     try {
       const response = await axios.post(
         url,
         {
-          sessionId: token, // Adjust the key according to the API endpoint
-          number: receiver, // Recipient phone number
+          sessionId: token, // Sesuaikan key sesuai API endpoint
+          number: receiver, // Nomor telepon penerima
           message: message,
         },
         {
           headers: {
-            "Content-Type": "application/json", // Set the content-type header to JSON
+            "Content-Type": "application/json", // Set header content-type JSON
           },
         }
       );
       console.log(response.data);
 
-      // If successful, return success response and mark as sent
-      responseSent = true;
+      // Log the successful attempt to the mm_logs table
+      await db.query(
+        `INSERT INTO mm_logs (school_id, user_id, activity, detail, action, ip)
+        VALUES (?, ?, ?, ?, ?, ?)`,
+        [
+          "530",
+          "34234",
+          activity,
+          `Message sent successfully to ${receiver} and ${response}`,
+          "Insert",
+          "12312312",
+        ]
+      );
+
+      // If the message is sent successfully, return a success response
       return {
         status: "success",
         message: "Message sent successfully",
         data: response.data,
       };
-
     } catch (error) {
       console.error(
         `Error sending message on attempt ${attempts + 1}: ${error.message}`
       );
       attempts++;
 
-      // Retry if the max retry count has not been reached
+      // Log the failed attempt to the mm_logs table
+      await db.query(
+        `INSERT INTO mm_logs (school_id, user_id, activity, detail, action, ip)
+        VALUES (?, ?, ?, ?, ?, ?)`,
+        [
+          '530',
+          '32434',
+          activity,
+          `Failed to send message to ${receiver} on attempt ${attempts}`,
+          'INSERT',
+          '123123123',
+        ]
+      );
+
+      // Retry if maximum attempts haven't been reached
       if (attempts < maxRetries) {
         console.log(`Retrying in ${delay / 1000} seconds...`);
-        await new Promise((resolve) => setTimeout(resolve, delay)); // Delay between retries
+        await new Promise((resolve) => setTimeout(resolve, delay)); // Wait between attempts
       } else {
-        console.log(error.message);
+        // If all attempts fail, log the failure
+        await db.query(
+          `INSERT INTO mm_logs (school_id, user_id, activity, detail, action, ip)
+          VALUES (?, ?, ?, ?, ?, ?)`,
+          
+          [
+            '530',
+            '32434',
+            activity,
+           `Failed to send message after ${maxRetries} attempts`,
+            'INSERT',
+            '123123123',
+          ]
+        );
 
-        // Only send the error response if it hasn't been sent yet
-        if (!responseSent) {
-          responseSent = true;
-          return {
-            status: "error",
-            message: "Failed to send message after multiple attempts",
-            error: error.message,
-          };
-        }
+        // Return an error response
+        return {
+          status: "error",
+          message: "Failed to send message after multiple attempts",
+          error: error.message,
+        };
       }
     }
   }
 };
-
 
 // const sendMessage = async (url, token, receiver, message, maxRetries = 5) => {
 //   let attempts = 0;

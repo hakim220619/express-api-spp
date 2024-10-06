@@ -15,7 +15,7 @@ app.use((req, res, next) => {
   next();
 });
 
-// parse requests of content-type - application/json
+// parse requests of content-type - application/jsona
 app.use(express.json()); /* bodyParser.json() is deprecated */
 
 // parse requests of content-type - application/x-www-form-urlencoded

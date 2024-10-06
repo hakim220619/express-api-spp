@@ -114,7 +114,7 @@ General.getListPayment = async (result) => {
     result(null, res);
   });
 };
-General.sendMessageBroadcast = async (dataUsers, message, result) => {
+General.sendMessageBroadcast = async (dataUsers, message, school_id, result) => {
   try {
     for (const user of dataUsers) {
       try {
@@ -122,12 +122,12 @@ General.sendMessageBroadcast = async (dataUsers, message, result) => {
         const query = `
           SELECT a.urlWa, a.token_whatsapp, a.sender 
           FROM aplikasi a 
-          WHERE a.school_id = '${user.school_id}'`;
+          WHERE a.school_id = '${school_id}'`;
 
         // console.log(query);
         db.query(query, (err, queryRes) => {
 
-          if (queryRes && queryRes.length > 0) {
+          if (queryRes) {
             // Ambil url, token, dan informasi pengirim dari query result
             const { urlWa: url, token_whatsapp: token, sender } = queryRes[0];
             // Mengirim pesan setelah semua data pembayaran diperbarui

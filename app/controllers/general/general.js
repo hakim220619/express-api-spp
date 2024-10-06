@@ -123,9 +123,10 @@ exports.getListPayment = (req, res, next) => {
 exports.sendMessageBroadcast = (req, res, next) => {
   const dataUsers = req.body.dataUsers
   const message = req.body.message
+  const school_id = req.body.school_id
 
   // console.log(req);
-  General.sendMessageBroadcast(dataUsers, message, (err, data) => {
+  General.sendMessageBroadcast(dataUsers, message, school_id, (err, data) => {
     if (err)
       res.status(500).send({
         message:

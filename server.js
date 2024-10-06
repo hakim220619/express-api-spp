@@ -10,7 +10,7 @@ app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // CORS configuration
 const corsOptions = {
-  origin: ['http://waspeed.my.id:8000', 'https://ypphbanjarbaru.sppapp.com'],  // Allow both domains
+  origin: ['http://waspeed.my.id:8000', 'https://ypphbanjarbaru.sppapp.com', 'http://localhost:3001'],  // Allow both domains
   methods: ['GET', 'POST', 'PUT', 'DELETE'],  // Allowed methods
   allowedHeaders: ['Content-Type', 'Authorization'],  // Allowed headers
 };

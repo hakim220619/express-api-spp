@@ -155,7 +155,7 @@ module.exports = (app) => {
   router.get("/getTypePayment", token.authenticateToken, general.getTypePayment);
   router.get("/getUnit", token.authenticateToken, general.getUnit);
   router.get("/getListPayment", token.authenticateToken, general.getListPayment);
-  router.post("/sendMessageBroadcast", general.sendMessageBroadcast);
+  router.post("/sendMessageBroadcast", token.authenticateToken, general.sendMessageBroadcast);
   router.get("/getDetailClassMajorUsers", token.authenticateToken, general.getDetailClassMajorUsers);
   router.get("/cekTransaksiSuccesMidtransByUserIdFree", general.cekTransaksiSuccesMidtransByUserIdFree);
   router.get("/cekTransaksiSuccesMidtransByUserIdByMonth", general.cekTransaksiSuccesMidtransByUserIdByMonth);

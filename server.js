@@ -3,32 +3,30 @@ const express = require("express");
 const cors = require('cors');
 const path = require('path');
 
-const app = express();
 
+const app = express();
 // Serve static files from the 'uploads' directory
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
-
-// CORS configuration
-const corsOptions = {
-  origin: ['http://waspeed.my.id:8000', 'https://ypphbanjarbaru.sppapp.com', 'http://localhost:3001'],  // Allow both domains
-  methods: ['GET', 'POST', 'PUT', 'DELETE'],  // Allowed methods
-  allowedHeaders: ['Content-Type', 'Authorization'],  // Allowed headers
-};
-
-app.use(cors(corsOptions));
+app.use(cors());
+app.use((req, res, next) => {
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  next();
+});
 
 // parse requests of content-type - application/json
 app.use(express.json()); /* bodyParser.json() is deprecated */
 
 // parse requests of content-type - application/x-www-form-urlencoded
 app.use(express.urlencoded({ extended: true })); /* bodyParser.urlencoded() is deprecated */
-
 // simple route
 app.get("/", (req, res) => {
   res.json({ message: "Welcome to bezkoder application." });
 });
 
 require("./app/routes/routes.js")(app);
+
 
 // set port, listen for requests
 const PORT = process.env.PORT || 8080;

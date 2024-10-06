@@ -2,6 +2,7 @@ const db = require("../../config/db.config");
 const { generateToken, verifyToken } = require("../../config/tokenHandler");
 const bcrypt = require("bcrypt");
 const createHash = require("crypto");
+const { insertMmLogs } = require("../../helpers/helper");
 // constructor
 const Login = function (data) {
   this.email = data.email;
@@ -12,9 +13,7 @@ Login.loginAction = async (req, res) => {
   try {
     db.query(
       `SELECT u.id, u.full_name, u.password, u.image, u.role, u.school_id, r.role_name, a.owner, a.title, a.aplikasi_name,a.logo, a.copy_right, s.school_name FROM users u, role r, aplikasi a, school s WHERE u.role=r.id AND u.school_id=a.school_id and u.school_id=s.id and u.email = '${req.email}'`,
-      async (err, respons) => {
-        console.log(respons);
-        
+      async (err, respons) => {   
         if (respons.length == 0) {
           res(err, {
             message: "Email tidak terdaftar!.",
@@ -53,6 +52,17 @@ Login.loginAction = async (req, res) => {
                 return;
               }
             });
+            const logData = {
+              school_id: respons[0].school_id,
+              user_id: respons[0].id,
+              activity: "loginAction",
+              detail: `Login Berhasil dengan ID ${respons[0].id} dan Nama ${respons[0].full_name}`,
+              action: "Insert",
+              status: true
+            };
+
+            // Insert log into mm_logs
+            insertMmLogs(logData);
             res(200, {
               status: 200,
               accessToken: access_token,

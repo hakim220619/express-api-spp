@@ -1,6 +1,6 @@
 const db = require("../../config/db.config");
 const axios = require("axios");
-const { sendMessage, formatRupiah } = require("../../helpers/helper");
+const { sendMessage, formatRupiah, insertMmLogs } = require("../../helpers/helper");
 
 const General = function (data) {};
 
@@ -114,8 +114,12 @@ General.getListPayment = async (result) => {
     result(null, res);
   });
 };
+// 1dbe71871816a3a138838e573d84bc
 General.sendMessageBroadcast = async (dataUsers, message, school_id, result) => {
   try {
+    let failedMessages = [];
+    let successMessages = [];
+
     for (const user of dataUsers) {
       try {
         // Asumsikan sendMessage adalah fungsi async untuk mengirim pesan
@@ -124,41 +128,106 @@ General.sendMessageBroadcast = async (dataUsers, message, school_id, result) => 
           FROM aplikasi a 
           WHERE a.school_id = '${school_id}'`;
 
-        // console.log(query);
-        db.query(query, (err, queryRes) => {
+        // Query ke database
+        const queryRes = await new Promise((resolve, reject) => {
+          db.query(query, (err, res) => {
+            if (err) return reject(err);
+            resolve(res);
+          });
+        });
 
-          if (queryRes) {
-            // Ambil url, token, dan informasi pengirim dari query result
-            const { urlWa: url, token_whatsapp: token, sender } = queryRes[0];
-            // Mengirim pesan setelah semua data pembayaran diperbarui
-             sendMessage(url, token, user.phone, message);
-  
+        if (queryRes && queryRes.length > 0) {
+          // Ambil url, token, dan informasi pengirim dari query result
+          const { urlWa: url, token_whatsapp: token, sender } = queryRes[0];
+          
+          // Mengirim pesan setelah semua data pembayaran diperbarui
+          try {
+            await sendMessage(url, token, user.phone, message); // await untuk memastikan error ditangkap
+
             console.log(
               `Pesan berhasil dikirim ke: ${user.phone}, Message: ${message}`
             );
-          } else {
+
+            const logData = {
+              school_id: school_id,
+              user_id: user.id,
+              activity: "sendMessageBroadcast",
+              detail: `Pesan berhasil dikirim ke: ${user.phone}, Message: ${message}`,
+              action: "Insert",
+              status: 'true'
+            };
+
+            // Insert log into mm_logs
+            insertMmLogs(logData);
+            successMessages.push(user.phone); // Menyimpan pesan yang berhasil
+
+          } catch (sendError) {
             console.error(
-              "Tidak ada template pesan atau data WhatsApp yang ditemukan."
+              `Gagal mengirim pesan ke: ${user.phone}, Error: ${sendError.message}`
             );
+
+            const logData = {
+              school_id: school_id,
+              user_id: user.id,
+              activity: "sendMessageBroadcast",
+              detail: `Gagal mengirim pesan ke: ${user.phone}, Error: ${sendError.message}`,
+              action: "Insert",
+              status: 'false'
+            };
+
+            // Insert log into mm_logs
+            insertMmLogs(logData);
+            failedMessages.push(user.phone); // Menyimpan pesan yang gagal
           }
-        })
+        } else {
+          console.error("Tidak ada template pesan atau data WhatsApp yang ditemukan.");
+          failedMessages.push(user.phone); // Menyimpan pesan yang gagal
+        }
       } catch (error) {
-        console.error(
-          `Gagal mengirim pesan ke: ${user.phone}, Error: ${error.message}`
-        );
-        result(error); // Memanggil callback dengan error
-        return; // Keluar dari fungsi jika terjadi error
+        console.error(`Error saat memproses user ${user.phone}: ${error.message}`);
+
+        const logData = {
+          school_id: school_id,
+          user_id: user.id,
+          activity: "sendMessageBroadcast",
+          detail: `Gagal memproses user ${user.phone}, Error: ${error.message}`,
+          action: "Insert",
+          status: 'false'
+        };
+
+        // Insert log into mm_logs
+        insertMmLogs(logData);
+        failedMessages.push(user.phone); // Menyimpan pesan yang gagal
       }
     }
 
-    // Jika semua pengiriman berhasil, kembalikan callback dengan null error
-    result(null, { message: "Semua pesan berhasil terkirim!" });
+    // Kembalikan respons JSON berdasarkan status pengiriman
+    if (failedMessages.length > 0) {
+      result(null, {
+        status: "failed",
+        message: "Beberapa pesan gagal dikirim.",
+        failed: failedMessages,
+        success: successMessages
+      });
+    } else {
+      result(null, {
+        status: "success",
+        message: "Semua pesan berhasil terkirim!",
+        success: successMessages
+      });
+    }
+
   } catch (err) {
     // Jika ada kesalahan global
     console.error("Terjadi kesalahan:", err);
-    result(err); // Memanggil callback dengan error global
+    result({
+      status: "error",
+      message: "Terjadi kesalahan saat mengirim pesan.",
+      error: err.message
+    });
   }
 };
+
 
 
 General.getDetailClassMajorUsers = async (school_id, result) => {

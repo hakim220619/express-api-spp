@@ -273,7 +273,7 @@ exports.createPaymentPendingByAdminFree = [
       });
     }
 
-    const { dataPayment, total_amount} = req.body;
+    const { dataPayment, total_amount, admin_id, } = req.body;
     // console.log(req.body);
 
     try {
@@ -281,6 +281,7 @@ exports.createPaymentPendingByAdminFree = [
       const pembayaran = {
         dataPayment: dataPayment,
         total_amount: total_amount,
+        admin_id
       };
 
       // Save admin to the database

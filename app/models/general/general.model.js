@@ -120,6 +120,31 @@ General.sendMessageBroadcast = async (dataUsers, message, result) => {
       dataUsers.map(async (user) => {
         try {
           // Asumsikan sendMessage adalah fungsi async untuk mengirim pesan
+          db.query(
+            `SELECT tm.*, a.urlWa, a.token_whatsapp, a.sender 
+                 FROM template_message tm, aplikasi a 
+                 WHERE tm.school_id=a.school_id 
+                 AND tm.deskripsi like '%cekTransaksiSuccesMidtrans%'  
+                 AND tm.school_id = '${payment.school_id}'`,
+            (err, queryRes) => {
+              if (err) {
+                console.error(
+                  "Error fetching template and WhatsApp details: ",
+                  err
+                );
+              } else {
+                // Ambil url, token dan informasi pengirim dari query result
+                const {
+                  urlWa: url,
+                  token_whatsapp: token,
+                  sender,
+                } = queryRes[0];
+
+                // Mengirim pesan setelah semua data pembayaran diperbarui
+                sendMessage(url, token, user.phone, message);
+              }
+            }
+          );
           await sendMessage(user.phone, message);
 
           console.log(

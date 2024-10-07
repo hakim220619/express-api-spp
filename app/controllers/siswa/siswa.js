@@ -116,6 +116,66 @@ exports.createSiswa = [
     }
   },
 ];
+function generateNoRegistrasi() {
+  const characters = '0123456789';
+  let result = '';
+  const length = 6; // Maksimal 8 karakter
+  for (let i = 0; i < length; i++) {
+    result += characters.charAt(Math.floor(Math.random() * characters.length));
+  }
+  return result;
+}
+exports.registerSiswa = [
+  upload.none(), // Middleware for handling file upload
+  async (req, res) => {
+    // Validate request
+    if (!req.body) {
+      return res.status(400).send({
+        message: "Content cannot be empty!",
+      });
+    }
+
+    const {
+      school_id,
+      nisn,
+      unit_id, // Unit field
+      full_name,
+      email,
+      phone,
+      date_of_birth
+    } = req.body;
+
+    try {
+      // Create new siswa object
+      const siswa = {
+        school_id,
+        no_registrasi: 'LPIH' +'-'+ generateNoRegistrasi(),
+        nisn: nisn,
+        unit_id,
+        full_name: full_name.toUpperCase(),
+        email: email,
+        phone: phone,
+        status: 'Registered',
+        date_of_birth: date_of_birth,
+        created_at: new Date()
+      };
+
+      // Save siswa to the database
+      Siswa.registerSiswa(siswa, (err, data) => {
+        if (err) {
+          return res.status(500).send({
+            message: err.message || "Some error occurred while creating the Siswa.",
+          });
+        }
+        res.send(data);
+      });
+    } catch (error) {
+      console.error("Error creating Siswa:", error);
+      res.status(500).send({ message: "Error creating Siswa" });
+    }
+  },
+];
+
 
 // Update existing Siswa
 // Update existing Siswa

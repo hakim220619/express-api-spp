@@ -17,7 +17,8 @@ module.exports = (app) => {
   const Unit = require("../controllers/unit/unit.js");
   const general = require("../controllers/general/general.js");
   const Permission = require("../controllers/permission/permission.js");
-  const Tunggakan = require("../controllers/tunggakan/tunggakan.js");
+  const Tunggakan = require("../controllers/tunggakan/tunggakan.js"); 
+  const Ppdb = require("../controllers/ppdb/ppdb.js"); 
   const TemplateMessage = require("../controllers/templateMessage/templateMessage.js");
   const token = require("../../app/config/tokenHandler.js");
   var router = require("express").Router();
@@ -45,6 +46,13 @@ module.exports = (app) => {
   router.post("/delete-siswa", token.authenticateToken, Siswa.delete);
   router.post("/detailSiswa", token.authenticateToken, Siswa.detailSiswa);
   router.post("/upload-siswa", token.authenticateToken, Siswa.uploadSiswa);
+  router.post("/registerSiswa", Siswa.registerSiswa);
+  //Ppdb
+  router.get("/list-ppdb", token.authenticateToken, Ppdb.listPpdb);
+  // router.post("/create-kelas", token.authenticateToken, Kelas.createKelas);
+  router.post("/update-ppdb", token.authenticateToken, Ppdb.updatePpdb);
+  router.post("/delete-ppdb", token.authenticateToken, Ppdb.delete);
+  router.post("/detailPpdb", token.authenticateToken, Ppdb.detailPpdb);
   //kelas
   router.get("/list-kelas", token.authenticateToken, Kelas.listKelas);
   router.post("/create-kelas", token.authenticateToken, Kelas.createKelas);
@@ -121,7 +129,7 @@ module.exports = (app) => {
   router.post("/update-unit", token.authenticateToken, Unit.updateUnit);
   router.post("/detailUnit", token.authenticateToken, Unit.detailUnit);
   router.post("/delete-unit", token.authenticateToken, Unit.delete);
-  //Sekolah
+  //Report
   router.get("/list-report", token.authenticateToken, Report.listReport);
   router.get("/list-report-free", token.authenticateToken, Report.listReportFree);
   //Tunggakan
@@ -155,6 +163,7 @@ module.exports = (app) => {
   router.get("/getTypePayment", token.authenticateToken, general.getTypePayment);
   router.get("/getUnit", token.authenticateToken, general.getUnit);
   router.get("/getListPayment", token.authenticateToken, general.getListPayment);
+  router.get("/getActivityBySchoolId", token.authenticateToken, general.getActivityBySchoolId);
   router.post("/sendMessageBroadcast", token.authenticateToken, general.sendMessageBroadcast);
   router.get("/getDetailClassMajorUsers", token.authenticateToken, general.getDetailClassMajorUsers);
   router.get("/cekTransaksiSuccesMidtransByUserIdFree", general.cekTransaksiSuccesMidtransByUserIdFree);
@@ -163,6 +172,8 @@ module.exports = (app) => {
   router.get("/cekTransaksiSuccesMidtransFree", general.cekTransaksiSuccesMidtransFree);
   router.get("/rolePermissions", general.rolePermissions);
   router.get("/getMenuActive", token.authenticateToken, general.getMenuActive);
+  router.get("/getUnits", general.getUnit);
+
 
 
   router.get("/cekFunction", general.cekFunction);

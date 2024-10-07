@@ -44,7 +44,7 @@ Report.listReport = (dataAll, result) => {
 Report.listReportFree = (dataAll, result) => {
     
   let query =
-    "SELECT ROW_NUMBER() OVER () AS no, pd.*, p.unit_id, p.school_id, p.years, u.full_name, sp.sp_name, p.amount, ut.unit_name FROM payment_detail pd, payment p, users u, setting_payment sp, unit ut WHERE pd.payment_id=p.uid AND pd.user_id=u.id AND pd.setting_payment_uid=sp.uid AND p.unit_id=ut.id";
+    "SELECT ROW_NUMBER() OVER () AS no, pd.*, p.unit_id, p.school_id, p.years, u.full_name, sp.sp_name, p.amount as amount_payment, ut.unit_name FROM payment_detail pd, payment p, users u, setting_payment sp, unit ut WHERE pd.payment_id=p.uid AND pd.user_id=u.id AND pd.setting_payment_uid=sp.uid AND p.unit_id=ut.id";
 
   if (dataAll.user_id) {
     query += ` AND pd.user_id like '%${dataAll.user_id}%'`;

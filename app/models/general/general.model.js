@@ -1,6 +1,6 @@
 const db = require("../../config/db.config");
 const axios = require("axios");
-const { sendMessage, formatRupiah, insertMmLogs } = require("../../helpers/helper");
+const { sendMessage, formatRupiah, insertMmLogs, insertKas } = require("../../helpers/helper");
 
 const General = function (data) {};
 
@@ -114,6 +114,23 @@ General.getListPayment = async (result) => {
     result(null, res);
   });
 };
+General.getActivityBySchoolId = async (school_id, result) => {
+  let query = "SELECT * from mm_logs where 1=1";
+  if (school_id) {
+    query += ` AND school_id = '${school_id}'`;
+  }
+  query += `order by created_at desc`;
+  db.query(query, (err, res) => {
+    if (err) {
+      console.log("error: ", err);
+      result(null, err);
+      return;
+    }
+
+    // console.log("role: ", res);
+    result(null, res);
+  });
+};
 // 1dbe71871816a3a138838e573d84bc
 General.sendMessageBroadcast = async (dataUsers, message, school_id, result) => {
   try {
@@ -154,7 +171,7 @@ General.sendMessageBroadcast = async (dataUsers, message, school_id, result) => 
               activity: "sendMessageBroadcast",
               detail: `Pesan berhasil dikirim ke: ${user.phone}, Message: ${message}`,
               action: "Insert",
-              status: 'true'
+              status: 1
             };
 
             // Insert log into mm_logs
@@ -172,7 +189,7 @@ General.sendMessageBroadcast = async (dataUsers, message, school_id, result) => 
               activity: "sendMessageBroadcast",
               detail: `Gagal mengirim pesan ke: ${user.phone}, Error: ${sendError.message}`,
               action: "Insert",
-              status: 'false'
+              status: 2
             };
 
             // Insert log into mm_logs
@@ -192,7 +209,7 @@ General.sendMessageBroadcast = async (dataUsers, message, school_id, result) => 
           activity: "sendMessageBroadcast",
           detail: `Gagal memproses user ${user.phone}, Error: ${error.message}`,
           action: "Insert",
-          status: 'false'
+          status: 2
         };
 
         // Insert log into mm_logs
@@ -472,7 +489,31 @@ General.cekTransaksiSuccesMidtrans = async (result) => {
               // Wait for all affiliate transactions to complete
               // await Promise.all(transactionPromises);
               // Commit the transaction
-
+              const kasData = {
+                school_id: payment.school_id,
+                user_id: payment.user_id,
+                deskripsi: `Kas Masuk Berhasil oleh ID Users: ${payment.user_id}, dengan id pembayaran bulanan: ${payment.id}`,
+                type: "KREDIT",
+                amount: payment.amount + total_affiliate,
+                flag: 0,
+                years: payment.years,
+              };
+          
+              await insertKas(kasData).then((response) => {
+                console.log(response);
+              });
+          
+              // Log the transaction
+              const logData = {
+                school_id: payment.school_id,
+                user_id: payment.user_id,
+                activity: "updatePaymentPendingByAdminFree",
+                detail: `Pembayaran berhasil oleh ID Users: ${payment.user_id}, dengan id pembayaran bulanan: ${payment.id}`,
+                action: "Update",
+                status: true,
+              };
+              
+              await insertMmLogs(logData);
               console.log(
                 `Payment processed and status updated for order_id: ${payment.order_id}`
               );
@@ -572,6 +613,7 @@ General.cekTransaksiSuccesMidtransByUserIdByMonth = async (userId, result) => {
 
     // Fetch payment records where metode_pembayaran is Midtrans and status is Verified
     db.query(query, async (err, rows) => {
+      
       if (err) {
         console.log("error: ", err);
         result(err, null);
@@ -689,7 +731,7 @@ General.cekTransaksiSuccesMidtransByUserIdByMonth = async (userId, result) => {
               }
 
               const newBalance = balance - total_affiliate;
-              console.log(payment);
+      
 
               // // Update school balance
               await paymentConnection.query(
@@ -736,10 +778,33 @@ General.cekTransaksiSuccesMidtransByUserIdByMonth = async (userId, result) => {
                   console.log("Payment status updated successfully:", results);
                 }
               );
-              // Wait for all affiliate transactions to complete
-              // await Promise.all(transactionPromises);
+
+              const kasData = {
+                school_id: payment.school_id,
+                user_id: payment.user_id,
+                deskripsi: `Kas Masuk Berhasil oleh ID Users: ${payment.user_id}, dengan id pembayaran bulanan: ${payment.id}`,
+                type: "KREDIT",
+                amount: payment.amount + total_affiliate,
+                flag: 0,
+                years: payment.years,
+              };
+          
+              await insertKas(kasData).then((response) => {
+                console.log(response);
+              });
+          
+              // Log the transaction
+              const logData = {
+                school_id: payment.school_id,
+                user_id: payment.user_id,
+                activity: "updatePaymentPendingByAdminFree",
+                detail: `Pembayaran berhasil oleh ID Users: ${payment.user_id}, dengan id pembayaran bulanan: ${payment.id}`,
+                action: "Update",
+                status: true,
+              };
+              
+              await insertMmLogs(logData);
               // Commit the transaction
-              await paymentConnection.commit();
               console.log(
                 `Payment processed and status updated for order_id: ${payment.order_id}`
               );
@@ -802,6 +867,7 @@ General.cekTransaksiSuccesMidtransByUserIdByMonth = async (userId, result) => {
                   }
                 }
               );
+              await paymentConnection.commit();
             }
           } catch (error) {
             // Rollback the transaction in case of error
@@ -844,7 +910,6 @@ General.cekTransaksiSuccesMidtransByUserIdFree = async (userId, result) => {
         result(err, null);
         return;
       }
-      console.log(rows);
 
       if (rows.length === 0) {
         console.log("No verified payments found.");
@@ -992,6 +1057,33 @@ General.cekTransaksiSuccesMidtransByUserIdFree = async (userId, result) => {
                 "UPDATE payment_detail SET status = ?, updated_at = ? WHERE order_id = ?",
                 ["Paid", new Date(), payment.order_id] // Use payment.order_id here
               );
+
+              const kasData = {
+                school_id: payment.school_id,
+                user_id: payment.user_id,
+                deskripsi: `Kas Masuk Berhasil oleh ID Users: ${payment.user_id}, dengan id pembayaran bulanan: ${payment.id}`,
+                type: "KREDIT",
+                amount: payment.amount + total_affiliate,
+                flag: 0,
+                years: payment.years,
+              };
+          
+              await insertKas(kasData).then((response) => {
+                console.log(response);
+              });
+          
+              // Log the transaction
+              const logData = {
+                school_id: payment.school_id,
+                user_id: payment.user_id,
+                activity: "updatePaymentPendingByAdminFree",
+                detail: `Pembayaran berhasil oleh ID Users: ${payment.user_id}, dengan id pembayaran bulanan: ${payment.id}`,
+                action: "Update",
+                status: true,
+              };
+              
+              await insertMmLogs(logData);
+
               db.query(
                 `SELECT tm.*, a.urlWa, a.token_whatsapp, a.sender 
                  FROM template_message tm, aplikasi a 
@@ -1301,7 +1393,31 @@ General.cekTransaksiSuccesMidtransFree = async (result) => {
                 "UPDATE payment_detail SET status = ?, updated_at = ? WHERE order_id = ?",
                 ["Paid", new Date(), payment.order_id] // Use payment.order_id here
               );
-
+              const kasData = {
+                school_id: payment.school_id,
+                user_id: payment.user_id,
+                deskripsi: `Kas Masuk Berhasil oleh ID Users: ${payment.user_id}, dengan id pembayaran bulanan: ${payment.id}`,
+                type: "KREDIT",
+                amount: payment.amount + total_affiliate,
+                flag: 0,
+                years: payment.years,
+              };
+          
+              await insertKas(kasData).then((response) => {
+                console.log(response);
+              });
+          
+              // Log the transaction
+              const logData = {
+                school_id: payment.school_id,
+                user_id: payment.user_id,
+                activity: "updatePaymentPendingByAdminFree",
+                detail: `Pembayaran berhasil oleh ID Users: ${payment.user_id}, dengan id pembayaran bulanan: ${payment.id}`,
+                action: "Update",
+                status: true,
+              };
+              
+              await insertMmLogs(logData);
               // Commit the transaction
               await paymentConnection.commit();
               console.log(

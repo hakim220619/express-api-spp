@@ -205,7 +205,7 @@ JOIN
 };
 
 Pembayaran.updatePaymentPendingAdmin = (newPayment, result) => {
-  const { dataPayment, dataUsers, redirect_url } = newPayment; // Ekstrak dataPayment dari newPayment
+  const { dataPayment, dataUsers, redirect_url, total_amount } = newPayment; // Ekstrak dataPayment dari newPayment
   let completedUpdates = 0; // Untuk menghitung jumlah update yang sudah selesai
   let errors = []; // Untuk menyimpan error jika ada
   let totalMonth = ""; // Untuk menjumlahkan bulan dari dataPayment
@@ -213,6 +213,7 @@ Pembayaran.updatePaymentPendingAdmin = (newPayment, result) => {
 
   // Iterasi melalui setiap item dalam dataPayment
   dataPayment.forEach((paymentData) => {
+    
     db.query(
       "UPDATE payment SET order_id = ?, metode_pembayaran = ?, redirect_url = ?, status = ?, updated_at = ? WHERE id = ?",
       [
@@ -255,7 +256,7 @@ Pembayaran.updatePaymentPendingAdmin = (newPayment, result) => {
           totalMonth = totalMonth.replace(/,\s*$/, "");
 
           // Lakukan query SELECT sebelum mengirim pesan
-
+          
           db.query(
             `SELECT tm.*, a.urlWa, a.token_whatsapp, a.sender 
                    FROM template_message tm, aplikasi a 
@@ -386,7 +387,6 @@ Pembayaran.updatePaymentPendingByAdmin = async (newPayment, result) => {
           flag: 0,
           years: paymentData.years,
         };
-        console.log(kasData);
 
         await insertKas(kasData).then((response) => {
           console.log(response);
@@ -560,7 +560,6 @@ Pembayaran.updatePaymentPendingByAdminFree = async (newPayment, result) => {
   });
 
   let connection;
-
   try {
     // Mendapatkan koneksi dari pool
     connection = await pool.getConnection();

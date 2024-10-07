@@ -83,7 +83,7 @@ exports.createPaymentPending = [
       });
     }
 
-    const { dataUsers, dataPayment, order_id, redirect_url } = req.body;
+    const { dataUsers, dataPayment, order_id, redirect_url, total_amount } = req.body;
 
     try {
       // Create new admin object
@@ -92,6 +92,7 @@ exports.createPaymentPending = [
         dataPayment: dataPayment,
         order_id: order_id,
         redirect_url: redirect_url,
+        total_amount: total_amount,
       };
 
       // Save admin to the database

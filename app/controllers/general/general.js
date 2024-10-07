@@ -120,6 +120,19 @@ exports.getListPayment = (req, res, next) => {
     else res.send(data);
   });
 };
+exports.getActivityBySchoolId = (req, res, next) => {
+  const school_id = req.query.school_id
+  General.getActivityBySchoolId(school_id, (err, data) => {
+    console.log(data);
+    
+    if (err)
+      res.status(500).send({
+        message:
+          err.message || "Some error occurred while retrieving tutorials.",
+      });
+    else res.send(data);
+  });
+};
 exports.sendMessageBroadcast = (req, res, next) => {
   const dataUsers = req.body.dataUsers
   const message = req.body.message

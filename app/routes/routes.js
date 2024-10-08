@@ -172,6 +172,7 @@ module.exports = (app) => {
   router.get("/cekTransaksiSuccesMidtransFree", general.cekTransaksiSuccesMidtransFree);
   router.get("/rolePermissions", general.rolePermissions);
   router.get("/getMenuActive", token.authenticateToken, general.getMenuActive);
+  router.get("/getPdfByIdPaymentMonth", token.authenticateToken, general.getPdfByIdPaymentMonth);
   router.get("/getUnits", general.getUnit);
 
 

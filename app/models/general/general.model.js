@@ -131,7 +131,7 @@ General.getActivityBySchoolId = async (school_id, result) => {
     result(null, res);
   });
 };
-// 1dbe71871816a3a138838e573d84bc
+
 General.sendMessageBroadcast = async (dataUsers, message, school_id, result) => {
   try {
     let failedMessages = [];
@@ -1632,6 +1632,97 @@ General.getMenuActive = async (school_id, result) => {
     result(null, menus); // Kembalikan dalam bentuk array
   });
 };
+
+const PDFDocument = require('pdfkit');
+const fs = require('fs');
+const path = require('path');
+
+General.getPdfByIdPaymentMonth = (id, result) => {
+  const affiliateQuery = `SELECT * FROM payment WHERE id = ?`;
+
+  // Fetch payment data
+  db.query(affiliateQuery, [id], (affiliateErr, paymentRows) => {
+    if (affiliateErr) {
+      console.error("Error fetching payment data:", affiliateErr);
+      result(500, { error: "Error fetching payment data." });
+      return;
+    }
+
+    if (paymentRows.length > 0) {
+      const schoolId = paymentRows[0].school_id;
+      const studentName = paymentRows[0].student_name; // Assuming you have this field
+      const studentClass = paymentRows[0].student_class; // Assuming you have this field
+      const major = paymentRows[0].major; // Assuming you have this field
+
+      const pdfFolderPath = path.join(`uploads/pdf/${schoolId}`);
+
+      // Ensure the directory exists
+      if (!fs.existsSync(pdfFolderPath)) {
+        fs.mkdirSync(pdfFolderPath, { recursive: true });
+      }
+
+      const pdfFilePath = path.join(pdfFolderPath, `payment_report_${id}.pdf`);
+
+      // Create a PDF document
+      const doc = new PDFDocument();
+
+      // Write PDF to file
+      doc.pipe(fs.createWriteStream(pdfFilePath));
+
+      // Set up the PDF content
+      // Header Section
+      doc.fontSize(20).text('SMK 1 BREBES', { align: 'center' });
+      doc.moveDown();
+      doc.fontSize(12).text('42GX+PFC, Jl. Jenderal A. Yani, Sangkalputung, Brebes, Kab. Brebes, Jawa Tengah 52212', { align: 'center' });
+      doc.text('Contact: 2147483647', { align: 'center' });
+      doc.moveDown();
+
+      // Student Information
+      doc.fontSize(14).text(`NIS: ${id}`);
+      doc.text(`Name: ${studentName}`);
+      doc.text(`Class: ${studentClass}`);
+      doc.text(`Major: ${major}`);
+      doc.moveDown();
+
+      // Table Header for Payment Details
+      doc.fontSize(12).text('No.', { continued: true });
+      doc.text('Payment Item', { continued: true, width: 150 });
+      doc.text('Month', { continued: true, width: 150 });
+      doc.text('Status', { continued: true, width: 150 });
+      doc.text('Created', { continued: true, width: 150 });
+      doc.text('Total Amount', { align: 'right' });
+      doc.moveDown();
+
+      // Payment Rows (This loops through each payment)
+      paymentRows.forEach((payment, index) => {
+        doc.text(index + 1, { continued: true });
+        doc.text(payment.payment_item, { continued: true, width: 150 });
+        doc.text(payment.month, { continued: true, width: 150 });
+        doc.text(payment.status, { continued: true, width: 150 });
+        doc.text(new Date(payment.created_at).toLocaleDateString(), { continued: true, width: 150 });
+        doc.text(`Rp. ${payment.amount.toLocaleString()}`, { align: 'right' });
+      });
+
+      // Footer Section
+      doc.moveDown();
+      doc.fontSize(12).text('This is an auto-generated report.', { align: 'center' });
+
+      // Finalize the PDF and end the stream
+      doc.end();
+
+      console.log(`PDF saved to ${pdfFilePath}`);
+      result(null, { message: 'PDF generated successfully', path: pdfFilePath });
+
+    } else {
+      console.log(`No payment records found for ID: ${id}`);
+      result(404, { error: "No payment record found." });
+    }
+  });
+};
+
+
+
+
 
 General.cekFunction = async (schoolId, result) => {
   const affiliateQuery = `SELECT SUM(amount) as amount FROM affiliate WHERE user_id = ?`;

@@ -344,7 +344,6 @@ exports.rolePermissions = (req, res, next) => {
 };
 exports.getMenuActive = (req, res, next) => {
   const school_id = req.query.school_id;
-console.log(school_id);
 
   // Validasi jika schoolId tidak ada di query
   if (!school_id) {
@@ -358,7 +357,33 @@ console.log(school_id);
         message: err.message || "Some error occurred while retrieving majors.",
       });
     }
-console.log(data);
+
+    // Jika data ditemukan, kirimkan respons dengan data
+    if (!data || data.length === 0) {
+      return res
+        .status(404)
+        .json({ message: "No majors found for this schoolId." });
+    }
+
+    // Kirimkan data jurusan yang ditemukan
+    res.status(200).send(data);
+  });
+};
+exports.getPdfByIdPaymentMonth = (req, res, next) => {
+  const id = req.query.id;
+
+  // Validasi jika schoolId tidak ada di query
+  if (!id) {
+    return res.status(400).json({ error: "schoolId is required" });
+  }
+
+  // Panggil fungsi General.getMonths dengan schoolId sebagai parameter
+  General.getPdfByIdPaymentMonth(id, (err, data) => {
+    if (err) {
+      return res.status(500).send({
+        message: err.message || "Some error occurred while retrieving majors.",
+      });
+    }
 
     // Jika data ditemukan, kirimkan respons dengan data
     if (!data || data.length === 0) {

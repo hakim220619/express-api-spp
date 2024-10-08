@@ -315,7 +315,8 @@ Pembayaran.updatePaymentPendingByAdmin = async (newPayment, result) => {
   const { dataPayment, dataUsers, total_affiliate } = newPayment;
   const errors = [];
   const { DB_HOST, DB_NAME, DB_USER, DB_PASSWORD } = process.env;
-
+  let totalMonth = "";
+  let totalPayment = 0;
   // Create MySQL connection pool
   const pool = mysql.createPool({
     host: DB_HOST,
@@ -404,43 +405,8 @@ Pembayaran.updatePaymentPendingByAdmin = async (newPayment, result) => {
         await insertMmLogs(logData);
 
         // Get message template and send WhatsApp message
-        const [queryRes] = await connection.query(
-          `SELECT tm.*, a.urlWa, a.token_whatsapp, a.sender 
-           FROM template_message tm, aplikasi a 
-           WHERE tm.school_id=a.school_id 
-           AND tm.deskripsi LIKE '%updatePaymentPendingByAdmin%'  
-           AND tm.school_id = ?`,
-          [dataUsers.school_id]
-        );
-
-        if (queryRes.length > 0) {
-          const {
-            urlWa: url,
-            token_whatsapp: token,
-            sender,
-            message: template_message,
-          } = queryRes[0];
-
-          // Data yang ingin diganti dalam template_message
-          const replacements = {
-            nama_lengkap: dataUsers.full_name,
-            nama_pembayaran: dataUsers.sp_name,
-            bulan: paymentData.month,
-            tahun: paymentData.years,
-            total_pembayaran: formatRupiah(paymentData.total_payment),
-            nama_sekolah: dataUsers.school_name,
-          };
-
-          // Fungsi untuk menggantikan setiap placeholder di template
-          const formattedMessage = template_message.replace(
-            /\$\{(\w+)\}/g,
-            (_, key) => {
-              return replacements[key] || "";
-            }
-          );
-          // Kirim pesan setelah semua pembayaran diperbarui
-          await sendMessage(url, token, dataUsers.phone, formattedMessage);
-        }
+        totalMonth += `${paymentData.month}, `;
+        totalPayment += paymentData.total_payment;
 
         // Handle affiliate transactions
         const transactionPromises = affiliateRes.map(async (affiliate) => {
@@ -477,7 +443,48 @@ Pembayaran.updatePaymentPendingByAdmin = async (newPayment, result) => {
 
     // Wait for all payment promises to complete
     await Promise.all(paymentPromises);
+    totalMonth = totalMonth.replace(/,\s*$/, "");
+    const [queryRes] = await connection.query(
+      `SELECT tm.*, a.urlWa, a.token_whatsapp, a.sender 
+       FROM template_message tm, aplikasi a 
+       WHERE tm.school_id=a.school_id 
+       AND tm.deskripsi LIKE '%updatePaymentPendingByAdmin%'  
+       AND tm.school_id = ?`,
+      [dataUsers.school_id]
+    );
 
+    if (queryRes.length > 0) {
+      const {
+        urlWa: url,
+        token_whatsapp: token,
+        sender,
+        message: template_message,
+      } = queryRes[0];
+
+
+      // Data yang ingin diganti dalam template_message
+      const replacements = {
+        nama_lengkap: dataUsers.full_name,
+        nama_pembayaran: dataUsers.sp_name,
+        bulan: totalMonth,
+        tahun: dataPayment[0].years,
+        kelas: dataUsers.class_name,
+        total_pembayaran: formatRupiah(totalPayment),
+        nama_sekolah: dataUsers.school_name,
+      };
+
+      // Fungsi untuk menggantikan setiap placeholder di template
+      const formattedMessage = template_message.replace(
+        /\$\{(\w+)\}/g,
+        (_, key) => {
+          return replacements[key] || "";
+        }
+      );
+      console.log(formattedMessage);
+      
+      // Kirim pesan setelah semua pembayaran diperbarui
+      await sendMessage(url, token, dataUsers.phone, formattedMessage);
+    }
     // Check results
     if (errors.length > 0) {
       // Rollback the transaction if there were errors
@@ -655,7 +662,6 @@ Pembayaran.updatePaymentPendingByAdminFree = async (newPayment, result) => {
       flag: 0,
       years: data.years,
     };
-    console.log(kasData);
 
     await insertKas(kasData).then((response) => {
       console.log(response);

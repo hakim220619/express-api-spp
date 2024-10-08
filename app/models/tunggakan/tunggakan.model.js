@@ -132,6 +132,7 @@ JOIN
   }
 
   query += `GROUP BY p.setting_payment_uid ORDER BY p.type DESC`;
+console.log(query);
 
   db.query(query, (err, res) => {
     if (err) {

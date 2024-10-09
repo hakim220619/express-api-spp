@@ -29,7 +29,9 @@ Pembayaran.listPembayaranPayByMonth = (
     p.type,
     p.status,
     p.amount,
+    p.updated_at,
     u.full_name,
+    u.nisn,
     c.class_name,
     m.major_name,
     sp.sp_name,
@@ -40,6 +42,7 @@ Pembayaran.listPembayaranPayByMonth = (
     u.phone,
     p.redirect_url,
     s.school_name,
+    s.address as school_address,
     (select sum(af.amount) FROM affiliate af WHERE af.school_id = p.school_id) as affiliate,
     (p.amount +  (select sum(af.amount) FROM affiliate af WHERE af.school_id = p.school_id)) as total_payment
 FROM 
@@ -164,22 +167,36 @@ Pembayaran.listPembayaranPayByFreeDetail = (
     p.type,
     p.status,
     p.amount,
+    p.updated_at,
     u.full_name,
     sp.sp_name,
     u.email,
     u.nisn,
     u.phone,
+    pm.years,
     p.redirect_url,
     p.metode_pembayaran,
     p.created_at,
     sp.sp_name,
+    s.school_name,
+    s.address as school_address,
+    c.class_name,
+    m.major_name,
     (SELECT SUM(amount) as amount FROM affiliate WHERE school_id = u.school_id ) as affiliate
-FROM 
+FROM
     payment_detail p
-JOIN 
+JOIN
+    payment pm ON pm.uid = p.payment_id
+JOIN
     users u ON p.user_id = u.id
-JOIN 
-    setting_payment sp ON p.setting_payment_uid = sp.uid`;
+JOIN
+    school s ON s.id = pm.school_id
+JOIN
+    class c ON c.id = u.class_id
+JOIN
+	major m ON m.id = u.major_id
+JOIN
+    setting_payment sp ON p.setting_payment_uid = sp.uid `;
 
   if (sp_name) {
     query += ` AND sp.sp_name like '%${sp_name}%'`;
@@ -640,7 +657,7 @@ Pembayaran.updatePaymentPendingByAdminFree = async (newPayment, result) => {
 
     // Insert ke payment_detail
     const [insertRes] = await connection.query(
-      "INSERT INTO payment_detail (metode_pembayaran, status, created_at, uid, user_id, payment_id, setting_payment_uid, type, amount) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+      "INSERT INTO payment_detail (metode_pembayaran, status, created_at, uid, user_id, payment_id, setting_payment_uid, type, amount ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
       [
         "Manual", // metode_pembayaran
         "Paid", // status

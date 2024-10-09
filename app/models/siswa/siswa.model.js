@@ -146,7 +146,7 @@ Siswa.registerSiswa = (newUsers, result) => {
                       const replacements = {
                         nama_lengkap: newUsers.full_name,
                         no_registrasi: newUsers.no_registrasi,
-                        nisn: newUsers.nisn,
+                        nik: newUsers.nik,
                         no_wa: newUsers.phone,
                         tahun: new Date().getFullYear(),
                         redirect_pembayaran: redirectUrl // Add Midtrans URL here

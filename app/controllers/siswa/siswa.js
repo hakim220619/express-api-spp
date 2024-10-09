@@ -137,7 +137,7 @@ exports.registerSiswa = [
 
     const {
       school_id,
-      nisn,
+      nik,
       unit_id, // Unit field
       full_name,
       email,
@@ -150,7 +150,7 @@ exports.registerSiswa = [
       const siswa = {
         school_id,
         no_registrasi: 'LPIH' +'-'+ generateNoRegistrasi(),
-        nisn: nisn,
+        nik: nik,
         unit_id,
         full_name: full_name.toUpperCase(),
         email: email,

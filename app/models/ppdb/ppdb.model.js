@@ -72,10 +72,10 @@ Ppdb.delete = (uid, result) => {
     result(null, res);
   });
 };
-Ppdb.detailPpdb = async (uid, result) => {
+Ppdb.detailPpdb = async (id, result) => {
   let query =
     "SELECT * from calon_siswa where id = '" +
-    uid +
+    id +
     "'";
   db.query(query, (err, res) => {
     if (err) {
@@ -88,5 +88,85 @@ Ppdb.detailPpdb = async (uid, result) => {
     result(null, res[0]);
   });
 };
+
+const generateRandomPassword = () => {
+  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+  let password = '';
+  for (let i = 0; i < 6; i++) {
+    const randomIndex = Math.floor(Math.random() * chars.length);
+    password += chars[randomIndex];
+  }
+  return password;
+};
+
+Ppdb.verifikasiSiswaBaru = async (id, result) => {
+  try {
+    // Step 1: Select the student by id to get date_of_birth and nik
+    let selectQuery = "SELECT date_of_birth, nik FROM calon_siswa WHERE id = ?";
+    
+    db.query(selectQuery, [id], async (err, res) => {
+      if (err) {
+        console.log("Error while selecting student: ", err);
+        result(null, err);
+        return;
+      }
+
+      if (res.length === 0) {
+        console.log("Student not found with id: ", id);
+        result({ message: "Student not found" }, null);
+        return;
+      }
+
+      // Step 2: Extract the date_of_birth and nik from the selected student
+      const { date_of_birth, nik } = res[0];
+
+      // Step 3: Extract the year from date_of_birth
+      const yearOfBirth = new Date(date_of_birth).getFullYear();
+
+      // Step 4: Generate random numbers (between 1 and 5)
+      const randomNumber = Math.floor(Math.random() * 5) + 1;
+
+      // Step 5: Create the username using the random number, year of birth, and nik
+      const username = `${randomNumber}${yearOfBirth}${nik}`;
+
+      const randomPassword = generateRandomPassword();
+      // Step 6: Hash the password using bcrypt
+      const hashedPassword = await bcrypt.hash(randomPassword, 10);
+
+      // Step 7: Update username and hashed password for the student with the given id
+      let updateQuery = "UPDATE calon_siswa SET username = ?, password = ? WHERE id = ?";
+      
+      db.query(updateQuery, [username, hashedPassword, id], (updateErr, updateRes) => {
+        if (updateErr) {
+          console.log("Error while updating student: ", updateErr);
+          result(null, updateErr);
+          return;
+        }
+
+        console.log("Updated student with id: ", {
+          message: "Student updated successfully",
+          id,
+          username, // Return the newly created username
+          password: randomPassword, // Return the hashed password
+          date_of_birth,
+          nik,
+        });
+        // Optionally, return the updated student data or a success message
+        result(null, {
+          message: "Student updated successfully",
+          id,
+          username, // Return the newly created username
+          password: randomPassword, // Return the hashed password
+          date_of_birth,
+          nik,
+        });
+      });
+    });
+  } catch (error) {
+    console.log("Error in verification process: ", error);
+    result(null, error);
+  }
+};
+
 
 module.exports = Ppdb;

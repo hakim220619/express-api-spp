@@ -72,12 +72,13 @@ exports.updatePpdb = [
     try {
       const ppdb = {
         id: req.body.data.id,
-        nisn: req.body.data.nisn,
+        nik: req.body.data.nik,
         email: req.body.data.email,
         full_name: req.body.data.full_name,
         phone: req.body.data.phone,
         unit_id: req.body.data.unit_id,
         status: req.body.data.status,
+        date_of_birth: req.body.data.date_of_birth,
         updated_at: new Date(),
       }; 
       
@@ -113,9 +114,22 @@ exports.delete = (req, res) => {
 };
 
 exports.detailPpdb = (req, res, next) => {
-  const uid = req.body.uid;
-  // console.log(req);
-  Ppdb.detailPpdb(uid, (err, data) => {
+  const id = req.body.id;
+
+  Ppdb.detailPpdb(id, (err, data) => {
+    if (err)
+      res.status(500).send({
+        message:
+          err.message || "Some error occurred while retrieving tutorials.",
+      });
+    else res.send(data);
+  });
+};
+exports.verifikasiSiswaBaru = (req, res, next) => {
+  const id = req.body.id;
+  Ppdb.verifikasiSiswaBaru(id, (err, data) => {
+    console.log(data);
+    
     if (err)
       res.status(500).send({
         message:

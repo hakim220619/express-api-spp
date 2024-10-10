@@ -9,7 +9,7 @@ const app = express();
 app.use(cors({
   origin: '*', // Atau bisa diatur ke domain spesifik yang diizinkan
 }));
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+
 
 
 app.use((req, res, next) => {
@@ -18,7 +18,7 @@ app.use((req, res, next) => {
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
   next();
 });
-
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 // parse requests of content-type - application/json
 app.use(express.json()); /* bodyParser.json() is deprecated */
 

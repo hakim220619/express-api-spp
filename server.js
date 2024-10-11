@@ -1,51 +1,47 @@
-// Import necessary modules
 const express = require("express");
-const cors = require("cors");
-const helmet = require("helmet");
-const path = require("path");
+// const bodyParser = require("body-parser"); /* deprecated */
+const cors = require('cors');
+const path = require('path');
+
 
 const app = express();
-
-// Middleware setup
-
-// Use Helmet to secure Express apps by setting various HTTP headers
-app.use(helmet());
-
-// Enable CORS for all origins
+// Serve static files from the 'uploads' directory
 app.use(cors({
-  origin: '*',  // Adjust as needed for specific origins
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
+  origin: '*', // Atau bisa diatur ke domain spesifik yang diizinkan
 }));
 
-// Serve static files from the 'uploads' directory
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
-// Parse JSON and urlencoded requests
-app.use(express.json());  // For parsing application/json
-app.use(express.urlencoded({ extended: true }));  // For parsing application/x-www-form-urlencoded
 
-// Simple welcome route
-app.get("/", (req, res) => {
-  res.json({ message: "Welcome to the API." });
+app.use((req, res, next) => {
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  next();
+});
+app.options('*', (req, res) => {
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  res.sendStatus(200);
 });
 
-// Import routes from an external file
+app.use('/uploads', express.static('uploads'));
+
+// parse requests of content-type - application/json
+app.use(express.json()); /* bodyParser.json() is deprecated */
+
+// parse requests of content-type - application/x-www-form-urlencoded
+app.use(express.urlencoded({ extended: true })); /* bodyParser.urlencoded() is deprecated */
+// simple route
+app.get("/", (req, res) => {
+  res.json({ message: "Welcome to Api DLH." });
+});
+
 require("./app/routes/routes.js")(app);
 
-// Error handling middleware for unknown routes
-app.use((req, res) => {
-  res.status(404).json({ error: "Not Found" });
-});
 
-// Error handling middleware for catching errors
-app.use((err, req, res, next) => {
-  console.error(err.stack);
-  res.status(500).json({ error: "Internal Server Error" });
-});
-
-// Set port and listen for requests
-const PORT = process.env.PORT || 4000;
-app.listen(PORT, () => {
+// set port, listen for requests
+const PORT = process.env.PORT || 8080;
+app.listen(PORT, async () => {
   console.log(`Server is running on port ${PORT}.`);
 });

@@ -13,7 +13,7 @@ app.use(helmet());
 
 // Enable CORS for all origins
 app.use(cors({
-  origin: '*',  // Adjust as needed for specific origins
+  origin: 'https://ypphbanjarbaru.sppapp.com',  // Adjust as needed for specific origins
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
 }));

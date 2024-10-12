@@ -24,6 +24,7 @@ module.exports = (app) => {
   var router = require("express").Router();
   // Create a new Tutorial
   router.post("/login", Login.login);
+  router.post("/loginSiswaBaru", Login.loginSiswaBaru);
   router.post("/register", Register.register);
   router.get("/checklogin", token.authenticateToken, Login.checklogin);
   router.get("/refresh-token", token.authenticateToken, Login.refreshToken);
@@ -53,6 +54,7 @@ module.exports = (app) => {
   router.post("/update-ppdb", token.authenticateToken, Ppdb.updatePpdb);
   router.post("/delete-ppdb", token.authenticateToken, Ppdb.delete);
   router.post("/detailPpdb", token.authenticateToken, Ppdb.detailPpdb);
+  router.post("/detailSiswaBaru", Ppdb.detailSiswaBaru);
   router.post("/verifikasi-siswa-baru", token.authenticateToken, Ppdb.verifikasiSiswaBaru);
   //kelas
   router.get("/list-kelas", token.authenticateToken, Kelas.listKelas);
@@ -169,6 +171,7 @@ module.exports = (app) => {
   router.get("/getDetailClassMajorUsers", token.authenticateToken, general.getDetailClassMajorUsers);
   router.get("/cekTransaksiSuccesMidtransByUserIdFree", general.cekTransaksiSuccesMidtransByUserIdFree);
   router.get("/cekTransaksiSuccesMidtransByUserIdByMonth", general.cekTransaksiSuccesMidtransByUserIdByMonth);
+  router.get("/cekTransaksiPaymentSiswaBaru", general.cekTransaksiPaymentSiswaBaru);
   router.get("/cekTransaksiSuccesMidtrans", general.cekTransaksiSuccesMidtrans);
   router.get("/cekTransaksiSuccesMidtransFree", general.cekTransaksiSuccesMidtransFree);
   router.get("/rolePermissions", general.rolePermissions);

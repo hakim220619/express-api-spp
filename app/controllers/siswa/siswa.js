@@ -156,6 +156,7 @@ exports.registerSiswa = [
         email: email,
         phone: phone,
         status: 'Registered',
+        role: 220,
         date_of_birth: date_of_birth,
         created_at: new Date()
       };

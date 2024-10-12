@@ -29,7 +29,8 @@ exports.createPpdb = [
       });
     }
 
-    const { school_id, unit_id , class_name, class_desc, class_status } = req.body;
+    const { school_id, unit_id, class_name, class_desc, class_status } =
+      req.body;
 
     try {
       // Create new admin object
@@ -80,8 +81,8 @@ exports.updatePpdb = [
         status: req.body.data.status,
         date_of_birth: req.body.data.date_of_birth,
         updated_at: new Date(),
-      }; 
-      
+      };
+
       Ppdb.update(ppdb, (err, data) => {
         if (err) {
           return res.status(500).send({
@@ -125,11 +126,22 @@ exports.detailPpdb = (req, res, next) => {
     else res.send(data);
   });
 };
+exports.detailSiswaBaru = (req, res, next) => {
+  const id = req.body.uid;
+
+  Ppdb.detailSiswaBaru(id, (err, data) => {
+    if (err)
+      res.status(500).send({
+        message:
+          err.message || "Some error occurred while retrieving tutorials.",
+      });
+    else res.send(data);
+  });
+};
 exports.verifikasiSiswaBaru = (req, res, next) => {
   const id = req.body.id;
   Ppdb.verifikasiSiswaBaru(id, (err, data) => {
-    console.log(data);
-    
+
     if (err)
       res.status(500).send({
         message:

@@ -1,5 +1,6 @@
 const db = require("../../config/db.config");
 const bcrypt = require("bcrypt");
+const { sendMessage } = require("../../helpers/helper");
 // constructor
 const Ppdb = function (data) {
   this.id = data.uid;
@@ -88,6 +89,42 @@ Ppdb.detailPpdb = async (id, result) => {
     result(null, res[0]);
   });
 };
+Ppdb.detailSiswaBaru = async (id, result) => {
+  // Step 1: Query personal_access_tokens to get uid based on the provided id
+  let uidQuery = "SELECT * FROM personal_access_tokens WHERE token = ?";
+  
+  db.query(uidQuery, [id], (err, uidRes) => {
+    if (err) {
+      console.log("error: ", err);
+      result(null, err);
+      return;
+    }
+
+    // Check if uid was found
+    if (uidRes.length === 0) {
+      console.log("No uid found for the given id");
+      result(null, { message: "No uid found for the given id" });
+      return;
+    }
+
+    const tokenable_id = uidRes[0].tokenable_id;
+
+    // Step 2: Now query calon_siswa using the found uid
+    let query = "SELECT * FROM calon_siswa WHERE id = ?";
+    
+    db.query(query, [tokenable_id], (err, res) => {
+      if (err) {
+        console.log("error: ", err);
+        result(null, err);
+        return;
+      }
+
+      console.log("students: ", res);
+      result(null, res[0]);
+    });
+  });
+};
+
 
 const generateRandomPassword = () => {
   const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
@@ -102,7 +139,7 @@ const generateRandomPassword = () => {
 Ppdb.verifikasiSiswaBaru = async (id, result) => {
   try {
     // Step 1: Select the student by id to get date_of_birth and nik
-    let selectQuery = "SELECT date_of_birth, nik FROM calon_siswa WHERE id = ?";
+    let selectQuery = "SELECT * FROM calon_siswa WHERE id = ?";
     
     db.query(selectQuery, [id], async (err, res) => {
       if (err) {
@@ -118,10 +155,16 @@ Ppdb.verifikasiSiswaBaru = async (id, result) => {
       }
 
       // Step 2: Extract the date_of_birth and nik from the selected student
-      const { date_of_birth, nik } = res[0];
+      const { date_of_birth, nik, school_id, phone } = res[0];
 
       // Step 3: Extract the year from date_of_birth
       const yearOfBirth = new Date(date_of_birth).getFullYear();
+      const dob = new Date(date_of_birth);
+
+      // Mengambil tahun, bulan, dan tanggal
+      const tahun = dob.getFullYear(); // Mengambil tahun
+      const bulan = dob.getMonth() + 1; // Mengambil bulan (0-11, jadi tambahkan 1)
+      const tanggal = dob.getDate(); // Mengambil tanggal
 
       // Step 4: Generate random numbers (between 1 and 5)
       const randomNumber = Math.floor(Math.random() * 5) + 1;
@@ -134,23 +177,56 @@ Ppdb.verifikasiSiswaBaru = async (id, result) => {
       const hashedPassword = await bcrypt.hash(randomPassword, 10);
 
       // Step 7: Update username and hashed password for the student with the given id
-      let updateQuery = "UPDATE calon_siswa SET username = ?, password = ? WHERE id = ?";
+      let updateQuery = "UPDATE calon_siswa SET username = ?, password = ?, status = ? WHERE id = ?";
       
-      db.query(updateQuery, [username, hashedPassword, id], (updateErr, updateRes) => {
+      db.query(updateQuery, [username, hashedPassword, 'Verification', id], (updateErr, updateRes) => {
         if (updateErr) {
           console.log("Error while updating student: ", updateErr);
           result(null, updateErr);
           return;
         }
+        db.query(
+          `SELECT tm.*, a.urlWa, a.token_whatsapp, a.sender 
+           FROM template_message tm, aplikasi a 
+           WHERE tm.school_id=a.school_id 
+           AND tm.deskripsi LIKE '%verifikasiSiswa%'  
+           AND tm.school_id = ?`,
+          [school_id],
+          (err, queryRes) => {
+            if (err) {
+              console.log("Query error: ", err);
+              result(err, null);
+              return;
+            }
 
-        console.log("Updated student with id: ", {
-          message: "Student updated successfully",
-          id,
-          username, // Return the newly created username
-          password: randomPassword, // Return the hashed password
-          date_of_birth,
-          nik,
-        });
+            if (queryRes.length > 0) {
+              const {
+                urlWa: url,
+                token_whatsapp: token,
+                sender,
+                message: template_message,
+              } = queryRes[0];
+
+              // Data to replace in the template message
+              const replacements = {
+                username: username,
+                password: randomPassword,
+                tanggal_lahir: tahun + '-' + bulan + '-' + tanggal,
+                nik: nik,
+              };
+
+              // Replace placeholders in the template_message
+              const formattedMessage = template_message.replace(
+                /\$\{(\w+)\}/g,
+                (_, key) => {
+                  return replacements[key] || "";
+                }
+              );
+              // Send message after creating the payment
+              sendMessage(url, token, phone, formattedMessage);
+            }
+          }
+        );
         // Optionally, return the updated student data or a success message
         result(null, {
           message: "Student updated successfully",

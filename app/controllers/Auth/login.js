@@ -23,6 +23,27 @@ exports.login = async (req, res) => {
     else res.send(data);
   });
 };
+exports.loginSiswaBaru = async (req, res) => {
+  // Validate request
+  if (!req.body) {
+    res.status(400).send({
+      message: "Content can not be empty!",
+    });
+  }
+  const users = {
+    username: req.body.username,
+    password: req.body.password,
+  };
+
+  // Save Tutorial in the database
+  Login.loginSiswaBaruAction(users, (err, data) => {
+    if (err != 200)
+      res.status(500).send({
+        message: err.message || "Some error occurred while retrieving Users.",
+      });
+    else res.send(data);
+  });
+};
 exports.checklogin = async (req, res) => {
   const AccessToken = req.headers["authorization"];
   Login.checklogin(AccessToken, (err, data) => {

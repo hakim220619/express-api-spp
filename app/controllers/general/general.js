@@ -171,6 +171,17 @@ exports.cekTransaksiSuccesMidtrans = (req, res, next) => {
     else res.send(data);
   });
 };
+exports.cekTransaksiPaymentSiswaBaru = (req, res, next) => {
+  // console.log(req);
+  General.cekTransaksiPaymentSiswaBaru((err, data) => {
+    if (err)
+      res.status(500).send({
+        message:
+          err.message || "Some error occurred while retrieving tutorials.",
+      });
+    else res.send(data);
+  });
+};
 exports.cekTransaksiSuccesMidtransByUserIdFree = (req, res, next) => {
   const userId = req.query.user_id;
 

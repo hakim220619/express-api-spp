@@ -6,18 +6,29 @@ const Ppdb = function (data) {
   this.id = data.uid;
 };
 
-Ppdb.create = (newUsers, result) => {
-  db.query("INSERT INTO class SET ?", newUsers, (err, res) => {
-    if (err) {
-      console.log("error: ", err);
-      result(err, null);
-      return;
-    }
+Ppdb.sendDataSiswaBaruAll = (newUsers, result) => {
+  // Assuming cs_id is a unique key or primary key
+  db.query(
+    "INSERT INTO calon_siswa_detail SET ? ON DUPLICATE KEY UPDATE ?",
+    [newUsers, newUsers], // newUsers is used for both insert and update values
+    (err, res) => {
+      if (err) {
+        console.log("error: ", err);
+        result(err, null);
+        return;
+      }
 
-    console.log("created Ppdb: ", { id: res.insertId, ...newUsers });
-    result(null, { id: res.insertId, ...newUsers });
-  });
+      if (res.affectedRows > 1) {
+        console.log("updated calon_siswa_detail: ", { id: newUsers.cs_id, ...newUsers });
+        result(null, { id: newUsers.cs_id, ...newUsers });
+      } else {
+        console.log("created calon_siswa_detail: ", { id: res.insertId, ...newUsers });
+        result(null, { id: res.insertId, ...newUsers });
+      }
+    }
+  );
 };
+
 
 Ppdb.update = (newUsers, result) => {
   db.query(
@@ -111,6 +122,41 @@ Ppdb.detailSiswaBaru = async (id, result) => {
 
     // Step 2: Now query calon_siswa using the found uid
     let query = "SELECT * FROM calon_siswa WHERE id = ?";
+    
+    db.query(query, [tokenable_id], (err, res) => {
+      if (err) {
+        console.log("error: ", err);
+        result(null, err);
+        return;
+      }
+
+      console.log("students: ", res);
+      result(null, res[0]);
+    });
+  });
+};
+Ppdb.detailCalonSiswaBaru = async (id, result) => {
+  // Step 1: Query personal_access_tokens to get uid based on the provided id
+  let uidQuery = "SELECT * FROM personal_access_tokens WHERE token = ?";
+  
+  db.query(uidQuery, [id], (err, uidRes) => {
+    if (err) {
+      console.log("error: ", err);
+      result(null, err);
+      return;
+    }
+
+    // Check if uid was found
+    if (uidRes.length === 0) {
+      console.log("No uid found for the given id");
+      result(null, { message: "No uid found for the given id" });
+      return;
+    }
+
+    const tokenable_id = uidRes[0].tokenable_id;
+
+    // Step 2: Now query calon_siswa using the found uid
+    let query = "SELECT * FROM calon_siswa_detail WHERE cs_id = ?";
     
     db.query(query, [tokenable_id], (err, res) => {
       if (err) {

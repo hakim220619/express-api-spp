@@ -19,7 +19,7 @@ exports.listPpdb = (req, res, next) => {
 };
 
 // Create new Admin
-exports.createPpdb = [
+exports.sendDataSiswaBaruAll = [
   upload.none(),
   async (req, res) => {
     // Validate request
@@ -29,33 +29,127 @@ exports.createPpdb = [
       });
     }
 
-    const { school_id, unit_id, class_name, class_desc, class_status } =
-      req.body;
+    const {
+      id,
+      fullName,
+      nick_name,
+      gender,
+      nik,
+      nisn,
+      birth_place_date,
+      birth_date,
+      birth_cert_no,
+      address,
+      religion,
+      rt,
+      rw,
+      dusun,
+      kecamatan,
+      school,
+      siblings,
+      transportation,
+      travelHours,
+      travelMinutes,
+      distanceInKm,
+      distanceToSchool,
+      height,
+      weight,
+      mobilePhone,
+      phone,
+      homePhone,
+      email,
+      kpsNumber,
+      kpsReceiver,
+      fatherName,
+      fatherNik,
+      fatherBirthYear,
+      fatherEducation,
+      fatherJob,
+      fatherIncome,
+      motherName,
+      motherNik,
+      motherBirthYear,
+      motherEducation,
+      motherJob,
+      motherIncome,
+      guardianName,
+      guardianNik,
+      guardianBirthYear,
+      guardianEducation,
+      guardianJob,
+      guardianIncome,
+    } = req.body;
 
     try {
-      // Create new admin object
-      const kelas = new Ppdb({
-        school_id: school_id,
-        unit_id: unit_id,
-        class_name: class_name,
-        class_desc: class_desc,
-        class_status: class_status || "ON",
-        created_at: new Date(),
-      });
+      // Create a new student data object
+      const studentData = {
+        cs_id: id,
+        full_name: fullName,
+        nick_name: nick_name,
+        gender: gender,
+        nik: nik,
+        nisn: nisn,
+        birth_place_date: birth_place_date,
+        birth_date: birth_date,
+        birth_cert_no: birth_cert_no,
+        address: address,
+        religion: religion,
+        rt: rt,
+        rw: rw,
+        dusun: dusun,
+        kecamatan: kecamatan,
+        school: school,
+        siblings: siblings,
+        transportation: transportation,
+        travel_hours: travelHours,
+        travel_minutes: travelMinutes,
+        distance_in_km: distanceInKm,
+        distance_to_school: distanceToSchool,
+        height: height,
+        weight: weight,
+        mobile_phone: mobilePhone,
+        phone: phone,
+        home_phone: homePhone,
+        email: email,
+        kps_number: kpsNumber,
+        kps_receiver: kpsReceiver,
+        father_name: fatherName,
+        father_nik: fatherNik,
+        father_birth_year: fatherBirthYear,
+        father_education: fatherEducation,
+        father_job: fatherJob,
+        father_income: parseInt(fatherIncome.replace(/[Rp.]/g, ''), 10),
+        mother_name: motherName,
+        mother_nik: motherNik,
+        mother_birth_year: motherBirthYear,
+        mother_education: motherEducation,
+        mother_job: motherJob,
+        mother_income: parseInt(motherIncome.replace(/[Rp.]/g, ''), 10) ,
+        guardian_name: guardianName,
+        guardian_nik: guardianNik,
+        guardian_birth_year: guardianBirthYear,
+        guardian_education: guardianEducation,
+        guardian_job: guardianJob,
+        guardian_income: guardianIncome ? 
+    (isNaN(parseInt(guardianIncome.replace(/[Rp.]/g, ''), 10)) ? null : parseInt(guardianIncome.replace(/[Rp.]/g, ''), 10))
+    : null,
 
-      // Save admin to the database
-      Ppdb.create(kelas, (err, data) => {
+        created_at: new Date(),
+      };
+
+      // Save the student data to the database
+      Ppdb.sendDataSiswaBaruAll(studentData, (err, data) => {
         if (err) {
           return res.status(500).send({
             message:
-              err.message || "Some error occurred while creating the Admin.",
+              err.message || "Some error occurred while saving the student data.",
           });
         } else {
           res.send(data);
         }
       });
     } catch (error) {
-      res.status(500).send({ message: "Error creating Admin" });
+      res.status(500).send({ message: "Error saving student data" });
     }
   },
 ];
@@ -138,10 +232,22 @@ exports.detailSiswaBaru = (req, res, next) => {
     else res.send(data);
   });
 };
+exports.detailCalonSiswaBaru = (req, res, next) => {
+  const id = req.body.uid;
+console.log(id);
+
+  Ppdb.detailCalonSiswaBaru(id, (err, data) => {
+    if (err)
+      res.status(500).send({
+        message:
+          err.message || "Some error occurred while retrieving tutorials.",
+      });
+    else res.send(data);
+  });
+};
 exports.verifikasiSiswaBaru = (req, res, next) => {
   const id = req.body.id;
   Ppdb.verifikasiSiswaBaru(id, (err, data) => {
-
     if (err)
       res.status(500).send({
         message:

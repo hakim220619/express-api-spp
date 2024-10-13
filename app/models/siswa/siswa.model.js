@@ -162,8 +162,6 @@ Siswa.registerSiswa = (newUsers, result) => {
                             return replacements[key] || "";
                           }
                         );
-   
-console.log(formattedMessage);
 
                         // Send message after creating the payment
                         sendMessage(

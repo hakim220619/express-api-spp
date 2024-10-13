@@ -340,7 +340,7 @@ Dashboard.getTotalTunggakanFreeBySiswa = async (schoolId, user_id, result) => {
 FROM 
     payment_detail pd
 WHERE 
-    pd.status IN ('Pending', 'Verified')`;
+    pd.status NOT IN ('Pending', 'Verified')`;
 
   if (user_id) {
     query += ` AND pd.user_id = '${user_id}'`;

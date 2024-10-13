@@ -1,6 +1,11 @@
 const db = require("../../config/db.config");
 const axios = require("axios");
-const { sendMessage, formatRupiah, insertMmLogs, insertKas } = require("../../helpers/helper");
+const {
+  sendMessage,
+  formatRupiah,
+  insertMmLogs,
+  insertKas,
+} = require("../../helpers/helper");
 
 const General = function (data) {};
 
@@ -132,7 +137,12 @@ General.getActivityBySchoolId = async (school_id, result) => {
   });
 };
 
-General.sendMessageBroadcast = async (dataUsers, message, school_id, result) => {
+General.sendMessageBroadcast = async (
+  dataUsers,
+  message,
+  school_id,
+  result
+) => {
   try {
     let failedMessages = [];
     let successMessages = [];
@@ -156,7 +166,7 @@ General.sendMessageBroadcast = async (dataUsers, message, school_id, result) => 
         if (queryRes && queryRes.length > 0) {
           // Ambil url, token, dan informasi pengirim dari query result
           const { urlWa: url, token_whatsapp: token, sender } = queryRes[0];
-          
+
           // Mengirim pesan setelah semua data pembayaran diperbarui
           try {
             await sendMessage(url, token, user.phone, message); // await untuk memastikan error ditangkap
@@ -171,13 +181,12 @@ General.sendMessageBroadcast = async (dataUsers, message, school_id, result) => 
               activity: "sendMessageBroadcast",
               detail: `Pesan berhasil dikirim ke: ${user.phone}, Message: ${message}`,
               action: "Insert",
-              status: 1
+              status: 1,
             };
 
             // Insert log into mm_logs
             insertMmLogs(logData);
             successMessages.push(user.phone); // Menyimpan pesan yang berhasil
-
           } catch (sendError) {
             console.error(
               `Gagal mengirim pesan ke: ${user.phone}, Error: ${sendError.message}`
@@ -189,7 +198,7 @@ General.sendMessageBroadcast = async (dataUsers, message, school_id, result) => 
               activity: "sendMessageBroadcast",
               detail: `Gagal mengirim pesan ke: ${user.phone}, Error: ${sendError.message}`,
               action: "Insert",
-              status: 2
+              status: 2,
             };
 
             // Insert log into mm_logs
@@ -197,11 +206,15 @@ General.sendMessageBroadcast = async (dataUsers, message, school_id, result) => 
             failedMessages.push(user.phone); // Menyimpan pesan yang gagal
           }
         } else {
-          console.error("Tidak ada template pesan atau data WhatsApp yang ditemukan.");
+          console.error(
+            "Tidak ada template pesan atau data WhatsApp yang ditemukan."
+          );
           failedMessages.push(user.phone); // Menyimpan pesan yang gagal
         }
       } catch (error) {
-        console.error(`Error saat memproses user ${user.phone}: ${error.message}`);
+        console.error(
+          `Error saat memproses user ${user.phone}: ${error.message}`
+        );
 
         const logData = {
           school_id: school_id,
@@ -209,7 +222,7 @@ General.sendMessageBroadcast = async (dataUsers, message, school_id, result) => 
           activity: "sendMessageBroadcast",
           detail: `Gagal memproses user ${user.phone}, Error: ${error.message}`,
           action: "Insert",
-          status: 2
+          status: 2,
         };
 
         // Insert log into mm_logs
@@ -224,28 +237,25 @@ General.sendMessageBroadcast = async (dataUsers, message, school_id, result) => 
         status: "failed",
         message: "Beberapa pesan gagal dikirim.",
         failed: failedMessages,
-        success: successMessages
+        success: successMessages,
       });
     } else {
       result(null, {
         status: "success",
         message: "Semua pesan berhasil terkirim!",
-        success: successMessages
+        success: successMessages,
       });
     }
-
   } catch (err) {
     // Jika ada kesalahan global
     console.error("Terjadi kesalahan:", err);
     result({
       status: "error",
       message: "Terjadi kesalahan saat mengirim pesan.",
-      error: err.message
+      error: err.message,
     });
   }
 };
-
-
 
 General.getDetailClassMajorUsers = async (school_id, result) => {
   let query = `
@@ -498,11 +508,11 @@ General.cekTransaksiSuccesMidtrans = async (result) => {
                 flag: 0,
                 years: payment.years,
               };
-          
+
               await insertKas(kasData).then((response) => {
                 console.log(response);
               });
-          
+
               // Log the transaction
               const logData = {
                 school_id: payment.school_id,
@@ -512,7 +522,7 @@ General.cekTransaksiSuccesMidtrans = async (result) => {
                 action: "Update",
                 status: true,
               };
-              
+
               await insertMmLogs(logData);
               console.log(
                 `Payment processed and status updated for order_id: ${payment.order_id}`
@@ -618,6 +628,7 @@ General.cekTransaksiPaymentSiswaBaru = async (result) => {
         result(err, null);
         return;
       }
+      // console.log(rows.length);
 
       if (rows.length === 0) {
         console.log("No verified payments found.");
@@ -668,8 +679,7 @@ General.cekTransaksiPaymentSiswaBaru = async (result) => {
             });
 
             const dataResponse = response.data;
-            console.log(dataResponse);
-            
+
             paymentConnection = await pool.getConnection();
 
             // Start a transaction
@@ -683,9 +693,6 @@ General.cekTransaksiPaymentSiswaBaru = async (result) => {
             }
 
             if (dataResponse.status_code == 200) {
-              // Get a new connection for each payment processing
-
-              // console.log(paymentConnection);
               // Check school balance
               const [schoolRes] = await paymentConnection.query(
                 "SELECT * FROM school WHERE id = ?",
@@ -702,12 +709,6 @@ General.cekTransaksiPaymentSiswaBaru = async (result) => {
               if (balance <= 10000) {
                 throw new Error("Saldo tidak cukup");
               }
-              // Get affiliate data
-              const [getTotalAffiliate] = await paymentConnection.query(
-                "SELECT * FROM payment WHERE status = 'Verified' AND metode_pembayaran = 'Online' AND redirect_url IS NOT NULL and order_id = ?",
-                [payment.order_id] // Use appropriate user_id or school_id
-              );
-              // console.log(getTotalAffiliate);
 
               // Get affiliate data
               const [affiliateRes] = await paymentConnection.query(
@@ -718,7 +719,7 @@ General.cekTransaksiPaymentSiswaBaru = async (result) => {
 
               // Iterate through each affiliate record and sum the amount
               affiliateRes.forEach((affiliate) => {
-                total_affiliate += affiliate.amount * getTotalAffiliate.length; // Accumulate the amount
+                total_affiliate += affiliate.amount; // Accumulate the amount
               });
               // console.log(total_affiliate);
 
@@ -732,40 +733,38 @@ General.cekTransaksiPaymentSiswaBaru = async (result) => {
                 throw new Error("No affiliates found");
               }
 
-              const newBalance = balance - total_affiliate;
+              const newBalance = balance - (total_affiliate * rows.length);
+              console.log(newBalance);
 
               // // Update school balance
               await paymentConnection.query(
                 "UPDATE school SET balance = ? WHERE id = ?",
                 [newBalance, payment.school_id]
               );
-              getTotalAffiliate.forEach((aff) => {
-                // Handle affiliate transactions
-                affiliateRes.map(async (affiliate) => {
-                  const totalByAff =
-                    affiliate.debit +
-                    affiliate.amount * getTotalAffiliate.length; // Adjust as necessary
 
-                  // Update the debit in the database
-                  await paymentConnection.query(
-                    "UPDATE affiliate SET debit = ? WHERE id = ?",
-                    [totalByAff, affiliate.id]
-                  );
+              // Handle affiliate transactions
+              affiliateRes.map(async (affiliate) => {
+                const totalByAff = affiliate.debit + (affiliate.amount * rows.length); // Adjust as necessary
 
-                  // Insert the payment transaction
-                  await paymentConnection.query(
-                    "INSERT INTO payment_transactions (user_id, school_id, payment_id, amount, type, state, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)",
-                    [
-                      affiliate.user_id,
-                      payment.user_id, // or the appropriate school_id
-                      payment.id,
-                      affiliate.amount,
-                      "BULANAN",
-                      "IN",
-                      new Date(),
-                    ]
-                  );
-                });
+                // Update the debit in the database
+                await paymentConnection.query(
+                  "UPDATE affiliate SET debit = ? WHERE id = ?",
+                  [totalByAff, affiliate.id]
+                );
+
+                // Insert the payment transaction
+                await paymentConnection.query(
+                  "INSERT INTO payment_transactions (user_id, school_id, payment_id, amount, type, state, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)",
+                  [
+                    affiliate.user_id,
+                    payment.school_id, // or the appropriate school_id
+                    payment.id,
+                    affiliate.amount,
+                    "REGISTRASI",
+                    "IN",
+                    new Date(),
+                  ]
+                );
               });
 
               paymentConnection.query(
@@ -784,91 +783,91 @@ General.cekTransaksiPaymentSiswaBaru = async (result) => {
               // Commit the transaction
               const kasData = {
                 school_id: payment.school_id,
-                user_id: payment.user_id,
-                deskripsi: `Kas Masuk Berhasil oleh ID Users: ${payment.user_id}, dengan id pembayaran bulanan: ${payment.id}`,
+                user_id: payment.id,
+                deskripsi: `Kas Masuk Berhasil oleh ID Users: ${payment.id}, dengan id pembayaran registrasi: ${payment.no_registrasi}`,
                 type: "KREDIT",
-                amount: payment.amount + total_affiliate,
+                amount:
+                  dataAplikasi[0].nominal_register_siswa + total_affiliate,
                 flag: 0,
-                years: payment.years,
+                years: new Date().getFullYear(),
               };
-          
+
               await insertKas(kasData).then((response) => {
                 console.log(response);
               });
-          
+
               // Log the transaction
               const logData = {
                 school_id: payment.school_id,
-                user_id: payment.user_id,
-                activity: "updatePaymentPendingByAdminFree",
-                detail: `Pembayaran berhasil oleh ID Users: ${payment.user_id}, dengan id pembayaran bulanan: ${payment.id}`,
+                user_id: payment.id,
+                activity: "cekTransaksiPaymentSiswaBaru",
+                detail: `Pembayaran berhasil oleh ID Users: ${payment.id}, dengan id pembayaran registrasi: ${payment.no_registrasi}`,
                 action: "Update",
                 status: true,
               };
-              
+
               await insertMmLogs(logData);
               console.log(
                 `Payment processed and status updated for order_id: ${payment.order_id}`
               );
-              // db.query(
-              //   `SELECT tm.*, a.urlWa, a.token_whatsapp, a.sender 
-              //        FROM template_message tm, aplikasi a 
-              //        WHERE tm.school_id=a.school_id 
-              //        AND tm.deskripsi like '%cekTransaksiSuccesMidtrans%'  
-              //        AND tm.school_id = '${payment.school_id}'`,
-              //   (err, queryRes) => {
-              //     if (err) {
-              //       console.error(
-              //         "Error fetching template and WhatsApp details: ",
-              //         err
-              //       );
-              //     } else {
-              //       // Ambil url, token dan informasi pengirim dari query result
-              //       const {
-              //         urlWa: url,
-              //         token_whatsapp: token,
-              //         sender,
-              //         message: template_message,
-              //       } = queryRes[0];
+              db.query(
+                `SELECT tm.*, a.urlWa, a.token_whatsapp, a.sender
+                     FROM template_message tm, aplikasi a
+                     WHERE tm.school_id=a.school_id
+                     AND tm.deskripsi like '%cekTransaksiPaymentSiswaBaru%'
+                     AND tm.school_id = '${payment.school_id}'`,
+                (err, queryRes) => {
+                  if (err) {
+                    console.error(
+                      "Error fetching template and WhatsApp details: ",
+                      err
+                    );
+                  } else {
+                    // Ambil url, token dan informasi pengirim dari query result
+                    const {
+                      urlWa: url,
+                      token_whatsapp: token,
+                      sender,
+                      message: template_message,
+                    } = queryRes[0];
 
-              //       // Data yang ingin diganti dalam template_message
-              //       let replacements = {
-              //         nama_lengkap: payment.full_name,
-              //         nama_pembayaran: payment.sp_name,
-              //         tahun: payment.years,
-              //         kelas: payment.class_name,
-              //         id_pembayaran: payment.order_id,
-              //         nama_sekolah: payment.school_name,
-              //         jenis_pembayaran_midtrans: "",
-              //         total_midtrans: formatRupiah(dataResponse.gross_amount),
-              //       };
+                    // Data yang ingin diganti dalam template_message
+                    let replacements = {
+                      nama_lengkap: payment.full_name,
+                      nama_pembayaran: "Registrasi Siswa Baru",
+                      tahun: new Date().getFullYear(),
+                      id_pembayaran: payment.order_id,
+                      nama_sekolah: payment.school_name,
+                      jenis_pembayaran_midtrans: "",
+                      total_midtrans: formatRupiah(dataResponse.gross_amount),
+                    };
 
-              //       if (dataResponse.payment_type == "bank_transfer") {
-              //         replacements.jenis_pembayaran_midtrans =
-              //           dataResponse.va_numbers
-              //             ? dataResponse.va_numbers[0].bank
-              //             : "";
-              //       } else if (dataResponse.payment_type == "echannel") {
-              //         replacements.jenis_pembayaran_midtrans = "Mandiri";
-              //       } else if (dataResponse.payment_type == "qris") {
-              //         replacements.jenis_pembayaran_midtrans =
-              //           dataResponse.acquirer || "";
-              //       }
+                    if (dataResponse.payment_type == "bank_transfer") {
+                      replacements.jenis_pembayaran_midtrans =
+                        dataResponse.va_numbers
+                          ? dataResponse.va_numbers[0].bank
+                          : "";
+                    } else if (dataResponse.payment_type == "echannel") {
+                      replacements.jenis_pembayaran_midtrans = "Mandiri";
+                    } else if (dataResponse.payment_type == "qris") {
+                      replacements.jenis_pembayaran_midtrans =
+                        dataResponse.acquirer || "";
+                    }
 
-              //       // Fungsi untuk menggantikan setiap placeholder di template
-              //       const formattedMessage = template_message.replace(
-              //         /\$\{(\w+)\}/g,
-              //         (_, key) => replacements[key] || ""
-              //       );
+                    // Fungsi untuk menggantikan setiap placeholder di template
+                    const formattedMessage = template_message.replace(
+                      /\$\{(\w+)\}/g,
+                      (_, key) => replacements[key] || ""
+                    );
 
-              //       // Output hasil format pesan untuk debugging
-              //       console.log(formattedMessage);
+                    // Output hasil format pesan untuk debugging
+                    console.log(formattedMessage);
 
-              //       // Mengirim pesan setelah semua data pembayaran diperbarui
-              //       sendMessage(url, token, payment.phone, formattedMessage);
-              //     }
-              //   }
-              // );
+                    // Mengirim pesan setelah semua data pembayaran diperbarui
+                    sendMessage(url, token, payment.phone, formattedMessage);
+                  }
+                }
+              );
             }
             await paymentConnection.commit();
           } catch (error) {
@@ -906,7 +905,6 @@ General.cekTransaksiSuccesMidtransByUserIdByMonth = async (userId, result) => {
 
     // Fetch payment records where metode_pembayaran is Midtrans and status is Verified
     db.query(query, async (err, rows) => {
-      
       if (err) {
         console.log("error: ", err);
         result(err, null);
@@ -1024,7 +1022,6 @@ General.cekTransaksiSuccesMidtransByUserIdByMonth = async (userId, result) => {
               }
 
               const newBalance = balance - total_affiliate;
-      
 
               // // Update school balance
               await paymentConnection.query(
@@ -1081,11 +1078,11 @@ General.cekTransaksiSuccesMidtransByUserIdByMonth = async (userId, result) => {
                 flag: 0,
                 years: payment.years,
               };
-          
+
               await insertKas(kasData).then((response) => {
                 console.log(response);
               });
-          
+
               // Log the transaction
               const logData = {
                 school_id: payment.school_id,
@@ -1095,7 +1092,7 @@ General.cekTransaksiSuccesMidtransByUserIdByMonth = async (userId, result) => {
                 action: "Update",
                 status: true,
               };
-              
+
               await insertMmLogs(logData);
               // Commit the transaction
               console.log(
@@ -1360,11 +1357,11 @@ General.cekTransaksiSuccesMidtransByUserIdFree = async (userId, result) => {
                 flag: 0,
                 years: payment.years,
               };
-          
+
               await insertKas(kasData).then((response) => {
                 console.log(response);
               });
-          
+
               // Log the transaction
               const logData = {
                 school_id: payment.school_id,
@@ -1374,7 +1371,7 @@ General.cekTransaksiSuccesMidtransByUserIdFree = async (userId, result) => {
                 action: "Update",
                 status: true,
               };
-              
+
               await insertMmLogs(logData);
 
               db.query(
@@ -1695,11 +1692,11 @@ General.cekTransaksiSuccesMidtransFree = async (result) => {
                 flag: 0,
                 years: payment.years,
               };
-          
+
               await insertKas(kasData).then((response) => {
                 console.log(response);
               });
-          
+
               // Log the transaction
               const logData = {
                 school_id: payment.school_id,
@@ -1709,7 +1706,7 @@ General.cekTransaksiSuccesMidtransFree = async (result) => {
                 action: "Update",
                 status: true,
               };
-              
+
               await insertMmLogs(logData);
               // Commit the transaction
               await paymentConnection.commit();
@@ -1926,9 +1923,9 @@ General.getMenuActive = async (school_id, result) => {
   });
 };
 
-const PDFDocument = require('pdfkit');
-const fs = require('fs');
-const path = require('path');
+const PDFDocument = require("pdfkit");
+const fs = require("fs");
+const path = require("path");
 
 General.getPdfByIdPaymentMonth = (id, result) => {
   const affiliateQuery = `SELECT * FROM payment WHERE id = ?`;
@@ -1964,10 +1961,15 @@ General.getPdfByIdPaymentMonth = (id, result) => {
 
       // Set up the PDF content
       // Header Section
-      doc.fontSize(20).text('SMK 1 BREBES', { align: 'center' });
+      doc.fontSize(20).text("SMK 1 BREBES", { align: "center" });
       doc.moveDown();
-      doc.fontSize(12).text('42GX+PFC, Jl. Jenderal A. Yani, Sangkalputung, Brebes, Kab. Brebes, Jawa Tengah 52212', { align: 'center' });
-      doc.text('Contact: 2147483647', { align: 'center' });
+      doc
+        .fontSize(12)
+        .text(
+          "42GX+PFC, Jl. Jenderal A. Yani, Sangkalputung, Brebes, Kab. Brebes, Jawa Tengah 52212",
+          { align: "center" }
+        );
+      doc.text("Contact: 2147483647", { align: "center" });
       doc.moveDown();
 
       // Student Information
@@ -1978,12 +1980,12 @@ General.getPdfByIdPaymentMonth = (id, result) => {
       doc.moveDown();
 
       // Table Header for Payment Details
-      doc.fontSize(12).text('No.', { continued: true });
-      doc.text('Payment Item', { continued: true, width: 150 });
-      doc.text('Month', { continued: true, width: 150 });
-      doc.text('Status', { continued: true, width: 150 });
-      doc.text('Created', { continued: true, width: 150 });
-      doc.text('Total Amount', { align: 'right' });
+      doc.fontSize(12).text("No.", { continued: true });
+      doc.text("Payment Item", { continued: true, width: 150 });
+      doc.text("Month", { continued: true, width: 150 });
+      doc.text("Status", { continued: true, width: 150 });
+      doc.text("Created", { continued: true, width: 150 });
+      doc.text("Total Amount", { align: "right" });
       doc.moveDown();
 
       // Payment Rows (This loops through each payment)
@@ -1992,30 +1994,33 @@ General.getPdfByIdPaymentMonth = (id, result) => {
         doc.text(payment.payment_item, { continued: true, width: 150 });
         doc.text(payment.month, { continued: true, width: 150 });
         doc.text(payment.status, { continued: true, width: 150 });
-        doc.text(new Date(payment.created_at).toLocaleDateString(), { continued: true, width: 150 });
-        doc.text(`Rp. ${payment.amount.toLocaleString()}`, { align: 'right' });
+        doc.text(new Date(payment.created_at).toLocaleDateString(), {
+          continued: true,
+          width: 150,
+        });
+        doc.text(`Rp. ${payment.amount.toLocaleString()}`, { align: "right" });
       });
 
       // Footer Section
       doc.moveDown();
-      doc.fontSize(12).text('This is an auto-generated report.', { align: 'center' });
+      doc
+        .fontSize(12)
+        .text("This is an auto-generated report.", { align: "center" });
 
       // Finalize the PDF and end the stream
       doc.end();
 
       console.log(`PDF saved to ${pdfFilePath}`);
-      result(null, { message: 'PDF generated successfully', path: pdfFilePath });
-
+      result(null, {
+        message: "PDF generated successfully",
+        path: pdfFilePath,
+      });
     } else {
       console.log(`No payment records found for ID: ${id}`);
       result(404, { error: "No payment record found." });
     }
   });
 };
-
-
-
-
 
 General.cekFunction = async (schoolId, result) => {
   const affiliateQuery = `SELECT SUM(amount) as amount FROM affiliate WHERE user_id = ?`;

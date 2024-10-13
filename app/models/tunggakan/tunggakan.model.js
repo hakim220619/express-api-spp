@@ -19,11 +19,14 @@ Tunggakan.listTunggakan = (dataAll, result) => {
     p.status,
     p.amount,
     u.full_name,
+    u.nisn,
     c.class_name,
     m.major_name,
     sp.sp_name,
     ut.unit_name,
     p.unit_id,
+    s.school_name,
+    s.address as school_address,
 
     -- Aggregating amounts from the payment table
     SUM(CASE WHEN p.status = 'Pending' THEN p.amount ELSE 0 END) AS pending,
@@ -116,7 +119,9 @@ JOIN
 JOIN
     unit ut ON p.unit_id = ut.id
 JOIN
-    setting_payment sp ON p.setting_payment_uid = sp.uid `;
+    school s ON p.school_id = s.id
+JOIN
+    setting_payment sp ON p.setting_payment_uid = sp.uid`;
 
   if (dataAll.sp_name) {
     query += ` AND sp.sp_name like '%${dataAll.sp_name}%'`;
@@ -132,7 +137,7 @@ JOIN
   }
 
   query += `GROUP BY p.setting_payment_uid ORDER BY p.type DESC`;
-console.log(query);
+// console.log(query);
 
   db.query(query, (err, res) => {
     if (err) {

@@ -2,6 +2,7 @@ const Ppdb = require("../../models/ppdb/ppdb.model.js");
 const { v4: uuidv4 } = require("uuid");
 const bcrypt = require("bcrypt");
 const multer = require("multer");
+const { NULL } = require("mysql/lib/protocol/constants/types.js");
 const upload = multer();
 
 // Retrieve all Admins from the database with conditions
@@ -118,21 +119,23 @@ exports.sendDataSiswaBaruAll = [
         father_birth_year: fatherBirthYear,
         father_education: fatherEducation,
         father_job: fatherJob,
-        father_income: parseInt(fatherIncome.replace(/[Rp.]/g, ''), 10),
+        father_income: parseInt(fatherIncome.replace(/[Rp.]/g, ""), 10),
         mother_name: motherName,
         mother_nik: motherNik,
         mother_birth_year: motherBirthYear,
         mother_education: motherEducation,
         mother_job: motherJob,
-        mother_income: parseInt(motherIncome.replace(/[Rp.]/g, ''), 10) ,
-        guardian_name: guardianName,
-        guardian_nik: guardianNik,
-        guardian_birth_year: guardianBirthYear,
-        guardian_education: guardianEducation,
-        guardian_job: guardianJob,
-        guardian_income: guardianIncome ? 
-    (isNaN(parseInt(guardianIncome.replace(/[Rp.]/g, ''), 10)) ? null : parseInt(guardianIncome.replace(/[Rp.]/g, ''), 10))
-    : null,
+        mother_income: parseInt(motherIncome.replace(/[Rp.]/g, ""), 10),
+        guardian_name: guardianName === undefined ? '' : guardianName,
+        guardian_nik: guardianNik === undefined ? '' : guardianNik,
+        guardian_birth_year: guardianBirthYear === undefined ? '' : guardianBirthYear,
+        guardian_education: guardianEducation === undefined ? '' : guardianEducation,
+        guardian_job: guardianJob === undefined ? '' : guardianJob,
+        guardian_income: guardianIncome
+          ? isNaN(parseInt(guardianIncome.replace(/[Rp.]/g, ""), 10))
+            ? null
+            : parseInt(guardianIncome.replace(/[Rp.]/g, ""), 10)
+          : null,
 
         created_at: new Date(),
       };
@@ -142,7 +145,8 @@ exports.sendDataSiswaBaruAll = [
         if (err) {
           return res.status(500).send({
             message:
-              err.message || "Some error occurred while saving the student data.",
+              err.message ||
+              "Some error occurred while saving the student data.",
           });
         } else {
           res.send(data);
@@ -234,7 +238,7 @@ exports.detailSiswaBaru = (req, res, next) => {
 };
 exports.detailCalonSiswaBaru = (req, res, next) => {
   const id = req.body.uid;
-console.log(id);
+  console.log(id);
 
   Ppdb.detailCalonSiswaBaru(id, (err, data) => {
     if (err)

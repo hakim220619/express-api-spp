@@ -106,6 +106,76 @@ exports.getTotalPembayaranBebas = (req, res, next) => {
     }
   );
 };
+exports.getTotalPaymentThisDay = (req, res, next) => {
+  const school_id = req.query.school_id;
+
+  Dashboard.getTotalPaymentThisDay(
+    school_id,
+    (err, data) => {
+      if (err)
+        res.status(500).send({
+          message: err.message || "Some error occurred while retrieving Data.",
+        });
+      else res.send(data);
+    }
+  );
+};
+exports.getTotalPaymentThisWeek = (req, res, next) => {
+  const school_id = req.query.school_id;
+
+  Dashboard.getTotalPaymentThisWeek(
+    school_id,
+    (err, data) => {
+      if (err)
+        res.status(500).send({
+          message: err.message || "Some error occurred while retrieving Data.",
+        });
+      else res.send(data);
+    }
+  );
+};
+exports.getTotalPaymentThisMonth = (req, res, next) => {
+  const school_id = req.query.school_id;
+
+  Dashboard.getTotalPaymentThisMonth(
+    school_id,
+    (err, data) => {
+      if (err)
+        res.status(500).send({
+          message: err.message || "Some error occurred while retrieving Data.",
+        });
+      else res.send(data);
+    }
+  );
+};
+exports.getTotalPaymentThisYears = (req, res, next) => {
+  const school_id = req.query.school_id;
+
+  Dashboard.getTotalPaymentThisYears(
+    school_id,
+    (err, data) => {
+      if (err)
+        res.status(500).send({
+          message: err.message || "Some error occurred while retrieving Data.",
+        });
+      else res.send(data);
+    }
+  );
+};
+exports.getTotalLoginMmLogs = (req, res, next) => {
+  const school_id = req.query.school_id;
+
+  Dashboard.getTotalLoginMmLogs(
+    school_id,
+    (err, data) => {
+      if (err)
+        res.status(500).send({
+          message: err.message || "Some error occurred while retrieving Data.",
+        });
+      else res.send(data);
+    }
+  );
+};
 exports.getTotalTunggakanBulanan = (req, res, next) => {
   const school_id = req.query.school_id;
 
@@ -138,6 +208,20 @@ exports.getSaldoBySchool = (req, res, next) => {
   const school_id = req.query.school_id;
 
   Dashboard.getSaldoBySchool(
+    school_id,
+    (err, data) => {
+      if (err)
+        res.status(500).send({
+          message: err.message || "Some error occurred while retrieving Data.",
+        });
+      else res.send(data);
+    }
+  );
+};
+exports.getTransaksiAffiliateBySchool = (req, res, next) => {
+  const school_id = req.query.school_id;
+
+  Dashboard.getTransaksiAffiliateBySchool(
     school_id,
     (err, data) => {
       if (err)

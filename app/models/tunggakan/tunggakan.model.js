@@ -288,7 +288,7 @@ db.query(query, (err, res) => {
       return;
     }
   
-    let totalTunggakan = 0;  // Initialize totalTunggakan with let to accumulate the values
+    let totalTunggakan = 0;  
   
     // Loop through each row in the result set
     res.forEach(row => {

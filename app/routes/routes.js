@@ -116,8 +116,14 @@ module.exports = (app) => {
   router.get("/get-total-tunggakan-bulanan", token.authenticateToken, Dashboard.getTotalTunggakanBulanan);
   router.get("/get-total-tunggakan-bebas", token.authenticateToken, Dashboard.getTotalTunggakanBebas);
   router.get("/get-saldo-bySchool", token.authenticateToken, Dashboard.getSaldoBySchool);
+  router.get("/get-transaski-affiliate-bySchool", token.authenticateToken, Dashboard.getTransaksiAffiliateBySchool);
   router.get("/get-total-tunggakan-bulanan-bySiswa", token.authenticateToken, Dashboard.getTotalTunggakanBulananBySiswa);
   router.get("/get-total-tunggakan-free-bySiswa", token.authenticateToken, Dashboard.getTotalTunggakanFreeBySiswa);
+  router.get("/get-total-payment-this-day", token.authenticateToken, Dashboard.getTotalPaymentThisDay);
+  router.get("/get-total-payment-this-week", token.authenticateToken, Dashboard.getTotalPaymentThisWeek);
+  router.get("/get-total-payment-this-month", token.authenticateToken, Dashboard.getTotalPaymentThisMonth);
+  router.get("/get-total-payment-this-years", token.authenticateToken, Dashboard.getTotalPaymentThisYears);
+  router.get("/get-total-login-mmLogs", token.authenticateToken, Dashboard.getTotalLoginMmLogs);
   //Pembayaran
   router.get("/list-payment-pay-byMonth", token.authenticateToken, Pembayaran.listPembayaranPayByMonth);
   router.get("/list-payment-pay-byFree", token.authenticateToken, Pembayaran.listPembayaranPayByFree);

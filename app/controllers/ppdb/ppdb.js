@@ -2,8 +2,34 @@ const Ppdb = require("../../models/ppdb/ppdb.model.js");
 const { v4: uuidv4 } = require("uuid");
 const bcrypt = require("bcrypt");
 const multer = require("multer");
-const { NULL } = require("mysql/lib/protocol/constants/types.js");
-const upload = multer();
+const path = require("path");
+const fs = require("fs");
+
+const baseUploadDir = "uploads/school/siswa_baru";
+if (!fs.existsSync(baseUploadDir)) {
+  fs.mkdirSync(baseUploadDir, { recursive: true });
+}
+
+// Multer setup for file uploads
+const storage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    const schoolId = req.body.school_id; // Get the school ID from the request body
+    const uploadPath = path.join(baseUploadDir, schoolId.toString()); // Construct the folder path
+
+    // Ensure the specific school directory exists
+    if (!fs.existsSync(uploadPath)) {
+      fs.mkdirSync(uploadPath, { recursive: true });
+      console.log(`Directory created: ${uploadPath}`);
+    }
+
+    cb(null, uploadPath); // Callback with the destination folder
+  },
+  filename: function (req, file, cb) {
+    cb(null, `${uuidv4()}${path.extname(file.originalname)}`); // Rename file with a unique identifier
+  },
+});
+
+const upload = multer({ storage: storage });
 
 // Retrieve all Admins from the database with conditions
 exports.listPpdb = (req, res, next) => {
@@ -19,9 +45,14 @@ exports.listPpdb = (req, res, next) => {
   });
 };
 
-// Create new Admin
+
 exports.sendDataSiswaBaruAll = [
-  upload.none(),
+  upload.fields([
+    { name: 'kartuKeluarga', maxCount: 1 },
+    { name: 'akteLahir', maxCount: 1 },
+    { name: 'ktpOrangtua', maxCount: 1 },
+    { name: 'ijasah', maxCount: 1 },
+  ]),
   async (req, res) => {
     // Validate request
     if (!req.body) {
@@ -80,6 +111,14 @@ exports.sendDataSiswaBaruAll = [
       guardianJob,
       guardianIncome,
     } = req.body;
+console.log(req.body);
+
+    // Extract file paths from multer
+    const files = req.files;
+    const kartuKeluarga = files.kartuKeluarga ? files.kartuKeluarga[0].path : null;
+    const akteLahir = files.akteLahir ? files.akteLahir[0].path : null;
+    const ktpOrangtua = files.ktpOrangtua ? files.ktpOrangtua[0].path : null;
+    const ijasah = files.ijasah ? files.ijasah[0].path : null;
 
     try {
       // Create a new student data object
@@ -126,19 +165,24 @@ exports.sendDataSiswaBaruAll = [
         mother_education: motherEducation,
         mother_job: motherJob,
         mother_income: parseInt(motherIncome.replace(/[Rp.]/g, ""), 10),
-        guardian_name: guardianName === undefined ? '' : guardianName,
-        guardian_nik: guardianNik === undefined ? '' : guardianNik,
-        guardian_birth_year: guardianBirthYear === undefined ? '' : guardianBirthYear,
-        guardian_education: guardianEducation === undefined ? '' : guardianEducation,
-        guardian_job: guardianJob === undefined ? '' : guardianJob,
+        guardian_name: guardianName === 'undefined' ? '' : guardianName,
+        guardian_nik: guardianNik === 'undefined' ? '' : guardianNik,
+        guardian_birth_year: guardianBirthYear === 'undefined' ? '' : guardianBirthYear,
+        guardian_education: guardianEducation === 'undefined' ? '' : guardianEducation,
+        guardian_job: guardianJob === 'undefined' ? '' : guardianJob,
         guardian_income: guardianIncome
           ? isNaN(parseInt(guardianIncome.replace(/[Rp.]/g, ""), 10))
             ? null
             : parseInt(guardianIncome.replace(/[Rp.]/g, ""), 10)
           : null,
-
         created_at: new Date(),
       };
+
+      // Only add document paths if they are not null
+      if (kartuKeluarga) studentData.kartu_keluarga = kartuKeluarga;
+      if (akteLahir) studentData.akte_lahir = akteLahir;
+      if (ktpOrangtua) studentData.ktp_orangtua = ktpOrangtua;
+      if (ijasah) studentData.ijasah = ijasah;
 
       // Save the student data to the database
       Ppdb.sendDataSiswaBaruAll(studentData, (err, data) => {
@@ -157,6 +201,8 @@ exports.sendDataSiswaBaruAll = [
     }
   },
 ];
+
+
 
 // Update existing Admin
 exports.updatePpdb = [

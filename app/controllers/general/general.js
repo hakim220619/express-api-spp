@@ -123,7 +123,7 @@ exports.getListPayment = (req, res, next) => {
 exports.getActivityBySchoolId = (req, res, next) => {
   const school_id = req.query.school_id
   General.getActivityBySchoolId(school_id, (err, data) => {
-    console.log(data);
+    // console.log(data);
     
     if (err)
       res.status(500).send({

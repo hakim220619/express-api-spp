@@ -57,6 +57,7 @@ module.exports = (app) => {
   router.post("/detailSiswaBaru", Ppdb.detailSiswaBaru);
   router.post("/detailCalonSiswaBaru", token.authenticateToken, Ppdb.detailCalonSiswaBaru);
   router.post("/verifikasi-siswa-baru", token.authenticateToken, Ppdb.verifikasiSiswaBaru);
+  router.post("/terima-siswa-baru", token.authenticateToken, Ppdb.terimaSiswaBaru);
   router.post("/sendDataSiswaBaruAll", token.authenticateToken, Ppdb.sendDataSiswaBaruAll);
   //kelas
   router.get("/list-kelas", token.authenticateToken, Kelas.listKelas);
@@ -187,37 +188,7 @@ module.exports = (app) => {
   router.get("/getPdfByIdPaymentMonth", token.authenticateToken, general.getPdfByIdPaymentMonth);
   router.get("/getUnits", general.getUnit);
 
-
-
   router.get("/cekFunction", general.cekFunction);
-
-  //Anggota
-  // router.get("/list-anggota", token.authenticateToken, Anggota.listAnggota);
-  // router.get("/list-anggota-verification", token.authenticateToken, Anggota.listAnggotaVerification);
-  // router.post("/create-anggota", token.authenticateToken, Anggota.createAnggota);
-  // router.post("/create-anggota-verification", token.authenticateToken, Anggota.createAnggotaVerification);
-  // router.post("/update-anggota", token.authenticateToken, Anggota.updateAnggota);
-  // router.post("/update-anggota-accept", token.authenticateToken, Anggota.updateAnggotaAccept);
-  // router.post("/update-anggota-rejected", token.authenticateToken, Anggota.updateAnggotaRejected);
-  // router.post("/delete-anggota", token.authenticateToken, Anggota.delete);
-
-  // //Identity
-  // router.get("/get-identity-types", token.authenticateToken, general.getIdentityTypes);
-
-  // // Retrieve all Tutorials
-  // router.get("/users/findAll", token.authenticateToken, profile.findAll);
-  // router.get("/general/getRoleAdmin", token.authenticateToken, general.roleAdmin);
-  // router.post("/general/getRoleNoDeve", token.authenticateToken, general.getRoleNoDeve);
-  // router.post("/general/getCompany", token.authenticateToken, general.getCompany);
-  // router.get("/general/getStatus", token.authenticateToken, general.getstatus);
-  // router.get("/general/getReligion", token.authenticateToken, general.getReligion);
-  // router.get("/general/getWorking", token.authenticateToken, general.getWorking);
-  // router.get("/general/getMaritalStatus", token.authenticateToken, general.getMaritalStatus);
-  // router.post(
-  //   "/general/findUsersByUid",
-  //   token.authenticateToken,
-  //   general.findUsersByUid
-  // );
   router.get("/faker/generate", general.generate);
 
   app.use("/api", router);

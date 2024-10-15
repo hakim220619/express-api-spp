@@ -289,6 +289,85 @@ Ppdb.verifikasiSiswaBaru = async (id, result) => {
     result(null, error);
   }
 };
+Ppdb.terimaSiswaBaru = async (id, result) => {
+  try {
+    // Step 1: Select the student by id to get date_of_birth and nik
+    let selectQuery = "SELECT * FROM calon_siswa WHERE id = ?";
+    
+    db.query(selectQuery, [id], async (err, res) => {
+      if (err) {
+        console.log("Error while selecting student: ", err);
+        result(null, err);
+        return;
+      }
+
+      if (res.length === 0) {
+        console.log("Student not found with id: ", id);
+        result({ message: "Student not found" }, null);
+        return;
+      }
+      // Step 7: Update username and hashed password for the student with the given id
+      let updateQuery = "UPDATE calon_siswa SET status = ? WHERE id = ?";
+      
+      db.query(updateQuery, ['Accepted', id], (updateErr, updateRes) => {
+        if (updateErr) {
+          console.log("Error while updating student: ", updateErr);
+          result(null, updateErr);
+          return;
+        }
+        // db.query(
+        //   `SELECT tm.*, a.urlWa, a.token_whatsapp, a.sender 
+        //    FROM template_message tm, aplikasi a 
+        //    WHERE tm.school_id=a.school_id 
+        //    AND tm.deskripsi LIKE '%verifikasiSiswa%'  
+        //    AND tm.school_id = ?`,
+        //   [school_id],
+        //   (err, queryRes) => {
+        //     if (err) {
+        //       console.log("Query error: ", err);
+        //       result(err, null);
+        //       return;
+        //     }
+
+        //     if (queryRes.length > 0) {
+        //       const {
+        //         urlWa: url,
+        //         token_whatsapp: token,
+        //         sender,
+        //         message: template_message,
+        //       } = queryRes[0];
+
+        //       // Data to replace in the template message
+        //       const replacements = {
+        //         username: username,
+        //         password: randomPassword,
+        //         tanggal_lahir: tahun + '-' + bulan + '-' + tanggal,
+        //         nik: nik,
+        //       };
+
+        //       // Replace placeholders in the template_message
+        //       const formattedMessage = template_message.replace(
+        //         /\$\{(\w+)\}/g,
+        //         (_, key) => {
+        //           return replacements[key] || "";
+        //         }
+        //       );
+        //       // Send message after creating the payment
+        //       sendMessage(url, token, phone, formattedMessage);
+        //     }
+        //   }
+        // );
+        // Optionally, return the updated student data or a success message
+        result(null, {
+          message: "Student updated successfully",
+        });
+      });
+    });
+  } catch (error) {
+    console.log("Error in verification process: ", error);
+    result(null, error);
+  }
+};
 
 
 module.exports = Ppdb;

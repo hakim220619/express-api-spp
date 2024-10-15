@@ -306,3 +306,14 @@ exports.verifikasiSiswaBaru = (req, res, next) => {
     else res.send(data);
   });
 };
+exports.terimaSiswaBaru = (req, res, next) => {
+  const id = req.body.id;
+  Ppdb.terimaSiswaBaru(id, (err, data) => {
+    if (err)
+      res.status(500).send({
+        message:
+          err.message || "Some error occurred while retrieving tutorials.",
+      });
+    else res.send(data);
+  });
+};

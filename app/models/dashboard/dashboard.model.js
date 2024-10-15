@@ -390,8 +390,7 @@ Dashboard.getTotalPembayaranBebas = async (schoolId, result) => {
 };
 Dashboard.getTotalPaymentThisDay = async (schoolId, result) => {
   // Siapkan query dasar
-  let query =
-    `SELECT 
+  let query = `SELECT 
     SUM(pd.amount) AS amount, 
     (SELECT SUM(pp.amount) 
      FROM payment pp 
@@ -434,9 +433,8 @@ Dashboard.getTotalPaymentThisWeek = async (schoolId, result) => {
   if (schoolId) {
     query += `AND p.school_id = '${schoolId}' `;
   }
-  query += `AND YEARWEEK(pd.created_at, 1) = YEARWEEK(CURDATE(), 1)`
+  query += `AND YEARWEEK(pd.created_at, 1) = YEARWEEK(CURDATE(), 1)`;
   // console.log(query);
-  
 
   // Eksekusi query dengan atau tanpa parameter schoolId
   db.query(query, [schoolId], (err, res) => {
@@ -474,7 +472,6 @@ AND YEAR(pd.created_at) = YEAR(CURDATE())`;
   }
 
   // console.log(query);
-  
 
   // Eksekusi query dengan atau tanpa parameter schoolId
   db.query(query, [schoolId], (err, res) => {
@@ -510,7 +507,6 @@ AND YEAR(pd.created_at) = YEAR(CURDATE())`;
   }
 
   // console.log(query);
-  
 
   // Eksekusi query dengan atau tanpa parameter schoolId
   db.query(query, [schoolId], (err, res) => {
@@ -525,7 +521,6 @@ AND YEAR(pd.created_at) = YEAR(CURDATE())`;
   });
 };
 Dashboard.getTotalLoginMmLogs = async (schoolId, result) => {
-  // Siapkan query dasar
   let query = `SELECT 
     CASE 
         WHEN TIME(created_at) < '12:00:00' THEN 'Sebelum 12 siang'
@@ -536,15 +531,11 @@ FROM mm_logs
 WHERE detail LIKE '%Login%'
 `;
 
-  // Jika schoolId ada, tambahkan filter berdasarkan school_id
   if (schoolId) {
     query += `AND school_id = '${schoolId}' `;
   }
-query += `GROUP BY waktu`
-  console.log(query);
-  
+  query += `GROUP BY waktu`;
 
-  // Eksekusi query dengan atau tanpa parameter schoolId
   db.query(query, [schoolId], (err, res) => {
     if (err) {
       console.log("Error: ", err);
@@ -552,21 +543,16 @@ query += `GROUP BY waktu`
       return;
     }
 
-    // Kembalikan hasil query
     result(null, res);
   });
 };
 Dashboard.getTotalTunggakanBulanan = async (schoolId, result) => {
-  // Siapkan query dasar
   let query =
     "SELECT SUM(amount) as amount, school_id FROM payment WHERE status in ('Pending', 'Verified')";
-
-  // Jika schoolId ada, tambahkan filter berdasarkan school_id
   if (schoolId) {
     query += " AND school_id = ?";
   }
 
-  // Eksekusi query dengan atau tanpa parameter schoolId
   db.query(query, [schoolId], (err, res) => {
     if (err) {
       console.log("Error: ", err);
@@ -574,42 +560,34 @@ Dashboard.getTotalTunggakanBulanan = async (schoolId, result) => {
       return;
     }
 
-    // Kembalikan hasil query
     result(null, res[0]);
   });
 };
 Dashboard.getTotalTunggakanBebas = async (schoolId, result) => {
-  // Siapkan query dasar
-  let query =
-    `SELECT SUM(pd.amount) as amount, (SELECT SUM(pp.amount) FROM payment pp WHERE pp.type = 'BEBAS' AND pp.status = 'Pending' AND pp.school_id = '${schoolId}') as total_payment, p.school_id FROM payment_detail pd, payment p WHERE pd.payment_id=p.uid AND pd.status = 'Paid'`;
-
-  // Jika schoolId ada, tambahkan filter berdasarkan school_id
+  let query = `SELECT SUM(pd.amount) as amount, (SELECT SUM(pp.amount) FROM payment pp WHERE pp.type = 'BEBAS' AND pp.status = 'Pending' AND pp.school_id = '${schoolId}') as total_payment, p.school_id FROM payment_detail pd, payment p WHERE pd.payment_id=p.uid AND pd.status = 'Paid'`;
   if (schoolId) {
     query += ` AND p.school_id = '${schoolId}'`;
   }
-  // console.log(query);
+
   db.query(query, [schoolId], (err, res) => {
     if (err) {
       console.log("Error: ", err);
       result(null, err);
       return;
     }
-
-    // Kembalikan hasil query
+    
     result(null, res[0]);
   });
 };
+
 Dashboard.getSaldoBySchool = async (schoolId, result) => {
-  // Siapkan query dasar
   let query =
     "SELECT balance, id FROM school WHERE status = 'ON' AND id != '0'";
 
-  // Jika schoolId ada, tambahkan filter berdasarkan school_id
   if (schoolId) {
     query += " AND id = ?";
   }
 
-  // Eksekusi query dengan atau tanpa parameter schoolId
   db.query(query, [schoolId], (err, res) => {
     if (err) {
       console.log("Error: ", err);
@@ -617,14 +595,12 @@ Dashboard.getSaldoBySchool = async (schoolId, result) => {
       return;
     }
 
-    // Kembalikan hasil query
     result(null, res[0]);
   });
 };
 Dashboard.getTransaksiAffiliateBySchool = async (schoolId, result) => {
   // Siapkan query dasar
-  let query =
-    "SELECT COUNT(id) as total FROM payment_transactions WHERE 1=1 ";
+  let query = "SELECT COUNT(id) as total FROM payment_transactions WHERE 1=1 ";
 
   // Jika schoolId ada, tambahkan filter berdasarkan school_id
   if (schoolId) {

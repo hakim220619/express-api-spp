@@ -187,6 +187,9 @@ module.exports = (app) => {
   router.get("/getMenuActive", token.authenticateToken, general.getMenuActive);
   router.get("/getPdfByIdPaymentMonth", token.authenticateToken, general.getPdfByIdPaymentMonth);
   router.get("/getUnits", general.getUnit);
+  router.post("/forgot-password", general.forgetPassword);
+  router.post("/reset-new-password", general.resetNewPassword);
+  router.post("/new-password-all",  token.authenticateToken, general.newPasswordAll);
 
   router.get("/cekFunction", general.cekFunction);
   router.get("/faker/generate", general.generate);

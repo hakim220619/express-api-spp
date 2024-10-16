@@ -133,6 +133,45 @@ exports.getActivityBySchoolId = (req, res, next) => {
     else res.send(data);
   });
 };
+exports.forgetPassword = (req, res, next) => {
+  const emailOrWhatsapp = req.body.emailOrWhatsapp
+  General.forgetPassword(emailOrWhatsapp, (err, data) => {
+    console.log(err);
+    
+    if (err)
+      res.status(500).send({
+        message:
+          err.message || "Some error occurred while retrieving tutorials.",
+      });
+    else res.send(data);
+  });
+};
+exports.resetNewPassword = (req, res, next) => {
+  const id = req.body.id
+  const newPassword = req.body.newPassword
+  General.resetNewPassword(id, newPassword, (err, data) => {
+    
+    if (err)
+      res.status(500).send({
+        message:
+          err.message || "Some error occurred while retrieving tutorials.",
+      });
+    else res.send(data);
+  });
+};
+exports.newPasswordAll = (req, res, next) => {
+  const id = req.body.uid
+  const newPassword = req.body.password
+  General.newPasswordAll(id, newPassword, (err, data) => {
+    
+    if (err)
+      res.status(500).send({
+        message:
+          err.message || "Some error occurred while retrieving tutorials.",
+      });
+    else res.send(data);
+  });
+};
 exports.sendMessageBroadcast = (req, res, next) => {
   const dataUsers = req.body.dataUsers
   const message = req.body.message

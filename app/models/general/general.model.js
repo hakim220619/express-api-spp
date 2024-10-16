@@ -1,5 +1,7 @@
 const db = require("../../config/db.config");
 const axios = require("axios");
+const crypto = require("crypto"); // Import crypto untuk membuat token yang aman
+
 const {
   sendMessage,
   formatRupiah,
@@ -136,6 +138,234 @@ General.getActivityBySchoolId = async (school_id, result) => {
     result(null, res);
   });
 };
+
+General.forgetPassword = async (emailOrWhatsapp, result) => {
+  if (!emailOrWhatsapp) {
+    result(null, {
+      message: "Invalid input: email or phone number is required",
+    });
+    return;
+  }
+
+  const Newtoken = crypto.randomBytes(60).toString("hex"); // 30 bytes menghasilkan 60 karakter hex
+  const createdAt = new Date();
+
+  // Jika input adalah nomor telepon dan dimulai dengan '08', ubah ke format internasional '62'
+  if (!emailOrWhatsapp.includes("@") && emailOrWhatsapp.startsWith("08")) {
+    emailOrWhatsapp = "62" + emailOrWhatsapp.slice(1);
+  }
+
+  // Query untuk memeriksa apakah email atau nomor telepon ada di tabel users
+  let checkQuery;
+  let checkValues;
+
+  if (emailOrWhatsapp.includes("@")) {
+    // Jika input adalah email
+    checkQuery = `SELECT u.full_name, u.role, u.email, u.phone, u.school_id, s.school_name FROM users u, school s WHERE u.school_id=s.id and  u.email = ?`;
+    checkValues = [emailOrWhatsapp];
+  } else {
+    // Jika input adalah nomor telepon
+    checkQuery = `SELECT u.full_name, u.role, u.phone, u.school_id, s.school_name FROM users u, school s WHERE u.school_id=s.id and u.phone = ?`;
+    checkValues = [emailOrWhatsapp];
+  }
+
+  // Mengeksekusi query untuk memeriksa apakah user ada
+  db.query(checkQuery, checkValues, (checkErr, checkRes) => {
+    if (checkErr) {
+      console.log("Error checking user: ", checkErr);
+      result({
+        error: true,
+        message: "Error checking user",
+        details: checkErr,
+      });
+      return;
+    }
+
+    // Jika user tidak ditemukan
+    if (checkRes.length === 0) {
+      result({ error: true, message: "User not found" });
+      return;
+    }
+
+    // Jika user ditemukan, lanjutkan untuk menyimpan token reset password
+    let insertQuery;
+    let values;
+
+    if (emailOrWhatsapp.includes("@")) {
+      insertQuery = `INSERT INTO password_reset_tokens (email, token, created_at) VALUES (?, ?, ?)`;
+      values = [emailOrWhatsapp, Newtoken, createdAt];
+    } else {
+      insertQuery = `INSERT INTO password_reset_tokens (phone, token, created_at) VALUES (?, ?, ?)`;
+      values = [emailOrWhatsapp, Newtoken, createdAt];
+    }
+
+    // Eksekusi query untuk menyimpan token
+    db.query(insertQuery, values, (insertErr, insertRes) => {
+      if (insertErr) {
+        console.log("Error inserting token: ", insertErr);
+        result(null, insertErr);
+        return;
+      }
+      db.query(
+        `SELECT tm.*, a.urlWa, a.token_whatsapp, a.sender 
+             FROM template_message tm, aplikasi a 
+             WHERE tm.school_id=a.school_id 
+             AND tm.deskripsi like '%sendTokenForgotPassword%'  
+             AND tm.school_id = '${checkRes[0].school_id}'`,
+        (err, queryRes) => {
+          if (err) {
+            console.error(
+              "Error fetching template and WhatsApp details: ",
+              err
+            );
+          } else {
+            console.log(checkRes[0].school_id);
+            
+            // Ambil url, token dan informasi pengirim dari query result
+            const {
+              urlWa: url,
+              token_whatsapp: token,
+              sender,
+              message: template_message,
+            } = queryRes[0];
+
+            // Data yang ingin diganti dalam template_message
+            let replacements = {
+              nama_sekolah: checkRes[0].school_name,
+              token: Newtoken,
+              baseUrl:
+                process.env.NODE_ENV === "production"
+                  ? "https://ypphbanjarbaru.sppapp.com"
+                  : "http://localhost:3001",
+            };
+
+            // Fungsi untuk menggantikan setiap placeholder di template
+            const formattedMessage = template_message.replace(
+              /\$\{(\w+)\}/g,
+              (_, key) => replacements[key] || ""
+            );
+
+            // Output hasil format pesan untuk debugging
+            // console.log(formattedMessage);
+
+            // Mengirim pesan setelah semua data pembayaran diperbarui
+            sendMessage(url, token, checkRes[0].phone, formattedMessage);
+          }
+        }
+      );
+      // Token berhasil disimpan
+      result(null, { message: "Password reset token created", Newtoken });
+    });
+  });
+};
+
+const bcrypt = require("bcrypt"); // Jika ingin menggunakan bcrypt untuk enkripsi password
+
+General.resetNewPassword = async (id, newPassword, result) => {
+  try {
+    // Query untuk memeriksa token dan mendapatkan email atau phone
+    const tokenQuery =
+      "SELECT email, phone FROM password_reset_tokens WHERE token = ?";
+
+    // Mengeksekusi query untuk mendapatkan email/phone berdasarkan token
+    db.query(tokenQuery, [id], (tokenErr, tokenRes) => {
+      if (tokenErr) {
+        console.log("Error: ", tokenErr);
+        return result({ error: true, message: "An error occurred", details: tokenErr });
+      }
+
+      if (tokenRes.length === 0) {
+        return result({ error: true, message: "Invalid or expired token" });
+      }
+
+      const { email, phone } = tokenRes[0];
+
+      // Query untuk memeriksa apakah user dengan email atau phone ini ada
+      const checkQuery = "SELECT * FROM users WHERE email = ? OR phone = ?";
+      db.query(checkQuery, [email, phone], (checkErr, checkRes) => {
+        if (checkErr) {
+          console.log("Error: ", checkErr);
+          return result({ error: true, message: "An error occurred", details: checkErr });
+        }
+
+        if (checkRes.length === 0) {
+          return result({ error: true, message: "User not found" });
+        }
+
+        // Enkripsi password (opsional)
+        bcrypt.hash(newPassword, 10, (hashErr, hashedPassword) => {
+          if (hashErr) {
+            console.log("Error: ", hashErr);
+            return result({ error: true, message: "An error occurred", details: hashErr });
+          }
+
+          // Jika user ditemukan, reset password
+          const updateQuery =
+            "UPDATE users SET password = ? WHERE email = ? OR phone = ?";
+          db.query(updateQuery, [hashedPassword, email, phone], (updateErr, updateRes) => {
+            if (updateErr) {
+              console.log("Error: ", updateErr);
+              return result({ error: true, message: "An error occurred", details: updateErr });
+            }
+
+            return result(null, { success: true, message: "Password reset successful" });
+          });
+        });
+      });
+    });
+  } catch (error) {
+    console.log("Error: ", error);
+    return result({
+      error: true,
+      message: "An error occurred",
+      details: error,
+    });
+  }
+};
+
+
+General.newPasswordAll = async (id, newPassword, result) => {
+  try {
+    console.log(id);
+    
+    // Asumsikan `id` adalah user ID yang unik, jadi pertama kita dapatkan `email` atau `phone` berdasarkan `id`.
+    const getUserQuery = "SELECT * FROM users WHERE uid = ?";
+    db.query(getUserQuery, id, (getUserErr, getUserRes) => {
+      if (getUserErr) {
+        console.log("Error: ", getUserErr);
+        return result({ error: true, message: "An error occurred", details: getUserErr });
+      }
+
+      if (getUserRes.length === 0) {
+        return result({ error: true, message: "User not found" });
+      }
+
+      // Enkripsi password (opsional)
+      bcrypt.hash(newPassword, 10, (hashErr, hashedPassword) => {
+        if (hashErr) {
+          console.log("Error: ", hashErr);
+          return result({ error: true, message: "An error occurred while hashing password", details: hashErr });
+        }
+
+        // Jika user ditemukan, reset password
+        const updateQuery = "UPDATE users SET password = ? WHERE uid = ?";
+        db.query(updateQuery, [hashedPassword, id], (updateErr, updateRes) => {
+          if (updateErr) {
+            console.log("Error: ", updateErr);
+            return result({ error: true, message: "An error occurred during password update", details: updateErr });
+          }
+
+          return result(null, { success: true, message: "Password reset successful" });
+        });
+      });
+    });
+  } catch (err) {
+    console.log("Unexpected error: ", err);
+    return result({ error: true, message: "An unexpected error occurred", details: err });
+  }
+};
+
+
 
 General.sendMessageBroadcast = async (
   dataUsers,
@@ -733,7 +963,7 @@ General.cekTransaksiPaymentSiswaBaru = async (result) => {
                 throw new Error("No affiliates found");
               }
 
-              const newBalance = balance - (total_affiliate * rows.length);
+              const newBalance = balance - total_affiliate * rows.length;
               console.log(newBalance);
 
               // // Update school balance
@@ -744,7 +974,8 @@ General.cekTransaksiPaymentSiswaBaru = async (result) => {
 
               // Handle affiliate transactions
               affiliateRes.map(async (affiliate) => {
-                const totalByAff = affiliate.debit + (affiliate.amount * rows.length); // Adjust as necessary
+                const totalByAff =
+                  affiliate.debit + affiliate.amount * rows.length; // Adjust as necessary
 
                 // Update the debit in the database
                 await paymentConnection.query(

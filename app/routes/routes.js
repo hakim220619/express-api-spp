@@ -190,6 +190,7 @@ module.exports = (app) => {
   router.post("/forgot-password", general.forgetPassword);
   router.post("/reset-new-password", general.resetNewPassword);
   router.post("/new-password-all",  token.authenticateToken, general.newPasswordAll);
+  router.post("/send-messages",  token.authenticateToken, general.sendMessages);
 
   router.get("/cekFunction", general.cekFunction);
   router.get("/faker/generate", general.generate);

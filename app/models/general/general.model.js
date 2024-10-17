@@ -220,7 +220,7 @@ General.forgetPassword = async (emailOrWhatsapp, result) => {
             );
           } else {
             console.log(checkRes[0].school_id);
-            
+
             // Ambil url, token dan informasi pengirim dari query result
             const {
               urlWa: url,
@@ -271,7 +271,11 @@ General.resetNewPassword = async (id, newPassword, result) => {
     db.query(tokenQuery, [id], (tokenErr, tokenRes) => {
       if (tokenErr) {
         console.log("Error: ", tokenErr);
-        return result({ error: true, message: "An error occurred", details: tokenErr });
+        return result({
+          error: true,
+          message: "An error occurred",
+          details: tokenErr,
+        });
       }
 
       if (tokenRes.length === 0) {
@@ -285,7 +289,11 @@ General.resetNewPassword = async (id, newPassword, result) => {
       db.query(checkQuery, [email, phone], (checkErr, checkRes) => {
         if (checkErr) {
           console.log("Error: ", checkErr);
-          return result({ error: true, message: "An error occurred", details: checkErr });
+          return result({
+            error: true,
+            message: "An error occurred",
+            details: checkErr,
+          });
         }
 
         if (checkRes.length === 0) {
@@ -296,20 +304,35 @@ General.resetNewPassword = async (id, newPassword, result) => {
         bcrypt.hash(newPassword, 10, (hashErr, hashedPassword) => {
           if (hashErr) {
             console.log("Error: ", hashErr);
-            return result({ error: true, message: "An error occurred", details: hashErr });
+            return result({
+              error: true,
+              message: "An error occurred",
+              details: hashErr,
+            });
           }
 
           // Jika user ditemukan, reset password
           const updateQuery =
             "UPDATE users SET password = ? WHERE email = ? OR phone = ?";
-          db.query(updateQuery, [hashedPassword, email, phone], (updateErr, updateRes) => {
-            if (updateErr) {
-              console.log("Error: ", updateErr);
-              return result({ error: true, message: "An error occurred", details: updateErr });
-            }
+          db.query(
+            updateQuery,
+            [hashedPassword, email, phone],
+            (updateErr, updateRes) => {
+              if (updateErr) {
+                console.log("Error: ", updateErr);
+                return result({
+                  error: true,
+                  message: "An error occurred",
+                  details: updateErr,
+                });
+              }
 
-            return result(null, { success: true, message: "Password reset successful" });
-          });
+              return result(null, {
+                success: true,
+                message: "Password reset successful",
+              });
+            }
+          );
         });
       });
     });
@@ -323,17 +346,20 @@ General.resetNewPassword = async (id, newPassword, result) => {
   }
 };
 
-
 General.newPasswordAll = async (id, newPassword, result) => {
   try {
     console.log(id);
-    
+
     // Asumsikan `id` adalah user ID yang unik, jadi pertama kita dapatkan `email` atau `phone` berdasarkan `id`.
     const getUserQuery = "SELECT * FROM users WHERE uid = ?";
     db.query(getUserQuery, id, (getUserErr, getUserRes) => {
       if (getUserErr) {
         console.log("Error: ", getUserErr);
-        return result({ error: true, message: "An error occurred", details: getUserErr });
+        return result({
+          error: true,
+          message: "An error occurred",
+          details: getUserErr,
+        });
       }
 
       if (getUserRes.length === 0) {
@@ -344,7 +370,11 @@ General.newPasswordAll = async (id, newPassword, result) => {
       bcrypt.hash(newPassword, 10, (hashErr, hashedPassword) => {
         if (hashErr) {
           console.log("Error: ", hashErr);
-          return result({ error: true, message: "An error occurred while hashing password", details: hashErr });
+          return result({
+            error: true,
+            message: "An error occurred while hashing password",
+            details: hashErr,
+          });
         }
 
         // Jika user ditemukan, reset password
@@ -352,20 +382,139 @@ General.newPasswordAll = async (id, newPassword, result) => {
         db.query(updateQuery, [hashedPassword, id], (updateErr, updateRes) => {
           if (updateErr) {
             console.log("Error: ", updateErr);
-            return result({ error: true, message: "An error occurred during password update", details: updateErr });
+            return result({
+              error: true,
+              message: "An error occurred during password update",
+              details: updateErr,
+            });
           }
 
-          return result(null, { success: true, message: "Password reset successful" });
+          return result(null, {
+            success: true,
+            message: "Password reset successful",
+          });
         });
       });
     });
   } catch (err) {
     console.log("Unexpected error: ", err);
-    return result({ error: true, message: "An unexpected error occurred", details: err });
+    return result({
+      error: true,
+      message: "An unexpected error occurred",
+      details: err,
+    });
   }
 };
+General.sendMessages = async (message, phone, school_id, result) => {
+  try {
+    let failedMessages = [];
+    let successMessages = [];
 
+    try {
+      // Asumsikan sendMessage adalah fungsi async untuk mengirim pesan
+      const query = `
+          SELECT a.urlWa, a.token_whatsapp, a.sender 
+          FROM aplikasi a 
+          WHERE a.school_id = '${school_id}'`;
 
+      // Query ke database
+      const queryRes = await new Promise((resolve, reject) => {
+        db.query(query, (err, res) => {
+          if (err) return reject(err);
+          resolve(res);
+        });
+      });
+
+      if (queryRes && queryRes.length > 0) {
+        // Ambil url, token, dan informasi pengirim dari query result
+        const { urlWa: url, token_whatsapp: token, sender } = queryRes[0];
+
+        // Mengirim pesan setelah semua data pembayaran diperbarui
+        try {
+          await sendMessage(url, token, phone, message); // await untuk memastikan error ditangkap
+
+          console.log(
+            `Pesan berhasil dikirim ke: ${phone}, Message: ${message}`
+          );
+
+          const logData = {
+            school_id: school_id,
+            user_id: 1,
+            activity: "sendMessageBroadcast",
+            detail: `Pesan berhasil dikirim ke: ${phone}, Message: ${message}`,
+            action: "Insert",
+            status: 1,
+          };
+
+          // Insert log into mm_logs
+          insertMmLogs(logData);
+          successMessages.push(phone); // Menyimpan pesan yang berhasil
+        } catch (sendError) {
+          console.error(
+            `Gagal mengirim pesan ke: ${phone}, Error: ${sendError.message}`
+          );
+
+          const logData = {
+            school_id: school_id,
+            user_id: 1,
+            activity: "sendMessageTagihan",
+            detail: `Gagal mengirim pesan ke: ${phone}, Error: ${sendError.message}`,
+            action: "Insert",
+            status: 2,
+          };
+
+          // Insert log into mm_logs
+          insertMmLogs(logData);
+          failedMessages.push(phone); // Menyimpan pesan yang gagal
+        }
+      } else {
+        console.error(
+          "Tidak ada template pesan atau data WhatsApp yang ditemukan."
+        );
+        failedMessages.push(phone); // Menyimpan pesan yang gagal
+      }
+    } catch (error) {
+      console.error(`Error saat memproses user ${phone}: ${error.message}`);
+
+      const logData = {
+        school_id: school_id,
+        user_id: 1,
+        activity: "sendMessageBroadcast",
+        detail: `Gagal memproses user ${phone}, Error: ${error.message}`,
+        action: "Insert",
+        status: 2,
+      };
+
+      // Insert log into mm_logs
+      insertMmLogs(logData);
+      failedMessages.push(phone); // Menyimpan pesan yang gagal
+    }
+
+    // Kembalikan respons JSON berdasarkan status pengiriman
+    if (failedMessages.length > 0) {
+      result(null, {
+        status: "failed",
+        message: "Beberapa pesan gagal dikirim.",
+        failed: failedMessages,
+        success: successMessages,
+      });
+    } else {
+      result(null, {
+        status: "success",
+        message: "Semua pesan berhasil terkirim!",
+        success: successMessages,
+      });
+    }
+  } catch (err) {
+    // Jika ada kesalahan global
+    console.error("Terjadi kesalahan:", err);
+    result({
+      status: "error",
+      message: "Terjadi kesalahan saat mengirim pesan.",
+      error: err.message,
+    });
+  }
+};
 
 General.sendMessageBroadcast = async (
   dataUsers,

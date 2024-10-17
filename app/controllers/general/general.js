@@ -172,6 +172,22 @@ exports.newPasswordAll = (req, res, next) => {
     else res.send(data);
   });
 };
+exports.sendMessages = (req, res, next) => {
+  const message = req.body.message
+  const phone = req.body.phone
+  const school_id = req.body.school_id
+  console.log(req.body);
+  
+  General.sendMessages(message, phone,school_id, (err, data) => {
+    
+    if (err)
+      res.status(500).send({
+        message:
+          err.message || "Some error occurred while retrieving tutorials.",
+      });
+    else res.send(data);
+  });
+};
 exports.sendMessageBroadcast = (req, res, next) => {
   const dataUsers = req.body.dataUsers
   const message = req.body.message

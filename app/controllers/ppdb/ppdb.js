@@ -37,22 +37,20 @@ exports.createSettingPpdb = [
       // Validasi input request body
       const { school_id, unit_id, years, amount, status, address, url } = req.body;
 
+      // Validasi wajib untuk unit_id, years, dan amount
       if (!unit_id || !years || !amount) {
         return res.status(400).send({
           message: "unit_id, years, dan amount tidak boleh kosong!",
         });
       }
 
-      // Manipulasi URL untuk mengganti spasi menjadi tanda "-"
-      const sanitizedUrl = url ? url.replace(/\s+/g, '-') : null;
+      // Manipulasi URL: Mengganti spasi dengan tanda "-"
+      const sanitizedUrl = url ? url.trim().replace(/\s+/g, '-') : null;
 
       // Cek apakah ada file gambar yang diupload
-      let gambar = null;
-      if (req.file) {
-        gambar = req.file.filename; // Simpan nama file yang diupload
-      }
+      const gambar = req.file ? req.file.filename : null; // Simpan nama file jika ada
 
-      // Buat objek pengaturan PPDB baru dengan data input yang diterima
+      // Buat objek pengaturan PPDB baru
       const settingPpdb = {
         school_id,
         unit_id,
@@ -60,18 +58,17 @@ exports.createSettingPpdb = [
         amount,
         address,
         url: sanitizedUrl,
-        status: status || "ON", // Default ke "ON" jika tidak diisi
-        image: gambar, // Simpan nama file gambar (jika ada)
-        created_at: new Date(),
+        status: status || "ON", // Default status ke "ON" jika tidak diisi
+        image: gambar, // Gambar opsional
+        created_at: new Date(), // Timestamp saat data dibuat
       };
 
-      // Simpan pengaturan PPDB ke database
+      // Simpan data ke database menggunakan callback
       Ppdb.createSettingPpdb(settingPpdb, (err, data) => {
         if (err) {
           console.error("Error saat menyimpan ke database:", err);
           return res.status(500).send({
-            message:
-              err.message || "Terjadi kesalahan saat membuat pengaturan PPDB.",
+            message: err.message || "Terjadi kesalahan saat membuat pengaturan PPDB.",
           });
         }
         res.status(201).send({
@@ -85,6 +82,7 @@ exports.createSettingPpdb = [
     }
   },
 ];
+
 
 // Retrieve all Admins from the database with conditions
 exports.listPpdb = (req, res, next) => {

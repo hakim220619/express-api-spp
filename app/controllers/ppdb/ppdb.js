@@ -327,6 +327,19 @@ exports.delete = (req, res) => {
     }
   });
 };
+exports.deleteSettingPpdb = (req, res) => {
+  const uid = req.body.data;
+
+  Ppdb.deleteSettingPpdb(uid, (err, data) => {
+    if (err) {
+      return res.status(500).send({
+        message: err.message || "Some error occurred while deleting the Admin.",
+      });
+    } else {
+      res.send(data);
+    }
+  });
+};
 
 exports.detailPpdb = (req, res, next) => {
   const id = req.body.id;

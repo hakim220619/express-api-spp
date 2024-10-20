@@ -145,6 +145,18 @@ Ppdb.delete = (uid, result) => {
     result(null, res);
   });
 };
+Ppdb.deleteSettingPpdb = (uid, result) => {
+  let query = `DELETE FROM setting_ppdb WHERE id = '${uid}'`;
+  db.query(query, (err, res) => {
+    if (err) {
+      console.log("error: ", err);
+      result(err, null);
+      return;
+    }
+    console.log(`Deleted user with ID ${uid}`);
+    result(null, res);
+  });
+};
 Ppdb.detailPpdb = async (id, result) => {
   let query = "SELECT * from calon_siswa where id = '" + id + "'";
   db.query(query, (err, res) => {

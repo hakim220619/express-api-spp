@@ -30,33 +30,6 @@ const storage = multer.diskStorage({
 });
 
 const upload = multer({ storage: storage });
-
-// Retrieve all Admins from the database with conditions
-exports.listPpdb = (req, res, next) => {
-  const full_name = req.query.q;
-  const school_id = req.query.school_id;
-
-  Ppdb.listPpdb(full_name, school_id, (err, data) => {
-    if (err)
-      res.status(500).send({
-        message: err.message || "Some error occurred while retrieving Data.",
-      });
-    else res.send(data);
-  });
-};
-exports.listSettingPpdb = (req, res, next) => {
-  const unit_id = req.query.q;
-  const school_id = req.query.school_id;
-
-  Ppdb.listSettingPpdb(unit_id, school_id, (err, data) => {
-    if (err)
-      res.status(500).send({
-        message: err.message || "Some error occurred while retrieving Data.",
-      });
-    else res.send(data);
-  });
-};
-
 exports.createSettingPpdb = [
   upload.single("image"), // Middleware untuk menangani upload file tunggal
   async (req, res) => {
@@ -112,6 +85,32 @@ exports.createSettingPpdb = [
     }
   },
 ];
+
+// Retrieve all Admins from the database with conditions
+exports.listPpdb = (req, res, next) => {
+  const full_name = req.query.q;
+  const school_id = req.query.school_id;
+
+  Ppdb.listPpdb(full_name, school_id, (err, data) => {
+    if (err)
+      res.status(500).send({
+        message: err.message || "Some error occurred while retrieving Data.",
+      });
+    else res.send(data);
+  });
+};
+exports.listSettingPpdb = (req, res, next) => {
+  const unit_id = req.query.q;
+  const school_id = req.query.school_id;
+
+  Ppdb.listSettingPpdb(unit_id, school_id, (err, data) => {
+    if (err)
+      res.status(500).send({
+        message: err.message || "Some error occurred while retrieving Data.",
+      });
+    else res.send(data);
+  });
+};
 
 
 

@@ -74,46 +74,52 @@ Siswa.registerSiswa = (newUsers, result) => {
     // Tambahkan unit_id ke newUsers jika tidak ada, lalu hapus unit_name
     newUsers.unit_id = unitData[0].id;
     delete newUsers.unit_name;
-    console.log(newUsers);
+console.log(newUsers.school_id, newUsers.unit_id, newUsers.years);
 
-    // Proses insert ke calon_siswa
-    db.query("INSERT INTO calon_siswa SET ?", newUsers, (err, res) => {
-      if (err) {
-        console.log("error: ", err);
-        result(err, null);
-        return;
-      }
+    // Query untuk mendapatkan setting_payment berdasarkan school_id, unit_id, dan years
+    db.query(
+      `SELECT * FROM setting_ppdb WHERE school_id = ? AND unit_id = ? AND years = ?`,
+      [newUsers.school_id, newUsers.unit_id, newUsers.years],
+      (err, paymentSetting) => {
+        if (err) {
+          console.log("Payment Setting Query error: ", err);
+          result(err, null);
+          return;
+        }
 
-      // Lanjutkan dengan query aplikasi untuk mendapatkan konfigurasi Midtrans
-      db.query(
-        `SELECT urlCreateTransaksiMidtrans, serverKey, nominal_register_siswa 
-         FROM aplikasi 
-         WHERE school_id = ?`,
-        [newUsers.school_id],
-        (err, appData) => {
+        if (paymentSetting.length === 0) {
+          console.log("Setting pembayaran tidak ditemukan.");
+          result({ message: "Setting pembayaran tidak ditemukan" }, null);
+          return;
+        }
+
+        // Jika setting pembayaran ditemukan, lanjut ke proses insert calon_siswa
+        db.query("INSERT INTO calon_siswa SET ?", newUsers, (err, res) => {
           if (err) {
-            console.log("Query error: ", err);
+            console.log("error: ", err);
             result(err, null);
             return;
           }
 
+          // Lanjutkan dengan query aplikasi untuk mendapatkan konfigurasi Midtrans
           db.query(
-            `SELECT * FROM affiliate WHERE school_id = ?`,
+            `SELECT urlCreateTransaksiMidtrans, serverKey, nominal_register_siswa 
+             FROM aplikasi 
+             WHERE school_id = ?`,
             [newUsers.school_id],
-            (err, affiliateData) => {
+            (err, appData) => {
               if (err) {
-                console.log("Affiliate Query error: ", err);
+                console.log("Query error: ", err);
                 result(err, null);
                 return;
               }
 
               db.query(
-                `SELECT * FROM setting_ppdb 
-                 WHERE school_id = ? AND unit_id = ? AND years = ?`,
-                [newUsers.school_id, newUsers.unit_id, new Date().getFullYear()],
-                (err, settingPPDBData) => {
+                `SELECT * FROM affiliate WHERE school_id = ?`,
+                [newUsers.school_id],
+                (err, affiliateData) => {
                   if (err) {
-                    console.log("Setting PPDB Query error: ", err);
+                    console.log("Affiliate Query error: ", err);
                     result(err, null);
                     return;
                   }
@@ -121,7 +127,8 @@ Siswa.registerSiswa = (newUsers, result) => {
                   if (appData.length > 0) {
                     const midtransUrl = appData[0].urlCreateTransaksiMidtrans;
                     const serverKey = appData[0].serverKey;
-                    const nominal = settingPPDBData[0].amount + affiliateData[0].amount;
+                    const nominal =
+                      paymentSetting[0].amount + affiliateData[0].amount;
 
                     const midtransPayload = {
                       transaction_details: {
@@ -147,18 +154,21 @@ Siswa.registerSiswa = (newUsers, result) => {
                       .post(midtransUrl, midtransPayload, {
                         headers: {
                           "Content-Type": "application/json",
-                          Authorization: `Basic ${Buffer.from(`${serverKey}:`).toString("base64")}`,
+                          Authorization: `Basic ${Buffer.from(
+                            `${serverKey}:`
+                          ).toString("base64")}`,
                         },
                       })
                       .then((response) => {
                         const transactionToken = response.data.token;
                         const redirectUrl = response.data.redirect_url;
-                        const orderId = midtransPayload.transaction_details.order_id;
+                        const orderId =
+                          midtransPayload.transaction_details.order_id;
 
                         db.query(
                           `UPDATE calon_siswa 
-                           SET order_id = ?, redirect_url = ?, status_pembayaran = 'Pending' 
-                           WHERE id = ?`,
+                               SET order_id = ?, redirect_url = ?, status_pembayaran = 'Pending' 
+                               WHERE id = ?`,
                           [orderId, redirectUrl, res.insertId],
                           (err, updateRes) => {
                             if (err) {
@@ -169,10 +179,10 @@ Siswa.registerSiswa = (newUsers, result) => {
 
                             db.query(
                               `SELECT tm.*, a.urlWa, a.token_whatsapp, a.sender 
-                               FROM template_message tm, aplikasi a 
-                               WHERE tm.school_id=a.school_id 
-                               AND tm.deskripsi LIKE '%registrasiSiswa%'  
-                               AND tm.school_id = ?`,
+                                   FROM template_message tm, aplikasi a 
+                                   WHERE tm.school_id=a.school_id 
+                                   AND tm.deskripsi LIKE '%registrasiSiswa%'  
+                                   AND tm.school_id = ?`,
                               [newUsers.school_id],
                               (err, queryRes) => {
                                 if (err) {
@@ -198,12 +208,18 @@ Siswa.registerSiswa = (newUsers, result) => {
                                     redirect_pembayaran: redirectUrl,
                                   };
 
-                                  const formattedMessage = template_message.replace(
-                                    /\$\{(\w+)\}/g,
-                                    (_, key) => replacements[key] || ""
-                                  );
+                                  const formattedMessage =
+                                    template_message.replace(
+                                      /\$\{(\w+)\}/g,
+                                      (_, key) => replacements[key] || ""
+                                    );
 
-                                  sendMessage(url, token, newUsers.phone, formattedMessage);
+                                  sendMessage(
+                                    url,
+                                    token,
+                                    newUsers.phone,
+                                    formattedMessage
+                                  );
                                 }
 
                                 console.log("created Siswa: ", {
@@ -228,19 +244,23 @@ Siswa.registerSiswa = (newUsers, result) => {
                         result(error, null);
                       });
                   } else {
-                    console.log("No Midtrans configuration found for the school.");
-                    result({ message: "Midtrans configuration missing" }, null);
+                    console.log(
+                      "No Midtrans configuration found for the school."
+                    );
+                    result(
+                      { message: "Midtrans configuration missing" },
+                      null
+                    );
                   }
                 }
               );
             }
           );
-        }
-      );
-    });
+        });
+      }
+    );
   });
 };
-
 
 
 Siswa.update = (newUsers, result) => {

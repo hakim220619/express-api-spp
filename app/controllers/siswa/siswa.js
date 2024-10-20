@@ -143,6 +143,7 @@ exports.registerSiswa = [
       full_name,
       email,
       phone,
+      years,
       date_of_birth
     } = req.body;
 
@@ -159,10 +160,10 @@ exports.registerSiswa = [
         phone: phone,
         status: 'Registered',
         role: 220,
+        years,
         date_of_birth: date_of_birth,
         created_at: new Date()
       };
-console.log(siswa);
 
       // Save siswa to the database
       Siswa.registerSiswa(siswa, (err, data) => {

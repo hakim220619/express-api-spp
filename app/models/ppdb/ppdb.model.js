@@ -147,18 +147,66 @@ Ppdb.delete = (uid, result) => {
     result(null, res);
   });
 };
+const fs = require('fs');
+const path = require('path');
+
 Ppdb.deleteSettingPpdb = (uid, result) => {
-  let query = `DELETE FROM setting_ppdb WHERE id = '${uid}'`;
-  db.query(query, (err, res) => {
+  // Query untuk mengambil data berdasarkan ID
+  let selectQuery = `SELECT school_id, image FROM setting_ppdb WHERE id = '${uid}'`;
+
+  // Jalankan query SELECT
+  db.query(selectQuery, (err, selectRes) => {
     if (err) {
-      console.log("error: ", err);
+      console.log("Select error: ", err);
       result(err, null);
       return;
     }
-    console.log(`Deleted user with ID ${uid}`);
-    result(null, res);
+
+    if (selectRes.length === 0) {
+      console.log(`No entry found with ID ${uid}`);
+      result({ message: 'No entry found' }, null);
+      return;
+    }
+
+    // Dapatkan school_id dan filename dari hasil SELECT
+    const { school_id, image } = selectRes[0];
+
+    // Tentukan path file yang akan dihapus
+    const filePath = path.resolve(  
+      'uploads', 
+      'school', 
+      'siswa_baru', 
+      school_id.toString(), 
+      image
+    );
+
+    // Hapus file gambar
+    fs.unlink(filePath, (err) => {
+      if (err) {
+        console.log("File deletion error: ", err);
+        // Tidak menghentikan proses meskipun ada kesalahan dalam penghapusan file
+      } else {
+        console.log(`Deleted file: ${filePath}`);
+      }
+    });
+
+    // Query untuk menghapus data dari database
+    let deleteQuery = `DELETE FROM setting_ppdb WHERE id = '${uid}'`;
+
+    // Jalankan query DELETE
+    db.query(deleteQuery, (err, res) => {
+      if (err) {
+        console.log("Delete error: ", err);
+        result(err, null);
+        return;
+      }
+
+      console.log(`Deleted user with ID ${uid}`);
+      result(null, res);
+    });
   });
 };
+
 Ppdb.detailPpdb = async (id, result) => {
   let query = "SELECT * from calon_siswa where id = '" + id + "'";
   db.query(query, (err, res) => {
@@ -280,92 +328,113 @@ Ppdb.verifikasiSiswaBaru = async (id, result) => {
       const dob = new Date(date_of_birth);
 
       // Mengambil tahun, bulan, dan tanggal
-      const tahun = dob.getFullYear(); // Mengambil tahun
-      const bulan = dob.getMonth() + 1; // Mengambil bulan (0-11, jadi tambahkan 1)
-      const tanggal = dob.getDate(); // Mengambil tanggal
+      const tahun = dob.getFullYear();
+      const bulan = dob.getMonth() + 1;
+      const tanggal = dob.getDate();
 
-      // Step 4: Generate random numbers (between 1 and 5)
-      const randomNumber = Math.floor(Math.random() * 5) + 1;
+      // Step 4: Get the highest username prefix (3-digit number) from the database
+      let prefixQuery = `
+        SELECT MAX(CAST(SUBSTRING(username, 1, 3) AS UNSIGNED)) AS maxPrefix 
+        FROM calon_siswa
+      `;
 
-      // Step 5: Create the username using the random number, year of birth, and nik
-      const username = `${randomNumber}${yearOfBirth}${nik}`;
-
-      const randomPassword = generateRandomPassword();
-      // Step 6: Hash the password using bcrypt
-      const hashedPassword = await bcrypt.hash(randomPassword, 10);
-
-      // Step 7: Update username and hashed password for the student with the given id
-      let updateQuery =
-        "UPDATE calon_siswa SET username = ?, password = ?, status = ? WHERE id = ?";
-
-      db.query(
-        updateQuery,
-        [username, hashedPassword, "Verification", id],
-        (updateErr, updateRes) => {
-          if (updateErr) {
-            console.log("Error while updating student: ", updateErr);
-            result(null, updateErr);
-            return;
-          }
-          db.query(
-            `SELECT tm.*, a.urlWa, a.token_whatsapp, a.sender 
-           FROM template_message tm, aplikasi a 
-           WHERE tm.school_id=a.school_id 
-           AND tm.deskripsi LIKE '%verifikasiSiswa%'  
-           AND tm.school_id = ?`,
-            [school_id],
-            (err, queryRes) => {
-              if (err) {
-                console.log("Query error: ", err);
-                result(err, null);
-                return;
-              }
-
-              if (queryRes.length > 0) {
-                const {
-                  urlWa: url,
-                  token_whatsapp: token,
-                  sender,
-                  message: template_message,
-                } = queryRes[0];
-
-                // Data to replace in the template message
-                const replacements = {
-                  username: username,
-                  password: randomPassword,
-                  tanggal_lahir: tahun + "-" + bulan + "-" + tanggal,
-                  nik: nik,
-                };
-
-                // Replace placeholders in the template_message
-                const formattedMessage = template_message.replace(
-                  /\$\{(\w+)\}/g,
-                  (_, key) => {
-                    return replacements[key] || "";
-                  }
-                );
-                // Send message after creating the payment
-                sendMessage(url, token, phone, formattedMessage);
-              }
-            }
-          );
-          // Optionally, return the updated student data or a success message
-          result(null, {
-            message: "Student updated successfully",
-            id,
-            username, // Return the newly created username
-            password: randomPassword, // Return the hashed password
-            date_of_birth,
-            nik,
-          });
+      db.query(prefixQuery, [], async (prefixErr, prefixRes) => {
+        if (prefixErr) {
+          console.log("Error while fetching max prefix: ", prefixErr);
+          result(null, prefixErr);
+          return;
         }
-      );
+
+        // Jika tidak ada prefix, mulai dari 1; jika ada, tambahkan 1
+        const nextPrefix = (prefixRes[0].maxPrefix || 0) + 1;
+        const formattedPrefix = String(nextPrefix).padStart(3, '0'); // Contoh: 001, 002, ...
+        const lastThreeDigitsNik = nik.slice(-3);
+        // Step 5: Create the username using the prefix, year of birth, and nik
+        const username = `${formattedPrefix}${yearOfBirth}${lastThreeDigitsNik}`;
+console.log(username);
+
+        const randomPassword = generateRandomPassword();
+
+        // Step 6: Hash the password using bcrypt
+        const hashedPassword = await bcrypt.hash(randomPassword, 10);
+
+        // Step 7: Update username and hashed password for the student with the given id
+        let updateQuery =
+          "UPDATE calon_siswa SET username = ?, password = ?, status = ? WHERE id = ?";
+
+        db.query(
+          updateQuery,
+          [username, hashedPassword, "Verification", id],
+          (updateErr, updateRes) => {
+            if (updateErr) {
+              console.log("Error while updating student: ", updateErr);
+              result(null, updateErr);
+              return;
+            }
+
+            db.query(
+              `SELECT tm.*, a.urlWa, a.token_whatsapp, a.sender 
+               FROM template_message tm, aplikasi a 
+               WHERE tm.school_id = a.school_id 
+                 AND tm.deskripsi LIKE '%verifikasiSiswa%'  
+                 AND tm.school_id = ?`,
+              [school_id],
+              (err, queryRes) => {
+                if (err) {
+                  console.log("Query error: ", err);
+                  result(err, null);
+                  return;
+                }
+
+                if (queryRes.length > 0) {
+                  const {
+                    urlWa: url,
+                    token_whatsapp: token,
+                    sender,
+                    message: template_message,
+                  } = queryRes[0];
+
+                  // Data to replace in the template message
+                  const replacements = {
+                    username: username,
+                    password: randomPassword,
+                    tanggal_lahir: tahun + "-" + bulan + "-" + tanggal,
+                    nik: nik,
+                  };
+
+                  // Replace placeholders in the template_message
+                  const formattedMessage = template_message.replace(
+                    /\$\{(\w+)\}/g,
+                    (_, key) => {
+                      return replacements[key] || "";
+                    }
+                  );
+
+                  // Send message after creating the payment
+                  sendMessage(url, token, phone, formattedMessage);
+                }
+              }
+            );
+
+            // Optionally, return the updated student data or a success message
+            result(null, {
+              message: "Student updated successfully",
+              id,
+              username, // Return the newly created username
+              password: randomPassword, // Return the hashed password
+              date_of_birth,
+              nik,
+            });
+          }
+        );
+      });
     });
   } catch (error) {
     console.log("Error in verification process: ", error);
     result(null, error);
   }
 };
+
 Ppdb.terimaSiswaBaru = async (id, result) => {
   try {
     // Step 1: Select the student by id to get date_of_birth and nik

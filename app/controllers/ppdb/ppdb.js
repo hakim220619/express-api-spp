@@ -57,8 +57,6 @@ exports.listSettingPpdb = (req, res, next) => {
   });
 };
 
-
-// Create new Admin
 exports.createSettingPpdb = [
   upload.single("image"), // Middleware untuk menangani upload file tunggal
   async (req, res) => {

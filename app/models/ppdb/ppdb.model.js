@@ -8,6 +8,8 @@ const Ppdb = function (data) {
 };
 
 Ppdb.createSettingPpdb = (newUsers, result) => {
+  console.log(newUsers);
+  
   db.query("INSERT INTO setting_ppdb SET ?", newUsers, (err, res) => {
     if (err) {
       console.log("error: ", err);
@@ -15,7 +17,7 @@ Ppdb.createSettingPpdb = (newUsers, result) => {
       return;
     }
 
-    console.log("created Kelas: ", { id: res.insertId, ...newUsers });
+    console.log("created setting Ppdb: ", { id: res.insertId, ...newUsers });
     result(null, { id: res.insertId, ...newUsers });
   });
 };

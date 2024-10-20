@@ -123,7 +123,7 @@ function generateNoRegistrasi() {
   for (let i = 0; i < length; i++) {
     result += characters.charAt(Math.floor(Math.random() * characters.length));
   }
-  return result;
+  return result; 
 }
 exports.registerSiswa = [
   upload.none(), // Middleware for handling file upload
@@ -138,7 +138,8 @@ exports.registerSiswa = [
     const {
       school_id,
       nik,
-      unit_id, // Unit field
+      unit_id,
+      unit_name, // Unit field
       full_name,
       email,
       phone,
@@ -151,6 +152,7 @@ exports.registerSiswa = [
         school_id,
         no_registrasi: 'LPIH' +'-'+ generateNoRegistrasi(),
         nik: nik,
+        unit_name,
         unit_id,
         full_name: full_name.toUpperCase(),
         email: email,
@@ -160,6 +162,7 @@ exports.registerSiswa = [
         date_of_birth: date_of_birth,
         created_at: new Date()
       };
+console.log(siswa);
 
       // Save siswa to the database
       Siswa.registerSiswa(siswa, (err, data) => {

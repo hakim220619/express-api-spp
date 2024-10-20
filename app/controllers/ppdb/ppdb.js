@@ -44,6 +44,77 @@ exports.listPpdb = (req, res, next) => {
     else res.send(data);
   });
 };
+exports.listSettingPpdb = (req, res, next) => {
+  const unit_id = req.query.q;
+  const school_id = req.query.school_id;
+
+  Ppdb.listSettingPpdb(unit_id, school_id, (err, data) => {
+    if (err)
+      res.status(500).send({
+        message: err.message || "Some error occurred while retrieving Data.",
+      });
+    else res.send(data);
+  });
+};
+
+
+// Create new Admin
+exports.createSettingPpdb = [
+  upload.single("image"), // Middleware untuk menangani upload file tunggal
+  async (req, res) => {
+    try {
+      // Validasi input request body
+      const { school_id, unit_id, years, amount, status, address, url } = req.body;
+
+      if (!unit_id || !years || !amount) {
+        return res.status(400).send({
+          message: "unit_id, years, dan amount tidak boleh kosong!",
+        });
+      }
+
+      // Manipulasi URL untuk mengganti spasi menjadi tanda "-"
+      const sanitizedUrl = url ? url.replace(/\s+/g, '-') : null;
+
+      // Cek apakah ada file gambar yang diupload
+      let gambar = null;
+      if (req.file) {
+        gambar = req.file.filename; // Simpan nama file yang diupload
+      }
+
+      // Buat objek pengaturan PPDB baru dengan data input yang diterima
+      const settingPpdb = {
+        school_id,
+        unit_id,
+        years,
+        amount,
+        address,
+        url: sanitizedUrl,
+        status: status || "ON", // Default ke "ON" jika tidak diisi
+        image: gambar, // Simpan nama file gambar (jika ada)
+        created_at: new Date(),
+      };
+
+      // Simpan pengaturan PPDB ke database
+      Ppdb.createSettingPpdb(settingPpdb, (err, data) => {
+        if (err) {
+          console.error("Error saat menyimpan ke database:", err);
+          return res.status(500).send({
+            message:
+              err.message || "Terjadi kesalahan saat membuat pengaturan PPDB.",
+          });
+        }
+        res.status(201).send({
+          message: "Pengaturan PPDB berhasil dibuat.",
+          data,
+        });
+      });
+    } catch (error) {
+      console.error("Error di server:", error);
+      res.status(500).send({ message: "Terjadi kesalahan di server." });
+    }
+  },
+];
+
 
 
 exports.sendDataSiswaBaruAll = [
@@ -111,7 +182,6 @@ exports.sendDataSiswaBaruAll = [
       guardianJob,
       guardianIncome,
     } = req.body;
-console.log(req.body);
 
     // Extract file paths from multer
     const files = req.files;
@@ -306,9 +376,45 @@ exports.verifikasiSiswaBaru = (req, res, next) => {
     else res.send(data);
   });
 };
+exports.reviewAndMasukanBySiswa = (req, res, next) => {
+  const id = req.body.id;
+  const review = req.body.review;
+  Ppdb.reviewAndMasukanBySiswa(id, review, (err, data) => {
+    if (err)
+      res.status(500).send({
+        message:
+          err.message || "Some error occurred while retrieving tutorials.",
+      });
+    else res.send(data);
+  });
+};
 exports.terimaSiswaBaru = (req, res, next) => {
   const id = req.body.id;
   Ppdb.terimaSiswaBaru(id, (err, data) => {
+    if (err)
+      res.status(500).send({
+        message:
+          err.message || "Some error occurred while retrieving tutorials.",
+      });
+    else res.send(data);
+  });
+};
+exports.tolakSiswaBaru = (req, res, next) => {
+  const id = req.body.id;
+  Ppdb.tolakSiswaBaru(id, (err, data) => {
+    if (err)
+      res.status(500).send({
+        message:
+          err.message || "Some error occurred while retrieving tutorials.",
+      });
+    else res.send(data);
+  });
+};
+exports.reloadPaymentSiswaBaru = (req, res, next) => {
+  const id = req.body.id;
+  console.log(id);
+  
+  Ppdb.reloadPaymentSiswaBaru(id, (err, data) => {
     if (err)
       res.status(500).send({
         message:

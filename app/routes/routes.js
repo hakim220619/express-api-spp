@@ -50,7 +50,8 @@ module.exports = (app) => {
   router.post("/registerSiswa", Siswa.registerSiswa);
   //Ppdb
   router.get("/list-ppdb", token.authenticateToken, Ppdb.listPpdb);
-  // router.post("/create-kelas", token.authenticateToken, Kelas.createKelas);
+  router.get("/list-setting-ppdb", token.authenticateToken, Ppdb.listSettingPpdb);
+  router.post("/create-setting-ppdb", token.authenticateToken, Ppdb.createSettingPpdb);
   router.post("/update-ppdb", token.authenticateToken, Ppdb.updatePpdb);
   router.post("/delete-ppdb", token.authenticateToken, Ppdb.delete);
   router.post("/detailPpdb", token.authenticateToken, Ppdb.detailPpdb);
@@ -58,7 +59,10 @@ module.exports = (app) => {
   router.post("/detailCalonSiswaBaru", token.authenticateToken, Ppdb.detailCalonSiswaBaru);
   router.post("/verifikasi-siswa-baru", token.authenticateToken, Ppdb.verifikasiSiswaBaru);
   router.post("/terima-siswa-baru", token.authenticateToken, Ppdb.terimaSiswaBaru);
+  router.post("/tolak-siswa-baru", token.authenticateToken, Ppdb.tolakSiswaBaru);
+  router.post("/reload-payment-siswa-baru", token.authenticateToken, Ppdb.reloadPaymentSiswaBaru);
   router.post("/sendDataSiswaBaruAll", token.authenticateToken, Ppdb.sendDataSiswaBaruAll);
+  router.post("/reviewAndMasukanBySiswa", Ppdb.reviewAndMasukanBySiswa);
   //kelas
   router.get("/list-kelas", token.authenticateToken, Kelas.listKelas);
   router.post("/create-kelas", token.authenticateToken, Kelas.createKelas);
@@ -174,6 +178,7 @@ module.exports = (app) => {
   router.get("/getMonths", token.authenticateToken, general.getMonths);
   router.get("/getTypePayment", token.authenticateToken, general.getTypePayment);
   router.get("/getUnit", token.authenticateToken, general.getUnit);
+  router.get("/getYears", token.authenticateToken, general.getYears);
   router.get("/getListPayment", token.authenticateToken, general.getListPayment);
   router.get("/getActivityBySchoolId", token.authenticateToken, general.getActivityBySchoolId);
   router.post("/sendMessageBroadcast", token.authenticateToken, general.sendMessageBroadcast);
@@ -187,10 +192,11 @@ module.exports = (app) => {
   router.get("/getMenuActive", token.authenticateToken, general.getMenuActive);
   router.get("/getPdfByIdPaymentMonth", token.authenticateToken, general.getPdfByIdPaymentMonth);
   router.get("/getUnits", general.getUnit);
+  router.get("/getListPpdbActive", general.getListPpdbActive);
   router.post("/forgot-password", general.forgetPassword);
   router.post("/reset-new-password", general.resetNewPassword);
   router.post("/new-password-all",  token.authenticateToken, general.newPasswordAll);
-  router.post("/send-messages",  token.authenticateToken, general.sendMessages);
+  router.post("/send-message",  token.authenticateToken, general.sendMessages);
 
   router.get("/cekFunction", general.cekFunction);
   router.get("/faker/generate", general.generate);

@@ -109,6 +109,29 @@ exports.getUnit = (req, res, next) => {
     else res.send(data);
   });
 };
+exports.getListPpdbActive = (req, res, next) => {
+  const school_id = req.query.school_id
+
+  General.getListPpdbActive(school_id, (err, data) => {
+    if (err)
+      res.status(500).send({
+        message:
+          err.message || "Some error occurred while retrieving tutorials.",
+      });
+    else res.send(data);
+  });
+};
+exports.getYears = (req, res, next) => {
+  // console.log(req);
+  General.getYears((err, data) => {
+    if (err)
+      res.status(500).send({
+        message:
+          err.message || "Some error occurred while retrieving tutorials.",
+      });
+    else res.send(data);
+  });
+};
 exports.getListPayment = (req, res, next) => {
   // console.log(req);
   General.getListPayment((err, data) => {
@@ -172,22 +195,40 @@ exports.newPasswordAll = (req, res, next) => {
     else res.send(data);
   });
 };
-exports.sendMessages = (req, res, next) => {
-  const message = req.body.message
-  const phone = req.body.phone
-  const school_id = req.body.school_id
-  console.log(req.body);
-  
-  General.sendMessages(message, phone,school_id, (err, data) => {
-    
-    if (err)
-      res.status(500).send({
-        message:
-          err.message || "Some error occurred while retrieving tutorials.",
+const multer = require('multer');
+
+// Konfigurasi multer untuk menerima file PDF
+const upload = multer({ storage: multer.memoryStorage() }).single('file');
+
+exports.sendMessages = (req, res) => {
+  upload(req, res, function (err) {
+    if (err) {
+      return res.status(500).send({
+        message: "Error saat mengunggah file.",
       });
-    else res.send(data);
+    }
+
+    const { message, number, school_id } = req.body;
+    const pdfFile = req.file; // File PDF yang diunggah
+
+    if (!pdfFile) {
+      return res.status(400).send({
+        message: "File PDF tidak ditemukan.",
+      });
+    }
+
+    // Contoh fungsi sendMessages untuk mengirim pesan WhatsApp
+    General.sendMessages(message, number, school_id, pdfFile, (err, data) => {
+      if (err) {
+        return res.status(500).send({
+          message: err.message || "Terjadi kesalahan saat mengirim pesan.",
+        });
+      }
+      res.send(data);
+    });
   });
 };
+
 exports.sendMessageBroadcast = (req, res, next) => {
   const dataUsers = req.body.dataUsers
   const message = req.body.message

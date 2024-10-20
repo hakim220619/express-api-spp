@@ -108,6 +108,19 @@ General.getUnit = async (result) => {
     result(null, res);
   });
 };
+General.getYears = async (result) => {
+  let query = "SELECT * from years";
+  db.query(query, (err, res) => {
+    if (err) {
+      console.log("error: ", err);
+      result(null, err);
+      return;
+    }
+
+    // console.log("role: ", res);
+    result(null, res);
+  });
+};
 General.getListPayment = async (result) => {
   let query = "SELECT * from setting_payment";
   db.query(query, (err, res) => {
@@ -127,6 +140,23 @@ General.getActivityBySchoolId = async (school_id, result) => {
     query += ` AND school_id = '${school_id}'`;
   }
   query += `order by created_at desc`;
+  db.query(query, (err, res) => {
+    if (err) {
+      console.log("error: ", err);
+      result(null, err);
+      return;
+    }
+
+    // console.log("role: ", res);
+    result(null, res);
+  });
+};
+General.getListPpdbActive = async (school_id, result) => {
+  let query = "SELECT sp.*, s.school_name, u.unit_name from setting_ppdb sp, school s, unit u where sp.school_id=s.id AND sp.unit_id=u.id ";
+  if (school_id) {
+    query += ` AND sp.school_id = '${school_id}'`;
+  }
+  query += `order by sp.created_at desc`;
   db.query(query, (err, res) => {
     if (err) {
       console.log("error: ", err);
@@ -405,116 +435,89 @@ General.newPasswordAll = async (id, newPassword, result) => {
     });
   }
 };
-General.sendMessages = async (message, phone, school_id, result) => {
+General.sendMessages = async (message, phone, school_id, pdfFile) => {
   try {
     let failedMessages = [];
     let successMessages = [];
+console.log(pdfFile);
 
-    try {
-      // Asumsikan sendMessage adalah fungsi async untuk mengirim pesan
-      const query = `
-          SELECT a.urlWa, a.token_whatsapp, a.sender 
-          FROM aplikasi a 
-          WHERE a.school_id = '${school_id}'`;
+    const query = `
+      SELECT a.urlWa, a.token_whatsapp, a.sender 
+      FROM aplikasi a 
+      WHERE a.school_id = '${school_id}'`;
 
-      // Query ke database
-      const queryRes = await new Promise((resolve, reject) => {
-        db.query(query, (err, res) => {
-          if (err) return reject(err);
-          resolve(res);
-        });
+    const queryRes = await new Promise((resolve, reject) => {
+      db.query(query, (err, res) => {
+        if (err) return reject(err);
+        resolve(res);
       });
+    });
 
-      if (queryRes && queryRes.length > 0) {
-        // Ambil url, token, dan informasi pengirim dari query result
-        const { urlWa: url, token_whatsapp: token, sender } = queryRes[0];
+    if (queryRes && queryRes.length > 0) {
+      const { urlWa: url, token_whatsapp: token, sender } = queryRes[0];
+// console.log(pdfFile);
 
-        // Mengirim pesan setelah semua data pembayaran diperbarui
-        try {
-          await sendMessage(url, token, phone, message); // await untuk memastikan error ditangkap
+      try {
+        await sendMessage(url, token, phone, message, pdfFile);
 
-          console.log(
-            `Pesan berhasil dikirim ke: ${phone}, Message: ${message}`
-          );
-
-          const logData = {
-            school_id: school_id,
-            user_id: 1,
-            activity: "sendMessageBroadcast",
-            detail: `Pesan berhasil dikirim ke: ${phone}, Message: ${message}`,
-            action: "Insert",
-            status: 1,
-          };
-
-          // Insert log into mm_logs
-          insertMmLogs(logData);
-          successMessages.push(phone); // Menyimpan pesan yang berhasil
-        } catch (sendError) {
-          console.error(
-            `Gagal mengirim pesan ke: ${phone}, Error: ${sendError.message}`
-          );
-
-          const logData = {
-            school_id: school_id,
-            user_id: 1,
-            activity: "sendMessageTagihan",
-            detail: `Gagal mengirim pesan ke: ${phone}, Error: ${sendError.message}`,
-            action: "Insert",
-            status: 2,
-          };
-
-          // Insert log into mm_logs
-          insertMmLogs(logData);
-          failedMessages.push(phone); // Menyimpan pesan yang gagal
-        }
-      } else {
-        console.error(
-          "Tidak ada template pesan atau data WhatsApp yang ditemukan."
+        console.log(
+          `Pesan berhasil dikirim ke: ${phone}, Message: ${message}`
         );
-        failedMessages.push(phone); // Menyimpan pesan yang gagal
+
+        const logData = {
+          school_id: school_id,
+          user_id: 1,
+          activity: "sendMessageBroadcast",
+          detail: `Pesan berhasil dikirim ke: ${phone}, Message: ${message}`,
+          action: "Insert",
+          status: 1,
+        };
+
+        insertMmLogs(logData);
+        successMessages.push(phone);
+      } catch (sendError) {
+        console.error(
+          `Gagal mengirim pesan ke: ${phone}, Error: ${sendError.message}`
+        );
+
+        const logData = {
+          school_id: school_id,
+          user_id: 1,
+          activity: "sendMessageTagihan",
+          detail: `Gagal mengirim pesan ke: ${phone}, Error: ${sendError.message}`,
+          action: "Insert",
+          status: 2,
+        };
+
+        insertMmLogs(logData);
+        failedMessages.push(phone);
       }
-    } catch (error) {
-      console.error(`Error saat memproses user ${phone}: ${error.message}`);
-
-      const logData = {
-        school_id: school_id,
-        user_id: 1,
-        activity: "sendMessageBroadcast",
-        detail: `Gagal memproses user ${phone}, Error: ${error.message}`,
-        action: "Insert",
-        status: 2,
-      };
-
-      // Insert log into mm_logs
-      insertMmLogs(logData);
-      failedMessages.push(phone); // Menyimpan pesan yang gagal
-    }
-
-    // Kembalikan respons JSON berdasarkan status pengiriman
-    if (failedMessages.length > 0) {
-      result(null, {
-        status: "failed",
-        message: "Beberapa pesan gagal dikirim.",
-        failed: failedMessages,
-        success: successMessages,
-      });
     } else {
-      result(null, {
-        status: "success",
-        message: "Semua pesan berhasil terkirim!",
-        success: successMessages,
-      });
+      console.error(
+        "Tidak ada template pesan atau data WhatsApp yang ditemukan."
+      );
+      failedMessages.push(phone);
     }
+
+    return {
+      status: failedMessages.length > 0 ? "failed" : "success",
+      message:
+        failedMessages.length > 0
+          ? "Beberapa pesan gagal dikirim."
+          : "Semua pesan berhasil terkirim!",
+      failed: failedMessages,
+      success: successMessages,
+    };
   } catch (err) {
-    // Jika ada kesalahan global
     console.error("Terjadi kesalahan:", err);
-    result({
+    return {
       status: "error",
       message: "Terjadi kesalahan saat mengirim pesan.",
       error: err.message,
-    });
+    };
   }
 };
+
 
 General.sendMessageBroadcast = async (
   dataUsers,

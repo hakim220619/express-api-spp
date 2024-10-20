@@ -45,175 +45,202 @@ Siswa.create = (newUsers, result) => {
 const axios = require("axios");
 
 Siswa.registerSiswa = (newUsers, result) => {
-  db.query("INSERT INTO calon_siswa SET ?", newUsers, (err, res) => {
+  // Tentukan query dan parameter berdasarkan apakah ada unit_id atau tidak
+  let queryUnit = `SELECT * FROM unit WHERE `;
+  let paramsUnit = [];
+
+  if (newUsers.unit_id) {
+    queryUnit += `id = ?`;
+    paramsUnit.push(newUsers.unit_id);
+  } else {
+    queryUnit += `unit_name LIKE ?`;
+    paramsUnit.push(`%${newUsers.unit_name}%`);
+  }
+
+  // Eksekusi query untuk mendapatkan data unit
+  db.query(queryUnit, paramsUnit, (err, unitData) => {
     if (err) {
-      console.log("error: ", err);
+      console.log("Unit Query error: ", err);
       result(err, null);
       return;
     }
 
-    // Fetch Midtrans URL and Server Key from the 'aplikasi' table
-    db.query(
-      `SELECT urlCreateTransaksiMidtrans, serverKey, nominal_register_siswa
-       FROM aplikasi 
-       WHERE school_id = ?`,
-      [newUsers.school_id],
-      (err, appData) => {
-        if (err) {
-          console.log("Query error: ", err);
-          result(err, null);
-          return;
-        }
+    if (unitData.length === 0) {
+      console.log("Unit tidak ditemukan.");
+      result({ message: "Unit tidak ditemukan" }, null);
+      return;
+    }
 
-        // Fetch affiliate data based on school_id
-        db.query(
-          `SELECT * FROM affiliate WHERE school_id = ?`,
-          [newUsers.school_id],
-          (err, affiliateData) => {
-            if (err) {
-              console.log("Affiliate Query error: ", err);
-              result(err, null);
-              return;
-            }
+    // Tambahkan unit_id ke newUsers jika tidak ada, lalu hapus unit_name
+    newUsers.unit_id = unitData[0].id;
+    delete newUsers.unit_name;
+    console.log(newUsers);
 
-            if (appData.length > 0) {
-              const midtransUrl = appData[0].urlCreateTransaksiMidtrans;
-              const serverKey = appData[0].serverKey;
-              const nominal = appData[0].nominal_register_siswa + affiliateData[0].amount;
+    // Proses insert ke calon_siswa
+    db.query("INSERT INTO calon_siswa SET ?", newUsers, (err, res) => {
+      if (err) {
+        console.log("error: ", err);
+        result(err, null);
+        return;
+      }
 
-              // Create the request payload for Midtrans
-              const midtransPayload = {
-                transaction_details: {
-                  order_id: `${newUsers.no_registrasi}-${Date.now()}`, // Unique order ID
-                  gross_amount: nominal, // Amount from newUsers.nominal
-                },
-                credit_card: {
-                  secure: true,
-                },
-                customer_details: {
-                  first_name: newUsers.full_name, // Full name from newUsers
-                  last_name: newUsers.no_registrasi, // Registration number
-                  email: newUsers.email, // Add email if available
-                  phone: newUsers.phone, // Phone number
-                  billing_address: {
-                    first_name: newUsers.full_name,
-                    last_name: newUsers.no_registrasi,
-                    address: `NISN: ${newUsers.nisn}`, // Store NISN
-                    country_code: "IDN", // Indonesia
-                  },
-                },
-              };
+      // Lanjutkan dengan query aplikasi untuk mendapatkan konfigurasi Midtrans
+      db.query(
+        `SELECT urlCreateTransaksiMidtrans, serverKey, nominal_register_siswa 
+         FROM aplikasi 
+         WHERE school_id = ?`,
+        [newUsers.school_id],
+        (err, appData) => {
+          if (err) {
+            console.log("Query error: ", err);
+            result(err, null);
+            return;
+          }
 
-              // Axios configuration for the POST request
-              axios
-                .post(midtransUrl, midtransPayload, {
-                  headers: {
-                    "Content-Type": "application/json",
-                    Authorization: `Basic ${Buffer.from(`${serverKey}:`).toString(
-                      "base64"
-                    )}`, // Use the fetched server key
-                  },
-                })
-                .then((response) => {
-                  // Midtrans transaction created successfully
-                  const transactionToken = response.data.token;
-                  const redirectUrl = response.data.redirect_url;
-                  const orderId = midtransPayload.transaction_details.order_id;
+          db.query(
+            `SELECT * FROM affiliate WHERE school_id = ?`,
+            [newUsers.school_id],
+            (err, affiliateData) => {
+              if (err) {
+                console.log("Affiliate Query error: ", err);
+                result(err, null);
+                return;
+              }
 
-                  // Update calon_siswa with order_id, redirect_url, and status
-                  db.query(
-                    `UPDATE calon_siswa 
-                   SET order_id = ?, redirect_url = ?, status_pembayaran = 'Pending' 
-                   WHERE id = ?`,
-                    [orderId, redirectUrl, res.insertId],
-                    (err, updateRes) => {
-                      if (err) {
-                        console.log("Update error: ", err);
-                        result(err, null);
-                        return;
-                      }
+              db.query(
+                `SELECT * FROM setting_ppdb 
+                 WHERE school_id = ? AND unit_id = ? AND years = ?`,
+                [newUsers.school_id, newUsers.unit_id, new Date().getFullYear()],
+                (err, settingPPDBData) => {
+                  if (err) {
+                    console.log("Setting PPDB Query error: ", err);
+                    result(err, null);
+                    return;
+                  }
 
-                      // Fetch template message and send WhatsApp message
-                      db.query(
-                        `SELECT tm.*, a.urlWa, a.token_whatsapp, a.sender 
-                       FROM template_message tm, aplikasi a 
-                       WHERE tm.school_id=a.school_id 
-                       AND tm.deskripsi LIKE '%registrasiSiswa%'  
-                       AND tm.school_id = ?`,
-                        [newUsers.school_id],
-                        (err, queryRes) => {
-                          if (err) {
-                            console.log("Query error: ", err);
-                            result(err, null);
-                            return;
-                          }
+                  if (appData.length > 0) {
+                    const midtransUrl = appData[0].urlCreateTransaksiMidtrans;
+                    const serverKey = appData[0].serverKey;
+                    const nominal = settingPPDBData[0].amount + affiliateData[0].amount;
 
-                          if (queryRes.length > 0) {
-                            const {
-                              urlWa: url,
-                              token_whatsapp: token,
-                              sender,
-                              message: template_message,
-                            } = queryRes[0];
+                    const midtransPayload = {
+                      transaction_details: {
+                        order_id: `${newUsers.no_registrasi}-${Date.now()}`,
+                        gross_amount: nominal,
+                      },
+                      credit_card: { secure: true },
+                      customer_details: {
+                        first_name: newUsers.full_name,
+                        last_name: newUsers.no_registrasi,
+                        email: newUsers.email,
+                        phone: newUsers.phone,
+                        billing_address: {
+                          first_name: newUsers.full_name,
+                          last_name: newUsers.no_registrasi,
+                          address: `NISN: ${newUsers.nisn}`,
+                          country_code: "IDN",
+                        },
+                      },
+                    };
 
-                            // Data to replace in the template message
-                            const replacements = {
-                              nama_lengkap: newUsers.full_name,
-                              no_registrasi: newUsers.no_registrasi,
-                              nik: newUsers.nik,
-                              no_wa: newUsers.phone,
-                              tahun: new Date().getFullYear(),
-                              redirect_pembayaran: redirectUrl, // Add Midtrans URL here
-                            };
+                    axios
+                      .post(midtransUrl, midtransPayload, {
+                        headers: {
+                          "Content-Type": "application/json",
+                          Authorization: `Basic ${Buffer.from(`${serverKey}:`).toString("base64")}`,
+                        },
+                      })
+                      .then((response) => {
+                        const transactionToken = response.data.token;
+                        const redirectUrl = response.data.redirect_url;
+                        const orderId = midtransPayload.transaction_details.order_id;
 
-                            // Replace placeholders in the template_message
-                            const formattedMessage = template_message.replace(
-                              /\$\{(\w+)\}/g,
-                              (_, key) => {
-                                return replacements[key] || "";
+                        db.query(
+                          `UPDATE calon_siswa 
+                           SET order_id = ?, redirect_url = ?, status_pembayaran = 'Pending' 
+                           WHERE id = ?`,
+                          [orderId, redirectUrl, res.insertId],
+                          (err, updateRes) => {
+                            if (err) {
+                              console.log("Update error: ", err);
+                              result(err, null);
+                              return;
+                            }
+
+                            db.query(
+                              `SELECT tm.*, a.urlWa, a.token_whatsapp, a.sender 
+                               FROM template_message tm, aplikasi a 
+                               WHERE tm.school_id=a.school_id 
+                               AND tm.deskripsi LIKE '%registrasiSiswa%'  
+                               AND tm.school_id = ?`,
+                              [newUsers.school_id],
+                              (err, queryRes) => {
+                                if (err) {
+                                  console.log("Query error: ", err);
+                                  result(err, null);
+                                  return;
+                                }
+
+                                if (queryRes.length > 0) {
+                                  const {
+                                    urlWa: url,
+                                    token_whatsapp: token,
+                                    sender,
+                                    message: template_message,
+                                  } = queryRes[0];
+
+                                  const replacements = {
+                                    nama_lengkap: newUsers.full_name,
+                                    no_registrasi: newUsers.no_registrasi,
+                                    nik: newUsers.nik,
+                                    no_wa: newUsers.phone,
+                                    tahun: new Date().getFullYear(),
+                                    redirect_pembayaran: redirectUrl,
+                                  };
+
+                                  const formattedMessage = template_message.replace(
+                                    /\$\{(\w+)\}/g,
+                                    (_, key) => replacements[key] || ""
+                                  );
+
+                                  sendMessage(url, token, newUsers.phone, formattedMessage);
+                                }
+
+                                console.log("created Siswa: ", {
+                                  id: res.insertId,
+                                  ...newUsers,
+                                });
+                                result(null, {
+                                  id: res.insertId,
+                                  ...newUsers,
+                                  midtransUrl: redirectUrl,
+                                });
                               }
                             );
-
-                            // Send message after creating the payment
-                            sendMessage(
-                              url,
-                              token,
-                              newUsers.phone,
-                              formattedMessage
-                            );
                           }
-
-                          console.log("created Siswa: ", {
-                            id: res.insertId,
-                            ...newUsers,
-                          });
-                          result(null, {
-                            id: res.insertId,
-                            ...newUsers,
-                            midtransUrl: redirectUrl,
-                          });
-                        }
-                      );
-                    }
-                  );
-                })
-                .catch((error) => {
-                  console.log(
-                    "Midtrans Error:",
-                    error.response ? error.response.data : error.message
-                  );
-                  result(error, null);
-                });
-            } else {
-              console.log("No Midtrans configuration found for the school.");
-              result({ message: "Midtrans configuration missing" }, null);
+                        );
+                      })
+                      .catch((error) => {
+                        console.log(
+                          "Midtrans Error:",
+                          error.response ? error.response.data : error.message
+                        );
+                        result(error, null);
+                      });
+                  } else {
+                    console.log("No Midtrans configuration found for the school.");
+                    result({ message: "Midtrans configuration missing" }, null);
+                  }
+                }
+              );
             }
-          }
-        );
-      }
-    );
+          );
+        }
+      );
+    });
   });
 };
+
 
 
 Siswa.update = (newUsers, result) => {

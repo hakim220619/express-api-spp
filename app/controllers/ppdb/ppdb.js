@@ -313,10 +313,10 @@ exports.sendDataSiswaBaruAll = [
       };
 
       // Tambahkan jalur dokumen jika tidak null
-      if (kartuKeluarga) studentData.kartu_keluarga = kartuKeluarga;
-      if (akteLahir) studentData.akte_lahir = akteLahir;
-      if (ktpOrangtua) studentData.ktp_orangtua = ktpOrangtua;
-      if (ijasah) studentData.ijasah = ijasah;
+      if (kartuKeluarga != null) studentData.kartu_keluarga = kartuKeluarga;
+      if (akteLahir != null) studentData.akte_lahir = akteLahir;
+      if (ktpOrangtua != null) studentData.ktp_orangtua = ktpOrangtua;
+      if (ijasah != null) studentData.ijasah = ijasah;
 
       // Simpan data siswa ke database
       Ppdb.sendDataSiswaBaruAll(studentData, (err, data) => {

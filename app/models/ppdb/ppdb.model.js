@@ -9,7 +9,7 @@ const Ppdb = function (data) {
 
 Ppdb.createSettingPpdb = (newUsers, result) => {
   console.log(newUsers);
-  
+
   db.query("INSERT INTO setting_ppdb SET ?", newUsers, (err, res) => {
     if (err) {
       console.log("error: ", err);
@@ -105,7 +105,6 @@ Ppdb.sendDataSiswaBaruAll = (newUsers, result) => {
   });
 };
 
-
 Ppdb.update = (newUsers, result) => {
   db.query(
     "UPDATE calon_siswa SET ? WHERE id = ?",
@@ -128,14 +127,14 @@ Ppdb.update = (newUsers, result) => {
 };
 Ppdb.reviewAndMasukanBySiswa = (id, review, result) => {
   const query = "UPDATE calon_siswa SET review = ? WHERE id = ?";
-  
+
   db.query(query, [review, id], (err, res) => {
     if (err) {
       console.error("Error: ", err);
       result(err, null);
       return;
     }
-    
+
     if (res.affectedRows === 0) {
       // Tidak ditemukan user dengan id tersebut
       result({ kind: "not_found" }, null);
@@ -146,7 +145,6 @@ Ppdb.reviewAndMasukanBySiswa = (id, review, result) => {
     result(null, { id: id, review: review });
   });
 };
-
 
 Ppdb.listPpdb = (full_name, school_id, result) => {
   let query =
@@ -202,8 +200,8 @@ Ppdb.delete = (uid, result) => {
     result(null, res);
   });
 };
-const fs = require('fs');
-const path = require('path');
+const fs = require("fs");
+const path = require("path");
 
 Ppdb.deleteSettingPpdb = (uid, result) => {
   // Query untuk mengambil data berdasarkan ID
@@ -219,7 +217,7 @@ Ppdb.deleteSettingPpdb = (uid, result) => {
 
     if (selectRes.length === 0) {
       console.log(`No entry found with ID ${uid}`);
-      result({ message: 'No entry found' }, null);
+      result({ message: "No entry found" }, null);
       return;
     }
 
@@ -227,11 +225,11 @@ Ppdb.deleteSettingPpdb = (uid, result) => {
     const { school_id, image } = selectRes[0];
 
     // Tentukan path file yang akan dihapus
-    const filePath = path.resolve(  
-      'uploads', 
-      'school', 
-      'siswa_baru', 
-      school_id.toString(), 
+    const filePath = path.resolve(
+      "uploads",
+      "school",
+      "siswa_baru",
+      school_id.toString(),
       image
     );
 
@@ -402,11 +400,11 @@ Ppdb.verifikasiSiswaBaru = async (id, result) => {
 
         // Jika tidak ada prefix, mulai dari 1; jika ada, tambahkan 1
         const nextPrefix = (prefixRes[0].maxPrefix || 0) + 1;
-        const formattedPrefix = String(nextPrefix).padStart(3, '0'); // Contoh: 001, 002, ...
+        const formattedPrefix = String(nextPrefix).padStart(3, "0"); // Contoh: 001, 002, ...
         const lastThreeDigitsNik = nik.slice(-3);
         // Step 5: Create the username using the prefix, year of birth, and nik
         const username = `${formattedPrefix}${yearOfBirth}${lastThreeDigitsNik}`;
-console.log(username);
+        console.log(username);
 
         const randomPassword = generateRandomPassword();
 
@@ -660,7 +658,7 @@ Ppdb.reloadPaymentSiswaBaru = (id, result) => {
 
     // Fetch Midtrans URL and Server Key from the 'aplikasi' table
     db.query(
-      `SELECT urlCreateTransaksiMidtrans, serverKey, nominal_register_siswa
+      `SELECT urlCreateTransaksiMidtrans, serverKey
        FROM aplikasi 
        WHERE school_id = ?`,
       [newUsers.school_id],
@@ -683,134 +681,150 @@ Ppdb.reloadPaymentSiswaBaru = (id, result) => {
             }
 
             if (appData.length > 0) {
-              const midtransUrl = appData[0].urlCreateTransaksiMidtrans;
-              const serverKey = appData[0].serverKey;
-              const nominal =
-                appData[0].nominal_register_siswa + affiliateData[0].amount;
+              db.query(
+                `SELECT amount 
+                 FROM setting_ppdb 
+                 WHERE school_id = ? AND unit_id = ? AND years = ?`,
+                [newUsers.school_id, newUsers.unit_id, newUsers.years],
+                (err, settingData) => {
+                  if (err) {
+                    console.log("Setting Query error: ", err);
+                    result(err, null);
+                    return;
+                  }
 
-              // Create the request payload for Midtrans
-              const midtransPayload = {
-                transaction_details: {
-                  order_id: `${newUsers.no_registrasi}-${Date.now()}`, // Unique order ID
-                  gross_amount: nominal, // Amount from newUsers.nominal
-                },
-                credit_card: {
-                  secure: true,
-                },
-                customer_details: {
-                  first_name: newUsers.full_name, // Full name from newUsers
-                  last_name: newUsers.no_registrasi, // Registration number
-                  email: newUsers.email, // Add email if available
-                  phone: newUsers.phone, // Phone number
-                  billing_address: {
-                    first_name: newUsers.full_name,
-                    last_name: newUsers.no_registrasi,
-                    address: `NISN: ${newUsers.nisn}`, // Store NISN
-                    country_code: "IDN", // Indonesia
-                  },
-                },
-              };
+                  const midtransUrl = appData[0].urlCreateTransaksiMidtrans;
+                  const serverKey = appData[0].serverKey;
+                  const nominal =
+                    settingData[0]?.amount + affiliateData[0].amount;
 
-              // Axios configuration for the POST request
-              axios
-                .post(midtransUrl, midtransPayload, {
-                  headers: {
-                    "Content-Type": "application/json",
-                    Authorization: `Basic ${Buffer.from(
-                      `${serverKey}:`
-                    ).toString("base64")}`, // Use the fetched server key
-                  },
-                })
-                .then((response) => {
-                  // Midtrans transaction created successfully
-                  const transactionToken = response.data.token;
-                  const redirectUrl = response.data.redirect_url;
-                  const orderId = midtransPayload.transaction_details.order_id;
+                  // Create the request payload for Midtrans
+                  const midtransPayload = {
+                    transaction_details: {
+                      order_id: `${newUsers.no_registrasi}-${Date.now()}`, // Unique order ID
+                      gross_amount: nominal, // Amount from newUsers.nominal
+                    },
+                    credit_card: {
+                      secure: true,
+                    },
+                    customer_details: {
+                      first_name: newUsers.full_name, // Full name from newUsers
+                      last_name: newUsers.no_registrasi, // Registration number
+                      email: newUsers.email, // Add email if available
+                      phone: newUsers.phone, // Phone number
+                      billing_address: {
+                        first_name: newUsers.full_name,
+                        last_name: newUsers.no_registrasi,
+                        address: `NISN: ${newUsers.phone}`, // Store NISN
+                        country_code: "IDN", // Indonesia
+                      },
+                    },
+                  };
 
-                  // Update calon_siswa with order_id, redirect_url, and status
-                  db.query(
-                    `UPDATE calon_siswa 
+                  // Axios configuration for the POST request
+                  axios
+                    .post(midtransUrl, midtransPayload, {
+                      headers: {
+                        "Content-Type": "application/json",
+                        Authorization: `Basic ${Buffer.from(
+                          `${serverKey}:`
+                        ).toString("base64")}`, // Use the fetched server key
+                      },
+                    })
+                    .then((response) => {
+                      // Midtrans transaction created successfully
+                      const transactionToken = response.data.token;
+                      const redirectUrl = response.data.redirect_url;
+                      const orderId =
+                        midtransPayload.transaction_details.order_id;
+
+                      // Update calon_siswa with order_id, redirect_url, and status
+                      db.query(
+                        `UPDATE calon_siswa 
                    SET order_id = ?, redirect_url = ?, status_pembayaran = 'Pending' 
                    WHERE id = ?`,
-                    [orderId, redirectUrl, newUsers.id],
-                    (err, updateRes) => {
-                      if (err) {
-                        console.log("Update error: ", err);
-                        result(err, null);
-                        return;
-                      }
-
-                      // Fetch template message and send WhatsApp message
-                      db.query(
-                        `SELECT tm.*, a.urlWa, a.token_whatsapp, a.sender 
-                       FROM template_message tm, aplikasi a 
-                       WHERE tm.school_id=a.school_id 
-                       AND tm.deskripsi LIKE '%registrasiSiswa%'  
-                       AND tm.school_id = ?`,
-                        [newUsers.school_id],
-                        (err, queryRes) => {
+                        [orderId, redirectUrl, newUsers.id],
+                        (err, updateRes) => {
                           if (err) {
-                            console.log("Query error: ", err);
+                            console.log("Update error: ", err);
                             result(err, null);
                             return;
                           }
 
-                          if (queryRes.length > 0) {
-                            const {
-                              urlWa: url,
-                              token_whatsapp: token,
-                              sender,
-                              message: template_message,
-                            } = queryRes[0];
-
-                            // Data to replace in the template message
-                            const replacements = {
-                              nama_lengkap: newUsers.full_name,
-                              no_registrasi: newUsers.no_registrasi,
-                              nik: newUsers.nik,
-                              no_wa: newUsers.phone,
-                              tahun: new Date().getFullYear(),
-                              redirect_pembayaran: redirectUrl, // Add Midtrans URL here
-                            };
-
-                            // Replace placeholders in the template_message
-                            const formattedMessage = template_message.replace(
-                              /\$\{(\w+)\}/g,
-                              (_, key) => {
-                                return replacements[key] || "";
+                          // Fetch template message and send WhatsApp message
+                          db.query(
+                            `SELECT tm.*, a.urlWa, a.token_whatsapp, a.sender 
+                       FROM template_message tm, aplikasi a 
+                       WHERE tm.school_id=a.school_id 
+                       AND tm.deskripsi LIKE '%registrasiSiswa%'  
+                       AND tm.school_id = ?`,
+                            [newUsers.school_id],
+                            (err, queryRes) => {
+                              if (err) {
+                                console.log("Query error: ", err);
+                                result(err, null);
+                                return;
                               }
-                            );
 
-                            // Send message after creating the payment
-                            sendMessage(
-                              url,
-                              token,
-                              newUsers.phone,
-                              formattedMessage
-                            );
-                          }
+                              if (queryRes.length > 0) {
+                                const {
+                                  urlWa: url,
+                                  token_whatsapp: token,
+                                  sender,
+                                  message: template_message,
+                                } = queryRes[0];
 
-                          console.log("created Siswa: ", {
-                            id: res.insertId,
-                            ...newUsers,
-                          });
-                          result(null, {
-                            id: res.insertId,
-                            ...newUsers,
-                            midtransUrl: redirectUrl,
-                          });
+                                // Data to replace in the template message
+                                const replacements = {
+                                  nama_lengkap: newUsers.full_name,
+                                  no_registrasi: newUsers.no_registrasi,
+                                  nik: newUsers.nik,
+                                  no_wa: newUsers.phone,
+                                  tahun: new Date().getFullYear(),
+                                  redirect_pembayaran: redirectUrl, // Add Midtrans URL here
+                                };
+
+                                // Replace placeholders in the template_message
+                                const formattedMessage =
+                                  template_message.replace(
+                                    /\$\{(\w+)\}/g,
+                                    (_, key) => {
+                                      return replacements[key] || "";
+                                    }
+                                  );
+
+                                // Send message after creating the payment
+                                sendMessage(
+                                  url,
+                                  token,
+                                  newUsers.phone,
+                                  formattedMessage
+                                );
+                              }
+
+                              console.log("created Siswa: ", {
+                                id: res.insertId,
+                                ...newUsers,
+                              });
+                              result(null, {
+                                id: res.insertId,
+                                ...newUsers,
+                                midtransUrl: redirectUrl,
+                              });
+                            }
+                          );
                         }
                       );
-                    }
-                  );
-                })
-                .catch((error) => {
-                  console.log(
-                    "Midtrans Error:",
-                    error.response ? error.response.data : error.message
-                  );
-                  result(error, null);
-                });
+                    })
+                    .catch((error) => {
+                      console.log(
+                        "Midtrans Error:",
+                        error.response ? error.response.data : error.message
+                      );
+                      result(error, null);
+                    });
+                }
+              );
             } else {
               console.log("No Midtrans configuration found for the school.");
               result({ message: "Midtrans configuration missing" }, null);

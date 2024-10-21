@@ -74,7 +74,7 @@ Siswa.registerSiswa = (newUsers, result) => {
     // Tambahkan unit_id ke newUsers jika tidak ada, lalu hapus unit_name
     newUsers.unit_id = unitData[0].id;
     delete newUsers.unit_name;
-console.log(newUsers.school_id, newUsers.unit_id, newUsers.years);
+    console.log(newUsers.school_id, newUsers.unit_id, newUsers.years);
 
     // Query untuk mendapatkan setting_payment berdasarkan school_id, unit_id, dan years
     db.query(
@@ -103,7 +103,7 @@ console.log(newUsers.school_id, newUsers.unit_id, newUsers.years);
 
           // Lanjutkan dengan query aplikasi untuk mendapatkan konfigurasi Midtrans
           db.query(
-            `SELECT urlCreateTransaksiMidtrans, serverKey, nominal_register_siswa 
+            `SELECT urlCreateTransaksiMidtrans, serverKey 
              FROM aplikasi 
              WHERE school_id = ?`,
             [newUsers.school_id],
@@ -144,7 +144,7 @@ console.log(newUsers.school_id, newUsers.unit_id, newUsers.years);
                         billing_address: {
                           first_name: newUsers.full_name,
                           last_name: newUsers.no_registrasi,
-                          address: `NISN: ${newUsers.nisn}`,
+                          address: `NISN: ${newUsers.phone}`,
                           country_code: "IDN",
                         },
                       },
@@ -247,10 +247,7 @@ console.log(newUsers.school_id, newUsers.unit_id, newUsers.years);
                     console.log(
                       "No Midtrans configuration found for the school."
                     );
-                    result(
-                      { message: "Midtrans configuration missing" },
-                      null
-                    );
+                    result({ message: "Midtrans configuration missing" }, null);
                   }
                 }
               );
@@ -261,7 +258,6 @@ console.log(newUsers.school_id, newUsers.unit_id, newUsers.years);
     );
   });
 };
-
 
 Siswa.update = (newUsers, result) => {
   console.log(newUsers);

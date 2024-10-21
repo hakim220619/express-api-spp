@@ -11,11 +11,14 @@ app.use(express.urlencoded({ limit: '50mb', extended: true }));
 // Mengaktifkan CORS untuk semua origin
 // Konfigurasi CORS untuk mengizinkan permintaan dari semua origin
 app.use(cors({
-  origin: 'https://ypphbanjarbaru.sppapp.com', // Atau ganti dengan origin spesifik seperti 'https://your-frontend.com'
-  methods: ['GET', 'POST', 'PUT', 'DELETE'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
+  origin: '*', // Tambahkan origin yang dibutuhkan
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'], // Tambahkan OPTIONS jika dibutuhkan oleh preflight request
+  allowedHeaders: ['Content-Type', 'Authorization'], // Header yang diperbolehkan
   credentials: true // Jika perlu mengirim cookie atau header otentikasi
 }));
+
+// Tambahkan opsi untuk menangani preflight request jika diperlukan
+app.options('*', cors()); // Handle preflight request untuk semua route
 
 // Menyajikan file statis dari folder 'uploads'
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));

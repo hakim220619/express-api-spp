@@ -273,6 +273,89 @@ Ppdb.detailPpdb = async (id, result) => {
     result(null, res[0]);
   });
 };
+Ppdb.detailPpdbStudentExcel = async (id, result) => {
+  let query = `SELECT 
+    full_name,
+    full_name AS "Nama Lengkap",
+    nick_name AS "Nama Panggilan",
+    gender AS "Jenis Kelamin",
+    nik AS "NIK",
+    nisn AS "NISN",
+    birth_place_date AS "Tempat dan Tanggal Lahir",
+    birth_date AS "Tanggal Lahir",
+    birth_cert_no AS "Nomor Akta Kelahiran",
+    address AS "Alamat",
+    religion AS "Agama",
+    rt AS "RT",
+    rw AS "RW",
+    dusun AS "Dusun",
+    kecamatan AS "Kecamatan",
+    school AS "Sekolah",
+    siblings AS "Saudara",
+    transportation AS "Transportasi",
+    travel_hours AS "Jam Perjalanan",
+    travel_minutes AS "Menit Perjalanan",
+    distance_in_km AS "Jarak (km)",
+    distance_to_school AS "Jarak ke Sekolah",
+    height AS "Tinggi Badan",
+    weight AS "Berat Badan",
+    mobile_phone AS "Telepon Seluler",
+    phone AS "Telepon",
+    home_phone AS "Telepon Rumah",
+    email AS "Email",
+    kps_number AS "Nomor KPS",
+    kps_receiver AS "Penerima KPS",
+    father_name AS "Nama Ayah",
+    father_nik AS "NIK Ayah",
+    father_birth_year AS "Tahun Lahir Ayah",
+    father_education AS "Pendidikan Ayah",
+    father_job AS "Pekerjaan Ayah",
+    father_income AS "Pendapatan Ayah",
+    mother_name AS "Nama Ibu",
+    mother_nik AS "NIK Ibu",
+    mother_birth_year AS "Tahun Lahir Ibu",
+    mother_education AS "Pendidikan Ibu",
+    mother_job AS "Pekerjaan Ibu",
+    guardian_name AS "Nama Wali",
+    guardian_nik AS "NIK Wali",
+    guardian_birth_year AS "Tahun Lahir Wali",
+    guardian_education AS "Pendidikan Wali",
+    guardian_job AS "Pekerjaan Wali",
+    guardian_income AS "Pendapatan Wali",
+    kartu_keluarga AS "Kartu Keluarga",
+    akte_lahir AS "Akta Lahir",
+    ktp_orangtua AS "KTP Orang Tua",
+    ijasah AS "Ijazah",
+    created_at AS "Tanggal Dibuat"
+FROM calon_siswa_detail
+ where cs_id = '${id}'`;
+  db.query(query, (err, res) => {
+    if (err) {
+      console.log("error: ", err);
+      result(null, err);
+      return;
+    }
+
+    console.log("users: ", res);
+    result(null, res[0]);
+  });
+};
+Ppdb.detailPpdbStudentDetail = async (id, result) => {
+  let query = `SELECT 
+   *
+FROM calon_siswa_detail
+ where cs_id = '${id}'`;
+  db.query(query, (err, res) => {
+    if (err) {
+      console.log("error: ", err);
+      result(null, err);
+      return;
+    }
+
+    console.log("users: ", res);
+    result(null, res[0]);
+  });
+};
 Ppdb.detailSiswaBaru = async (id, result) => {
   // Step 1: Query personal_access_tokens to get uid based on the provided id
   let uidQuery = "SELECT * FROM personal_access_tokens WHERE token = ?";

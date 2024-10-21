@@ -138,12 +138,7 @@ const storageV1 = multer.diskStorage({
   },
 });
 
-const uploadV1 = multer({
-  storage: storageV1,
-  limits: {
-      fileSize: 1 * 1024 * 1024 // 1 MB dalam byte
-  }
-});
+const uploadV1 = multer({ storage: storageV1 });
 
 
 exports.sendDataSiswaBaruAll = [
@@ -400,6 +395,30 @@ exports.detailPpdb = (req, res, next) => {
   const id = req.body.id;
 
   Ppdb.detailPpdb(id, (err, data) => {
+    if (err)
+      res.status(500).send({
+        message:
+          err.message || "Some error occurred while retrieving tutorials.",
+      });
+    else res.send(data);
+  });
+};
+exports.detailPpdbStudentExcel = (req, res, next) => {
+  const id = req.body.id;
+
+  Ppdb.detailPpdbStudentExcel(id, (err, data) => {
+    if (err)
+      res.status(500).send({
+        message:
+          err.message || "Some error occurred while retrieving tutorials.",
+      });
+    else res.send(data);
+  });
+};
+exports.detailPpdbStudentDetail = (req, res, next) => {
+  const id = req.body.id;
+
+  Ppdb.detailPpdbStudentDetail(id, (err, data) => {
     if (err)
       res.status(500).send({
         message:

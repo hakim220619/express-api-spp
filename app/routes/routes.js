@@ -57,7 +57,7 @@ module.exports = (app) => {
   router.post("/delete-setting-ppdb", token.authenticateToken, Ppdb.deleteSettingPpdb);
   router.post("/detailPpdb", token.authenticateToken, Ppdb.detailPpdb);
   router.post("/detailSiswaBaru", Ppdb.detailSiswaBaru);
-  router.post("/detailCalonSiswaBaru", token.authenticateToken, Ppdb.detailCalonSiswaBaru);
+  router.post("/detailCalonSiswaBaru", Ppdb.detailCalonSiswaBaru);
   router.post("/verifikasi-siswa-baru", token.authenticateToken, Ppdb.verifikasiSiswaBaru);
   router.post("/terima-siswa-baru", token.authenticateToken, Ppdb.terimaSiswaBaru);
   router.post("/tolak-siswa-baru", token.authenticateToken, Ppdb.tolakSiswaBaru);

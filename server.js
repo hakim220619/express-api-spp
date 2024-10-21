@@ -7,7 +7,9 @@ const path = require('path');
 const app = express();
 // Serve static files from the 'uploads' directory
 app.use(cors({
-  origin: '*', // Atau bisa diatur ke domain spesifik yang diizinkan
+  origin: '*', // Atur sesuai kebutuhan, bisa spesifik domain.
+  methods: ['POST', 'GET', 'PUT', 'DELETE'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
 }));
 
 

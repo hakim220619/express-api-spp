@@ -5,6 +5,9 @@ const path = require('path');
 
 
 const app = express();
+
+app.use(express.json({ limit: '50mb' })); // Atur limit JSON hingga 50MB
+app.use(express.urlencoded({ limit: '50mb', extended: true })); // Untuk URL-encoded
 // Serve static files from the 'uploads' directory
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 app.use(cors());

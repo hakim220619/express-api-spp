@@ -138,7 +138,13 @@ const storageV1 = multer.diskStorage({
   },
 });
 
-const uploadV1 = multer({ storage: storageV1 });
+const uploadV1 = multer({
+  storage: storageV1,
+  limits: {
+      fileSize: 1 * 1024 * 1024 // 1 MB dalam byte
+  }
+});
+
 
 exports.sendDataSiswaBaruAll = [
   uploadV1.fields([

@@ -204,7 +204,7 @@ Siswa.registerSiswa = (newUsers, result) => {
                                     no_registrasi: newUsers.no_registrasi,
                                     nik: newUsers.nik,
                                     no_wa: newUsers.phone,
-                                    tahun: new Date().getFullYear(),
+                                    tahun: newUsers.years,
                                     redirect_pembayaran: redirectUrl,
                                   };
 

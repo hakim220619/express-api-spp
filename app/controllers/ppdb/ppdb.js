@@ -210,9 +210,7 @@ exports.sendDataSiswaBaruAll = [
 
     // Extract file paths from multer
     const files = req.files;
-    const kartuKeluarga = files.kartuKeluarga
-      ? files.kartuKeluarga[0].path
-      : null;
+    const kartuKeluarga = files.kartuKeluarga ? files.kartuKeluarga[0].path : null;
     const akteLahir = files.akteLahir ? files.akteLahir[0].path : null;
     const ktpOrangtua = files.ktpOrangtua ? files.ktpOrangtua[0].path : null;
     const ijasah = files.ijasah ? files.ijasah[0].path : null;
@@ -264,10 +262,8 @@ exports.sendDataSiswaBaruAll = [
         mother_income: parseInt(motherIncome.replace(/[Rp.]/g, ""), 10),
         guardian_name: guardianName === "undefined" ? "" : guardianName,
         guardian_nik: guardianNik === "undefined" ? "" : guardianNik,
-        guardian_birth_year:
-          guardianBirthYear === "undefined" ? "" : guardianBirthYear,
-        guardian_education:
-          guardianEducation === "undefined" ? "" : guardianEducation,
+        guardian_birth_year: guardianBirthYear === "undefined" ? "" : guardianBirthYear,
+        guardian_education: guardianEducation === "undefined" ? "" : guardianEducation,
         guardian_job: guardianJob === "undefined" ? "" : guardianJob,
         guardian_income: guardianIncome
           ? isNaN(parseInt(guardianIncome.replace(/[Rp.]/g, ""), 10))
@@ -277,7 +273,7 @@ exports.sendDataSiswaBaruAll = [
         created_at: new Date(),
       };
 
-      // Only add document paths if they are not null
+      // Add document paths if they are not null
       if (kartuKeluarga) studentData.kartu_keluarga = kartuKeluarga;
       if (akteLahir) studentData.akte_lahir = akteLahir;
       if (ktpOrangtua) studentData.ktp_orangtua = ktpOrangtua;
@@ -287,9 +283,7 @@ exports.sendDataSiswaBaruAll = [
       Ppdb.sendDataSiswaBaruAll(studentData, (err, data) => {
         if (err) {
           return res.status(500).send({
-            message:
-              err.message ||
-              "Some error occurred while saving the student data.",
+            message: err.message || "Some error occurred while saving the student data.",
           });
         } else {
           res.send(data);
@@ -300,6 +294,7 @@ exports.sendDataSiswaBaruAll = [
     }
   },
 ];
+
 
 // Update existing Admin
 exports.updatePpdb = [

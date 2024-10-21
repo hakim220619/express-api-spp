@@ -23,33 +23,88 @@ Ppdb.createSettingPpdb = (newUsers, result) => {
 };
 
 Ppdb.sendDataSiswaBaruAll = (newUsers, result) => {
-  // Assuming cs_id is a unique key or primary key
-  db.query(
-    "INSERT INTO calon_siswa_detail SET ? ON DUPLICATE KEY UPDATE ?",
-    [newUsers, newUsers], // newUsers is used for both insert and update values
-    (err, res) => {
-      if (err) {
-        console.log("error: ", err);
-        result(err, null);
-        return;
-      }
+  const query = `
+    INSERT INTO calon_siswa_detail SET ?
+    ON DUPLICATE KEY UPDATE 
+    full_name = VALUES(full_name),
+    nick_name = VALUES(nick_name),
+    gender = VALUES(gender),
+    nik = VALUES(nik),
+    nisn = VALUES(nisn),
+    birth_place_date = VALUES(birth_place_date),
+    birth_date = VALUES(birth_date),
+    birth_cert_no = VALUES(birth_cert_no),
+    address = VALUES(address),
+    religion = VALUES(religion),
+    rt = VALUES(rt),
+    rw = VALUES(rw),
+    dusun = VALUES(dusun),
+    kecamatan = VALUES(kecamatan),
+    school = VALUES(school),
+    siblings = VALUES(siblings),
+    transportation = VALUES(transportation),
+    travel_hours = VALUES(travel_hours),
+    travel_minutes = VALUES(travel_minutes),
+    distance_in_km = VALUES(distance_in_km),
+    distance_to_school = VALUES(distance_to_school),
+    height = VALUES(height),
+    weight = VALUES(weight),
+    mobile_phone = VALUES(mobile_phone),
+    phone = VALUES(phone),
+    home_phone = VALUES(home_phone),
+    email = VALUES(email),
+    kps_number = VALUES(kps_number),
+    kps_receiver = VALUES(kps_receiver),
+    father_name = VALUES(father_name),
+    father_nik = VALUES(father_nik),
+    father_birth_year = VALUES(father_birth_year),
+    father_education = VALUES(father_education),
+    father_job = VALUES(father_job),
+    father_income = VALUES(father_income),
+    mother_name = VALUES(mother_name),
+    mother_nik = VALUES(mother_nik),
+    mother_birth_year = VALUES(mother_birth_year),
+    mother_education = VALUES(mother_education),
+    mother_job = VALUES(mother_job),
+    mother_income = VALUES(mother_income),
+    guardian_name = VALUES(guardian_name),
+    guardian_nik = VALUES(guardian_nik),
+    guardian_birth_year = VALUES(guardian_birth_year),
+    guardian_education = VALUES(guardian_education),
+    guardian_job = VALUES(guardian_job),
+    guardian_income = VALUES(guardian_income),
+    kartu_keluarga = VALUES(kartu_keluarga),
+    akte_lahir = VALUES(akte_lahir),
+    ktp_orangtua = VALUES(ktp_orangtua),
+    ijasah = VALUES(ijasah),
+    created_at = VALUES(created_at)
+  `;
 
-      if (res.affectedRows > 1) {
-        console.log("updated calon_siswa_detail: ", {
-          id: newUsers.cs_id,
-          ...newUsers,
-        });
-        result(null, { id: newUsers.cs_id, ...newUsers });
-      } else {
-        console.log("created calon_siswa_detail: ", {
-          id: res.insertId,
-          ...newUsers,
-        });
-        result(null, { id: res.insertId, ...newUsers });
-      }
+  db.query(query, [newUsers], (err, res) => {
+    if (err) {
+      console.log("error: ", err);
+      result(err, null);
+      return;
     }
-  );
+
+    const isUpdate = res.affectedRows > 1;
+
+    if (isUpdate) {
+      console.log("Updated calon_siswa_detail: ", {
+        id: newUsers.cs_id,
+        ...newUsers,
+      });
+      result(null, { id: newUsers.cs_id, ...newUsers });
+    } else {
+      console.log("Created calon_siswa_detail: ", {
+        id: res.insertId || newUsers.cs_id,
+        ...newUsers,
+      });
+      result(null, { id: res.insertId || newUsers.cs_id, ...newUsers });
+    }
+  });
 };
+
 
 Ppdb.update = (newUsers, result) => {
   db.query(

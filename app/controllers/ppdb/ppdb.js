@@ -33,6 +33,22 @@ const fs = require("fs");
 //   storage: storage,
 //   limits: { fileSize: 5 * 1024 * 1024 },
 // });
+
+// Konfigurasi penyimpanan multer
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+      cb(null, path.join(__dirname, 'uploads/school/siswa_baru'));
+  },
+  filename: (req, file, cb) => {
+      cb(null, Date.now() + '-' + file.originalname); // Menyimpan file dengan nama unik
+  }
+});
+
+// Pengaturan batas ukuran file (diatur lebih dari 1 MB)
+const upload = multer({ 
+  storage: storage,
+  limits: { fileSize: 5 * 1024 * 1024 } // Batas ukuran 5 MB
+});
 exports.createSettingPpdb = [
   upload.single("image"), // Middleware untuk menangani upload file tunggal
   async (req, res) => {
@@ -117,21 +133,7 @@ exports.listSettingPpdb = (req, res, next) => {
 
 
 
-// Konfigurasi penyimpanan multer
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-      cb(null, path.join(__dirname, 'uploads/school/siswa_baru'));
-  },
-  filename: (req, file, cb) => {
-      cb(null, Date.now() + '-' + file.originalname); // Menyimpan file dengan nama unik
-  }
-});
 
-// Pengaturan batas ukuran file (diatur lebih dari 1 MB)
-const upload = multer({ 
-  storage: storage,
-  limits: { fileSize: 5 * 1024 * 1024 } // Batas ukuran 5 MB
-});
 
 // Fungsi untuk mengirim data siswa baru
 exports.sendDataSiswaBaruAll = [

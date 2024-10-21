@@ -29,13 +29,17 @@ const storage = multer.diskStorage({
   },
 });
 
-const upload = multer({ storage: storage });
+const upload = multer({
+  storage: storage,
+  limits: { fileSize: 5 * 1024 * 1024 },
+});
 exports.createSettingPpdb = [
   upload.single("image"), // Middleware untuk menangani upload file tunggal
   async (req, res) => {
     try {
       // Validasi input request body
-      const { school_id, unit_id, years, amount, status, address, url } = req.body;
+      const { school_id, unit_id, years, amount, status, address, url } =
+        req.body;
 
       // Validasi wajib untuk unit_id, years, dan amount
       if (!unit_id || !years || !amount) {
@@ -45,7 +49,7 @@ exports.createSettingPpdb = [
       }
 
       // Manipulasi URL: Mengganti spasi dengan tanda "-"
-      const sanitizedUrl = url ? url.trim().replace(/\s+/g, '-') : null;
+      const sanitizedUrl = url ? url.trim().replace(/\s+/g, "-") : null;
 
       // Cek apakah ada file gambar yang diupload
       const gambar = req.file ? req.file.filename : null; // Simpan nama file jika ada
@@ -68,7 +72,8 @@ exports.createSettingPpdb = [
         if (err) {
           console.error("Error saat menyimpan ke database:", err);
           return res.status(500).send({
-            message: err.message || "Terjadi kesalahan saat membuat pengaturan PPDB.",
+            message:
+              err.message || "Terjadi kesalahan saat membuat pengaturan PPDB.",
           });
         }
         res.status(201).send({
@@ -82,7 +87,6 @@ exports.createSettingPpdb = [
     }
   },
 ];
-
 
 // Retrieve all Admins from the database with conditions
 exports.listPpdb = (req, res, next) => {
@@ -134,14 +138,17 @@ const storagev1 = multer.diskStorage({
   },
 });
 
-const uploadv1 = multer({ storage: storagev1 });
+const uploadv1 = multer({
+  storage: storagev1,
+  limits: { fileSize: 5 * 1024 * 1024 },
+});
 
 exports.sendDataSiswaBaruAll = [
   uploadv1.fields([
-    { name: 'kartuKeluarga', maxCount: 1 },
-    { name: 'akteLahir', maxCount: 1 },
-    { name: 'ktpOrangtua', maxCount: 1 },
-    { name: 'ijasah', maxCount: 1 },
+    { name: "kartuKeluarga", maxCount: 1 },
+    { name: "akteLahir", maxCount: 1 },
+    { name: "ktpOrangtua", maxCount: 1 },
+    { name: "ijasah", maxCount: 1 },
   ]),
   async (req, res) => {
     // Validate request
@@ -204,7 +211,9 @@ exports.sendDataSiswaBaruAll = [
 
     // Extract file paths from multer
     const files = req.files;
-    const kartuKeluarga = files.kartuKeluarga ? files.kartuKeluarga[0].path : null;
+    const kartuKeluarga = files.kartuKeluarga
+      ? files.kartuKeluarga[0].path
+      : null;
     const akteLahir = files.akteLahir ? files.akteLahir[0].path : null;
     const ktpOrangtua = files.ktpOrangtua ? files.ktpOrangtua[0].path : null;
     const ijasah = files.ijasah ? files.ijasah[0].path : null;
@@ -254,11 +263,13 @@ exports.sendDataSiswaBaruAll = [
         mother_education: motherEducation,
         mother_job: motherJob,
         mother_income: parseInt(motherIncome.replace(/[Rp.]/g, ""), 10),
-        guardian_name: guardianName === 'undefined' ? '' : guardianName,
-        guardian_nik: guardianNik === 'undefined' ? '' : guardianNik,
-        guardian_birth_year: guardianBirthYear === 'undefined' ? '' : guardianBirthYear,
-        guardian_education: guardianEducation === 'undefined' ? '' : guardianEducation,
-        guardian_job: guardianJob === 'undefined' ? '' : guardianJob,
+        guardian_name: guardianName === "undefined" ? "" : guardianName,
+        guardian_nik: guardianNik === "undefined" ? "" : guardianNik,
+        guardian_birth_year:
+          guardianBirthYear === "undefined" ? "" : guardianBirthYear,
+        guardian_education:
+          guardianEducation === "undefined" ? "" : guardianEducation,
+        guardian_job: guardianJob === "undefined" ? "" : guardianJob,
         guardian_income: guardianIncome
           ? isNaN(parseInt(guardianIncome.replace(/[Rp.]/g, ""), 10))
             ? null
@@ -290,8 +301,6 @@ exports.sendDataSiswaBaruAll = [
     }
   },
 ];
-
-
 
 // Update existing Admin
 exports.updatePpdb = [
@@ -445,7 +454,7 @@ exports.tolakSiswaBaru = (req, res, next) => {
 exports.reloadPaymentSiswaBaru = (req, res, next) => {
   const id = req.body.id;
   console.log(id);
-  
+
   Ppdb.reloadPaymentSiswaBaru(id, (err, data) => {
     if (err)
       res.status(500).send({

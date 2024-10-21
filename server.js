@@ -1,38 +1,48 @@
 const express = require("express");
+// const bodyParser = require("body-parser"); /* deprecated */
 const cors = require('cors');
 const path = require('path');
 
+
 const app = express();
-
-// Middleware untuk parsing JSON dan URL-encoded dengan limit 50MB
-
-
-// Mengaktifkan CORS untuk semua origin
-// Konfigurasi CORS untuk mengizinkan permintaan dari semua origin
+// Serve static files from the 'uploads' directory
 app.use(cors({
-  origin: '*', // Tambahkan origin yang dibutuhkan
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'], // Tambahkan OPTIONS jika dibutuhkan oleh preflight request
-  allowedHeaders: ['Content-Type', 'Authorization'], // Header yang diperbolehkan
-  credentials: true // Jika perlu mengirim cookie atau header otentikasi
+  origin: '*', // Atau bisa diatur ke domain spesifik yang diizinkan
 }));
 
-// Tambahkan opsi untuk menangani preflight request jika diperlukan
-app.options('*', cors()); // Handle preflight request untuk semua route
+
+
+app.use((req, res, next) => {
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  next();
+});
+app.options('*', (req, res) => {
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  res.sendStatus(200);
+});
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
-// Menyajikan file statis dari folder 'uploads'
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
-// Route sederhana untuk cek server berjalan
+app.use('/uploads', express.static('uploads'));
+
+// parse requests of content-type - application/json
+
+// parse requests of content-type - application/x-www-form-urlencoded
+app.use(express.urlencoded({ extended: true })); /* bodyParser.urlencoded() is deprecated */
+// simple route
 app.get("/", (req, res) => {
-  res.json({ message: "Welcome to Dlh application." });
+  res.json({ message: "Welcome to Api DLH." });
 });
 
-// Mengimpor routes dari folder routes
 require("./app/routes/routes.js")(app);
 
-// Menentukan port dan menjalankan server
+
+// set port, listen for requests
 const PORT = process.env.PORT || 8080;
-app.listen(PORT, () => {
+app.listen(PORT, async () => {
   console.log(`Server is running on port ${PORT}.`);
 });

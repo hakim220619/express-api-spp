@@ -1,38 +1,29 @@
 const express = require("express");
-// const bodyParser = require("body-parser"); /* deprecated */
 const cors = require('cors');
 const path = require('path');
 
-
 const app = express();
 
-app.use(express.json({ limit: '50mb' })); // Atur limit JSON hingga 50MB
-app.use(express.urlencoded({ limit: '50mb', extended: true })); // Untuk URL-encoded
-// Serve static files from the 'uploads' directory
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+// Middleware untuk parsing JSON dan URL-encoded dengan limit 50MB
+app.use(express.json({ limit: '50mb' }));
+app.use(express.urlencoded({ limit: '50mb', extended: true }));
+
+// Mengaktifkan CORS untuk semua origin
 app.use(cors());
-app.use((req, res, next) => {
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-  next();
-});
 
-// parse requests of content-type - application/json
-app.use(express.json()); /* bodyParser.json() is deprecated */
+// Menyajikan file statis dari folder 'uploads'
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
-// parse requests of content-type - application/x-www-form-urlencoded
-app.use(express.urlencoded({ extended: true })); /* bodyParser.urlencoded() is deprecated */
-// simple route
+// Route sederhana untuk cek server berjalan
 app.get("/", (req, res) => {
   res.json({ message: "Welcome to bezkoder application." });
 });
 
+// Mengimpor routes dari folder routes
 require("./app/routes/routes.js")(app);
 
-
-// set port, listen for requests
+// Menentukan port dan menjalankan server
 const PORT = process.env.PORT || 8080;
-app.listen(PORT, async () => {
+app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}.`);
 });

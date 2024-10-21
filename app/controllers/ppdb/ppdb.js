@@ -110,10 +110,34 @@ exports.listSettingPpdb = (req, res, next) => {
   });
 };
 
+const baseUploadDirv1 = "uploads/school/siswa_baru";
+if (!fs.existsSync(baseUploadDirv1)) {
+  fs.mkdirSync(baseUploadDirv1, { recursive: true });
+}
 
+// Multer setup for file uploads
+const storagev1 = multer.diskStorage({
+  destination: function (req, file, cb) {
+    const schoolId = req.body.school_id; // Get the school ID from the request body
+    const uploadPath = path.join(baseUploadDir, schoolId.toString()); // Construct the folder path
+
+    // Ensure the specific school directory exists
+    if (!fs.existsSync(uploadPath)) {
+      fs.mkdirSync(uploadPath, { recursive: true });
+      console.log(`Directory created: ${uploadPath}`);
+    }
+
+    cb(null, uploadPath); // Callback with the destination folder
+  },
+  filename: function (req, file, cb) {
+    cb(null, `${uuidv4()}${path.extname(file.originalname)}`); // Rename file with a unique identifier
+  },
+});
+
+const uploadv1 = multer({ storage: storagev1 });
 
 exports.sendDataSiswaBaruAll = [
-  upload.fields([
+  uploadv1.fields([
     { name: 'kartuKeluarga', maxCount: 1 },
     { name: 'akteLahir', maxCount: 1 },
     { name: 'ktpOrangtua', maxCount: 1 },

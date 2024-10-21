@@ -5,8 +5,7 @@ const path = require('path');
 const app = express();
 
 // Middleware untuk parsing JSON dan URL-encoded dengan limit 50MB
-app.use(express.json({ limit: '50mb' }));
-app.use(express.urlencoded({ limit: '50mb', extended: true }));
+
 
 // Mengaktifkan CORS untuk semua origin
 // Konfigurasi CORS untuk mengizinkan permintaan dari semua origin
@@ -19,13 +18,14 @@ app.use(cors({
 
 // Tambahkan opsi untuk menangani preflight request jika diperlukan
 app.options('*', cors()); // Handle preflight request untuk semua route
-
+app.use(express.json({ limit: '50mb' }));
+app.use(express.urlencoded({ limit: '50mb', extended: true }));
 // Menyajikan file statis dari folder 'uploads'
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // Route sederhana untuk cek server berjalan
 app.get("/", (req, res) => {
-  res.json({ message: "Welcome to bezkoder application." });
+  res.json({ message: "Welcome to Dlh application." });
 });
 
 // Mengimpor routes dari folder routes

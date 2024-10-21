@@ -5,34 +5,34 @@ const multer = require("multer");
 const path = require("path");
 const fs = require("fs");
 
-const baseUploadDir = "uploads/school/siswa_baru";
-if (!fs.existsSync(baseUploadDir)) {
-  fs.mkdirSync(baseUploadDir, { recursive: true });
-}
+// const baseUploadDir = "uploads/school/siswa_baru";
+// if (!fs.existsSync(baseUploadDir)) {
+//   fs.mkdirSync(baseUploadDir, { recursive: true });
+// }
 
-// Multer setup for file uploads
-const storage = multer.diskStorage({
-  destination: function (req, file, cb) {
-    const schoolId = req.body.school_id; // Get the school ID from the request body
-    const uploadPath = path.join(baseUploadDir, schoolId.toString()); // Construct the folder path
+// // Multer setup for file uploads
+// const storage = multer.diskStorage({
+//   destination: function (req, file, cb) {
+//     const schoolId = req.body.school_id; // Get the school ID from the request body
+//     const uploadPath = path.join(baseUploadDir, schoolId.toString()); // Construct the folder path
 
-    // Ensure the specific school directory exists
-    if (!fs.existsSync(uploadPath)) {
-      fs.mkdirSync(uploadPath, { recursive: true });
-      console.log(`Directory created: ${uploadPath}`);
-    }
+//     // Ensure the specific school directory exists
+//     if (!fs.existsSync(uploadPath)) {
+//       fs.mkdirSync(uploadPath, { recursive: true });
+//       console.log(`Directory created: ${uploadPath}`);
+//     }
 
-    cb(null, uploadPath); // Callback with the destination folder
-  },
-  filename: function (req, file, cb) {
-    cb(null, `${uuidv4()}${path.extname(file.originalname)}`); // Rename file with a unique identifier
-  },
-});
+//     cb(null, uploadPath); // Callback with the destination folder
+//   },
+//   filename: function (req, file, cb) {
+//     cb(null, `${uuidv4()}${path.extname(file.originalname)}`); // Rename file with a unique identifier
+//   },
+// });
 
-const upload = multer({
-  storage: storage,
-  limits: { fileSize: 5 * 1024 * 1024 },
-});
+// const upload = multer({
+//   storage: storage,
+//   limits: { fileSize: 5 * 1024 * 1024 },
+// });
 exports.createSettingPpdb = [
   upload.single("image"), // Middleware untuk menangani upload file tunggal
   async (req, res) => {
@@ -114,34 +114,28 @@ exports.listSettingPpdb = (req, res, next) => {
   });
 };
 
-const baseUploadDirV1 = "uploads/school/siswa_baru";
-if (!fs.existsSync(baseUploadDir)) {
-  fs.mkdirSync(baseUploadDir, { recursive: true });
-}
 
-// Multer setup for file uploads
-const storageV1 = multer.diskStorage({
-  destination: function (req, file, cb) {
-    const schoolId = req.body.school_id; // Get the school ID from the request body
-    const uploadPath = path.join(baseUploadDirV1, schoolId.toString()); // Construct the folder path
 
-    // Ensure the specific school directory exists
-    if (!fs.existsSync(uploadPath)) {
-      fs.mkdirSync(uploadPath, { recursive: true });
-      console.log(`Directory created: ${uploadPath}`);
-    }
 
-    cb(null, uploadPath); // Callback with the destination folder
+// Konfigurasi penyimpanan multer
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+      cb(null, path.join(__dirname, 'uploads/school/siswa_baru'));
   },
-  filename: function (req, file, cb) {
-    cb(null, `${uuidv4()}${path.extname(file.originalname)}`); // Rename file with a unique identifier
-  },
+  filename: (req, file, cb) => {
+      cb(null, Date.now() + '-' + file.originalname); // Menyimpan file dengan nama unik
+  }
 });
 
-const uploadV1 = multer({ storage: storageV1 });
+// Pengaturan batas ukuran file (diatur lebih dari 1 MB)
+const upload = multer({ 
+  storage: storage,
+  limits: { fileSize: 5 * 1024 * 1024 } // Batas ukuran 5 MB
+});
 
+// Fungsi untuk mengirim data siswa baru
 exports.sendDataSiswaBaruAll = [
-  uploadV1.fields([
+  upload.fields([
     { name: "kartuKeluarga", maxCount: 1 },
     { name: "akteLahir", maxCount: 1 },
     { name: "ktpOrangtua", maxCount: 1 },
@@ -150,178 +144,98 @@ exports.sendDataSiswaBaruAll = [
   async (req, res) => {
     // Validasi permintaan
     if (!req.body) {
-      return res.status(400).send({
-        message: "Content cannot be empty!",
-      });
+      return res.status(400).send({ message: "Content cannot be empty!" });
     }
 
     // Daftar field yang wajib ada
     const requiredFields = [
-      "id",
-      "fullName",
-      "gender",
-      "nik",
-      "nisn",
-      "birth_place_date",
-      "birth_date",
-      "address",
-      "fatherName",
-      "motherName",
+      "id", "fullName", "gender", "nik", "nisn",
+      "birth_place_date", "birth_date", "address",
+      "fatherName", "motherName"
     ];
 
     // Cek apakah semua field yang diperlukan ada dan tidak null
     for (const field of requiredFields) {
       if (!req.body[field]) {
-        return res.status(400).send({
-          message: `${field} cannot be empty!`,
-        });
+        return res.status(400).send({ message: `${field} cannot be empty!` });
       }
     }
 
-    const {
-      id,
-      fullName,
-      nick_name,
-      gender,
-      nik,
-      nisn,
-      birth_place_date,
-      birth_date,
-      birth_cert_no,
-      address,
-      religion,
-      rt,
-      rw,
-      dusun,
-      kecamatan,
-      school,
-      siblings,
-      transportation,
-      travelHours,
-      travelMinutes,
-      distanceInKm,
-      distanceToSchool,
-      height,
-      weight,
-      mobilePhone,
-      phone,
-      homePhone,
-      email,
-      kpsNumber,
-      kpsReceiver,
-      fatherName,
-      fatherNik,
-      fatherBirthYear,
-      fatherEducation,
-      fatherJob,
-      fatherIncome,
-      motherName,
-      motherNik,
-      motherBirthYear,
-      motherEducation,
-      motherJob,
-      motherIncome,
-      guardianName,
-      guardianNik,
-      guardianBirthYear,
-      guardianEducation,
-      guardianJob,
-      guardianIncome,
-    } = req.body;
-
-    // Ekstrak jalur file dari multer
-    const files = req.files;
-
-    const kartuKeluarga = files.kartuKeluarga
-      ? files.kartuKeluarga[0].path
-      : req.body.kartuKeluarga;
-    const akteLahir = files.akteLahir ? files.akteLahir[0].path : req.body.akteLahir;
-    const ktpOrangtua = files.ktpOrangtua ? files.ktpOrangtua[0].path : req.body.ktpOrangtua;
-    const ijasah = files.ijasah ? files.ijasah[0].path : req.body.ijasah;
+    // Ekstrak data siswa dari body request
+    const studentData = {
+      cs_id: req.body.id,
+      full_name: req.body.fullName,
+      nick_name: req.body.nick_name,
+      gender: req.body.gender,
+      nik: req.body.nik,
+      nisn: req.body.nisn,
+      birth_place_date: req.body.birth_place_date,
+      birth_date: req.body.birth_date,
+      birth_cert_no: req.body.birth_cert_no,
+      address: req.body.address,
+      religion: req.body.religion,
+      rt: req.body.rt,
+      rw: req.body.rw,
+      dusun: req.body.dusun,
+      kecamatan: req.body.kecamatan,
+      school: req.body.school,
+      siblings: req.body.siblings,
+      transportation: req.body.transportation,
+      travel_hours: req.body.travelHours,
+      travel_minutes: req.body.travelMinutes,
+      distance_in_km: req.body.distanceInKm,
+      distance_to_school: req.body.distanceToSchool,
+      height: req.body.height,
+      weight: req.body.weight,
+      mobile_phone: req.body.mobilePhone,
+      phone: req.body.phone,
+      home_phone: req.body.homePhone,
+      email: req.body.email,
+      kps_number: req.body.kpsNumber,
+      kps_receiver: req.body.kpsReceiver,
+      father_name: req.body.fatherName,
+      father_nik: req.body.fatherNik,
+      father_birth_year: req.body.fatherBirthYear,
+      father_education: req.body.fatherEducation,
+      father_job: req.body.fatherJob,
+      father_income: parseInt(req.body.fatherIncome.replace(/[Rp.]/g, ""), 10),
+      mother_name: req.body.motherName,
+      mother_nik: req.body.motherNik,
+      mother_birth_year: req.body.motherBirthYear,
+      mother_education: req.body.motherEducation,
+      mother_job: req.body.motherJob,
+      mother_income: parseInt(req.body.motherIncome.replace(/[Rp.]/g, ""), 10),
+      guardian_name: req.body.guardianName || "",
+      guardian_nik: req.body.guardianNik || "",
+      guardian_birth_year: req.body.guardianBirthYear || "",
+      guardian_education: req.body.guardianEducation || "",
+      guardian_job: req.body.guardianJob || "",
+      guardian_income: req.body.guardianIncome
+        ? parseInt(req.body.guardianIncome.replace(/[Rp.]/g, ""), 10)
+        : null,
+      kartu_keluarga: req.files.kartuKeluarga ? req.files.kartuKeluarga[0].path : req.body.kartuKeluarga,
+      akte_lahir: req.files.akteLahir ? req.files.akteLahir[0].path : req.body.akteLahir,
+      ktp_orangtua: req.files.ktpOrangtua ? req.files.ktpOrangtua[0].path : req.body.ktpOrangtua,
+      ijasah: req.files.ijasah ? req.files.ijasah[0].path : req.body.ijasah,
+      created_at: new Date(),
+    };
 
     try {
-      // Kompresi gambar jika ada
-
-      // Buat objek data siswa baru
-      const studentData = {
-        cs_id: id,
-        full_name: fullName,
-        nick_name: nick_name,
-        gender: gender,
-        nik: nik,
-        nisn: nisn,
-        birth_place_date: birth_place_date,
-        birth_date: birth_date,
-        birth_cert_no: birth_cert_no,
-        address: address,
-        religion: religion,
-        rt: rt,
-        rw: rw,
-        dusun: dusun,
-        kecamatan: kecamatan,
-        school: school,
-        siblings: siblings,
-        transportation: transportation,
-        travel_hours: travelHours,
-        travel_minutes: travelMinutes,
-        distance_in_km: distanceInKm,
-        distance_to_school: distanceToSchool,
-        height: height,
-        weight: weight,
-        mobile_phone: mobilePhone,
-        phone: phone,
-        home_phone: homePhone,
-        email: email,
-        kps_number: kpsNumber,
-        kps_receiver: kpsReceiver,
-        father_name: fatherName,
-        father_nik: fatherNik,
-        father_birth_year: fatherBirthYear,
-        father_education: fatherEducation,
-        father_job: fatherJob,
-        father_income: parseInt(fatherIncome.replace(/[Rp.]/g, ""), 10),
-        mother_name: motherName,
-        mother_nik: motherNik,
-        mother_birth_year: motherBirthYear,
-        mother_education: motherEducation,
-        mother_job: motherJob,
-        mother_income: parseInt(motherIncome.replace(/[Rp.]/g, ""), 10),
-        guardian_name: guardianName === "undefined" ? "" : guardianName,
-        guardian_nik: guardianNik === "undefined" ? "" : guardianNik,
-        guardian_birth_year:
-          guardianBirthYear === "undefined" ? "" : guardianBirthYear,
-        guardian_education:
-          guardianEducation === "undefined" ? "" : guardianEducation,
-        guardian_job: guardianJob === "undefined" ? "" : guardianJob,
-        guardian_income: guardianIncome
-          ? isNaN(parseInt(guardianIncome.replace(/[Rp.]/g, ""), 10))
-            ? null
-            : parseInt(guardianIncome.replace(/[Rp.]/g, ""), 10)
-          : null,
-        kartu_keluarga: kartuKeluarga,
-        akte_lahir: akteLahir,
-        ktp_orangtua: ktpOrangtua,
-        ijasah: ijasah,
-        created_at: new Date(),
-      };
-
       // Simpan data siswa ke database
       Ppdb.sendDataSiswaBaruAll(studentData, (err, data) => {
         if (err) {
           return res.status(500).send({
-            message:
-              err.message ||
-              "Some error occurred while saving the student data.",
+            message: err.message || "Some error occurred while saving the student data.",
           });
-        } else {
-          res.send(data);
         }
+        res.send(data);
       });
     } catch (error) {
       res.status(500).send({ message: "Error saving student data" });
     }
   },
 ];
+
 
 // Update existing Admin
 exports.updatePpdb = [

@@ -2,7 +2,7 @@ const express = require("express");
 // const bodyParser = require("body-parser"); /* deprecated */
 const cors = require('cors');
 const path = require('path');
-
+const bodyParser = require("body-parser");
 
 const app = express();
 // Serve static files from the 'uploads' directory
@@ -12,8 +12,8 @@ app.use(cors({
   allowedHeaders: ['Content-Type', 'Authorization'],
 }));
 
-app.use(express.json({ limit: '10mb' })); // Maksimal 10MB
-app.use(express.urlencoded({ extended: true, limit: '10mb' })); // Maksimal 10MB
+app.use(bodyParser.json());
+app.use(bodyParser.urlencoded({ extended: true }));
 
 
 app.use((req, res, next) => {

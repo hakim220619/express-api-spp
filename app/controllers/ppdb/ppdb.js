@@ -4,6 +4,7 @@ const bcrypt = require("bcrypt");
 const multer = require("multer");
 const path = require("path");
 const fs = require("fs");
+const sharp = require('sharp'); // Untuk kompresi gambar
 
 const baseUploadDir = "uploads/school/siswa_baru";
 if (!fs.existsSync(baseUploadDir)) {
@@ -142,6 +143,7 @@ const storageV1 = multer.diskStorage({
 
 const uploadV1 = multer({ storage: storageV1 });
 
+
 exports.sendDataSiswaBaruAll = [
   uploadV1.fields([
     { name: "kartuKeluarga", maxCount: 1 },
@@ -150,11 +152,34 @@ exports.sendDataSiswaBaruAll = [
     { name: "ijasah", maxCount: 1 },
   ]),
   async (req, res) => {
-    // Validate request
+    // Validasi permintaan
     if (!req.body) {
       return res.status(400).send({
         message: "Content cannot be empty!",
       });
+    }
+
+    // Daftar field yang wajib ada
+    const requiredFields = [
+      "id",
+      "fullName",
+      "gender",
+      "nik",
+      "nisn",
+      "birth_place_date",
+      "birth_date",
+      "address",
+      "fatherName",
+      "motherName",
+    ];
+
+    // Cek apakah semua field yang diperlukan ada dan tidak null
+    for (const field of requiredFields) {
+      if (!req.body[field]) {
+        return res.status(400).send({
+          message: `${field} cannot be empty!`,
+        });
+      }
     }
 
     const {
@@ -208,7 +233,7 @@ exports.sendDataSiswaBaruAll = [
       guardianIncome,
     } = req.body;
 
-    // Extract file paths from multer
+    // Ekstrak jalur file dari multer
     const files = req.files;
     const kartuKeluarga = files.kartuKeluarga ? files.kartuKeluarga[0].path : null;
     const akteLahir = files.akteLahir ? files.akteLahir[0].path : null;
@@ -216,7 +241,21 @@ exports.sendDataSiswaBaruAll = [
     const ijasah = files.ijasah ? files.ijasah[0].path : null;
 
     try {
-      // Create a new student data object
+      // Kompresi gambar jika ada
+      if (kartuKeluarga) {
+        await compressImage(kartuKeluarga);
+      }
+      if (akteLahir) {
+        await compressImage(akteLahir);
+      }
+      if (ktpOrangtua) {
+        await compressImage(ktpOrangtua);
+      }
+      if (ijasah) {
+        await compressImage(ijasah);
+      }
+
+      // Buat objek data siswa baru
       const studentData = {
         cs_id: id,
         full_name: fullName,
@@ -273,13 +312,13 @@ exports.sendDataSiswaBaruAll = [
         created_at: new Date(),
       };
 
-      // Add document paths if they are not null
+      // Tambahkan jalur dokumen jika tidak null
       if (kartuKeluarga) studentData.kartu_keluarga = kartuKeluarga;
       if (akteLahir) studentData.akte_lahir = akteLahir;
       if (ktpOrangtua) studentData.ktp_orangtua = ktpOrangtua;
       if (ijasah) studentData.ijasah = ijasah;
 
-      // Save the student data to the database
+      // Simpan data siswa ke database
       Ppdb.sendDataSiswaBaruAll(studentData, (err, data) => {
         if (err) {
           return res.status(500).send({
@@ -294,6 +333,23 @@ exports.sendDataSiswaBaruAll = [
     }
   },
 ];
+
+
+// Fungsi untuk mengompres gambar
+const compressImage = async (filePath) => {
+  const outputPath = filePath.replace(/(\.\w+)$/, '-compressed$1');
+  
+  await sharp(filePath)
+    .resize({ width: 800 }) // Sesuaikan dengan ukuran yang diinginkan
+    .jpeg({ quality: 80 }) // Atur kualitas
+    .toFile(outputPath);
+
+  // Hapus file asli setelah kompresi
+  fs.unlinkSync(filePath);
+
+  // Ganti file asli dengan file yang dikompresi
+  fs.renameSync(outputPath, filePath);
+};
 
 
 // Update existing Admin

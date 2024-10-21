@@ -4,7 +4,6 @@ const bcrypt = require("bcrypt");
 const multer = require("multer");
 const path = require("path");
 const fs = require("fs");
-const sharp = require('sharp'); // Untuk kompresi gambar
 
 const baseUploadDir = "uploads/school/siswa_baru";
 if (!fs.existsSync(baseUploadDir)) {
@@ -123,8 +122,6 @@ if (!fs.existsSync(baseUploadDir)) {
 // Multer setup for file uploads
 const storageV1 = multer.diskStorage({
   destination: function (req, file, cb) {
-    console.log(req.body);
-
     const schoolId = req.body.school_id; // Get the school ID from the request body
     const uploadPath = path.join(baseUploadDirV1, schoolId.toString()); // Construct the folder path
 
@@ -142,7 +139,6 @@ const storageV1 = multer.diskStorage({
 });
 
 const uploadV1 = multer({ storage: storageV1 });
-
 
 exports.sendDataSiswaBaruAll = [
   uploadV1.fields([
@@ -235,25 +231,16 @@ exports.sendDataSiswaBaruAll = [
 
     // Ekstrak jalur file dari multer
     const files = req.files;
-    const kartuKeluarga = files.kartuKeluarga ? files.kartuKeluarga[0].path : null;
-    const akteLahir = files.akteLahir ? files.akteLahir[0].path : null;
-    const ktpOrangtua = files.ktpOrangtua ? files.ktpOrangtua[0].path : null;
-    const ijasah = files.ijasah ? files.ijasah[0].path : null;
+
+    const kartuKeluarga = files.kartuKeluarga
+      ? files.kartuKeluarga[0].path
+      : req.body.kartuKeluarga;
+    const akteLahir = files.akteLahir ? files.akteLahir[0].path : req.body.akteLahir;
+    const ktpOrangtua = files.ktpOrangtua ? files.ktpOrangtua[0].path : req.body.ktpOrangtua;
+    const ijasah = files.ijasah ? files.ijasah[0].path : req.body.ijasah;
 
     try {
       // Kompresi gambar jika ada
-      if (kartuKeluarga) {
-        await compressImage(kartuKeluarga);
-      }
-      if (akteLahir) {
-        await compressImage(akteLahir);
-      }
-      if (ktpOrangtua) {
-        await compressImage(ktpOrangtua);
-      }
-      if (ijasah) {
-        await compressImage(ijasah);
-      }
 
       // Buat objek data siswa baru
       const studentData = {
@@ -301,28 +288,30 @@ exports.sendDataSiswaBaruAll = [
         mother_income: parseInt(motherIncome.replace(/[Rp.]/g, ""), 10),
         guardian_name: guardianName === "undefined" ? "" : guardianName,
         guardian_nik: guardianNik === "undefined" ? "" : guardianNik,
-        guardian_birth_year: guardianBirthYear === "undefined" ? "" : guardianBirthYear,
-        guardian_education: guardianEducation === "undefined" ? "" : guardianEducation,
+        guardian_birth_year:
+          guardianBirthYear === "undefined" ? "" : guardianBirthYear,
+        guardian_education:
+          guardianEducation === "undefined" ? "" : guardianEducation,
         guardian_job: guardianJob === "undefined" ? "" : guardianJob,
         guardian_income: guardianIncome
           ? isNaN(parseInt(guardianIncome.replace(/[Rp.]/g, ""), 10))
             ? null
             : parseInt(guardianIncome.replace(/[Rp.]/g, ""), 10)
           : null,
+        kartu_keluarga: kartuKeluarga,
+        akte_lahir: akteLahir,
+        ktp_orangtua: ktpOrangtua,
+        ijasah: ijasah,
         created_at: new Date(),
       };
-
-      // Tambahkan jalur dokumen jika tidak null
-      if (kartuKeluarga != null) studentData.kartu_keluarga = kartuKeluarga;
-      if (akteLahir != null) studentData.akte_lahir = akteLahir;
-      if (ktpOrangtua != null) studentData.ktp_orangtua = ktpOrangtua;
-      if (ijasah != null) studentData.ijasah = ijasah;
 
       // Simpan data siswa ke database
       Ppdb.sendDataSiswaBaruAll(studentData, (err, data) => {
         if (err) {
           return res.status(500).send({
-            message: err.message || "Some error occurred while saving the student data.",
+            message:
+              err.message ||
+              "Some error occurred while saving the student data.",
           });
         } else {
           res.send(data);
@@ -333,24 +322,6 @@ exports.sendDataSiswaBaruAll = [
     }
   },
 ];
-
-
-// Fungsi untuk mengompres gambar
-const compressImage = async (filePath) => {
-  const outputPath = filePath.replace(/(\.\w+)$/, '-compressed$1');
-  
-  await sharp(filePath)
-    .resize({ width: 800 }) // Sesuaikan dengan ukuran yang diinginkan
-    .jpeg({ quality: 80 }) // Atur kualitas
-    .toFile(outputPath);
-
-  // Hapus file asli setelah kompresi
-  fs.unlinkSync(filePath);
-
-  // Ganti file asli dengan file yang dikompresi
-  fs.renameSync(outputPath, filePath);
-};
-
 
 // Update existing Admin
 exports.updatePpdb = [
@@ -445,7 +416,6 @@ exports.detailSiswaBaru = (req, res, next) => {
 };
 exports.detailCalonSiswaBaru = (req, res, next) => {
   const id = req.body.uid;
-  console.log(id);
 
   Ppdb.detailCalonSiswaBaru(id, (err, data) => {
     if (err)
@@ -503,7 +473,6 @@ exports.tolakSiswaBaru = (req, res, next) => {
 };
 exports.reloadPaymentSiswaBaru = (req, res, next) => {
   const id = req.body.id;
-  console.log(id);
 
   Ppdb.reloadPaymentSiswaBaru(id, (err, data) => {
     if (err)

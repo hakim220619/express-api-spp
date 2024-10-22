@@ -289,11 +289,32 @@ JOIN
 Dashboard.getTotalPembayaranBulanan = async (schoolId, result) => {
   // Siapkan query dasar
   let query =
-    "SELECT SUM(amount) as amount, school_id FROM payment WHERE status = 'Paid'";
+    `SELECT 
+    SUM(amount) AS total_amount,
+    school_id,
+    IF(SUM(amount) = 0, 0, 
+        ROUND(SUM(CASE WHEN MONTH(updated_at) = MONTH(CURDATE()) AND YEAR(updated_at) = YEAR(CURDATE()) THEN amount ELSE 0 END) / SUM(amount) * 100, 4)
+    ) AS percent_this_month,
+    IF(SUM(amount) = 0, 0, 
+        ROUND(SUM(CASE WHEN MONTH(updated_at) = MONTH(CURDATE()) - 1 AND YEAR(updated_at) = YEAR(CURDATE()) THEN amount ELSE 0 END) / SUM(amount) * 100, 4)
+    ) AS percent_last_month,
+    JSON_ARRAY(
+        COUNT(CASE WHEN DATE(updated_at) = CURDATE() - INTERVAL 6 DAY THEN 1 ELSE NULL END),  -- 6 hari sebelumnya
+        COUNT(CASE WHEN DATE(updated_at) = CURDATE() - INTERVAL 5 DAY THEN 1 ELSE NULL END),  -- 5 hari sebelumnya
+        COUNT(CASE WHEN DATE(updated_at) = CURDATE() - INTERVAL 4 DAY THEN 1 ELSE NULL END),  -- 4 hari sebelumnya
+        COUNT(CASE WHEN DATE(updated_at) = CURDATE() - INTERVAL 3 DAY THEN 1 ELSE NULL END),  -- 3 hari sebelumnya
+        COUNT(CASE WHEN DATE(updated_at) = CURDATE() - INTERVAL 2 DAY THEN 1 ELSE NULL END),  -- 2 hari sebelumnya
+        COUNT(CASE WHEN DATE(updated_at) = CURDATE() - INTERVAL 1 DAY THEN 1 ELSE NULL END),  -- 1 hari sebelumnya
+        COUNT(CASE WHEN DATE(updated_at) = CURDATE() THEN 1 ELSE NULL END)   -- Hari ini
+    ) AS transactions_last_7_days
+FROM 
+    payment
+WHERE 
+    status = 'Paid'`;
 
   // Jika schoolId ada, tambahkan filter berdasarkan school_id
   if (schoolId) {
-    query += " AND school_id = ?";
+    query += ` AND school_id = '${schoolId}'`;
   }
 
   // Eksekusi query dengan atau tanpa parameter schoolId
@@ -305,7 +326,7 @@ Dashboard.getTotalPembayaranBulanan = async (schoolId, result) => {
     }
 
     // Kembalikan hasil query
-    result(null, res[0]);
+    result(null, res);
   });
 };
 Dashboard.getTotalTunggakanBulananBySiswa = async (
@@ -369,7 +390,30 @@ WHERE
 Dashboard.getTotalPembayaranBebas = async (schoolId, result) => {
   // Siapkan query dasar
   let query =
-    "SELECT SUM(pd.amount) as amount, p.school_id FROM payment_detail pd, payment p WHERE pd.payment_id=p.uid AND pd.status = 'Paid'";
+    `SELECT 
+    SUM(pd.amount) AS total_amount,
+    p.school_id,
+    IF(SUM(pd.amount) = 0, 0, 
+        ROUND(SUM(CASE WHEN MONTH(pd.updated_at) = MONTH(CURDATE()) AND YEAR(pd.updated_at) = YEAR(CURDATE()) THEN pd.amount ELSE 0 END) / SUM(pd.amount) * 100, 4)
+    ) AS percent_this_month,
+    IF(SUM(pd.amount) = 0, 0, 
+        ROUND(SUM(CASE WHEN MONTH(pd.updated_at) = MONTH(CURDATE()) - 1 AND YEAR(pd.updated_at) = YEAR(CURDATE()) THEN pd.amount ELSE 0 END) / SUM(pd.amount) * 100, 4)
+    ) AS percent_last_month,
+    JSON_ARRAY(
+        COUNT(CASE WHEN DATE(pd.updated_at) = CURDATE() - INTERVAL 6 DAY THEN 1 ELSE NULL END),  -- 6 hari sebelumnya
+        COUNT(CASE WHEN DATE(pd.updated_at) = CURDATE() - INTERVAL 5 DAY THEN 1 ELSE NULL END),  -- 5 hari sebelumnya
+        COUNT(CASE WHEN DATE(pd.updated_at) = CURDATE() - INTERVAL 4 DAY THEN 1 ELSE NULL END),  -- 4 hari sebelumnya
+        COUNT(CASE WHEN DATE(pd.updated_at) = CURDATE() - INTERVAL 3 DAY THEN 1 ELSE NULL END),  -- 3 hari sebelumnya
+        COUNT(CASE WHEN DATE(pd.updated_at) = CURDATE() - INTERVAL 2 DAY THEN 1 ELSE NULL END),  -- 2 hari sebelumnya
+        COUNT(CASE WHEN DATE(pd.updated_at) = CURDATE() - INTERVAL 1 DAY THEN 1 ELSE NULL END),  -- 1 hari sebelumnya
+        COUNT(CASE WHEN DATE(pd.updated_at) = CURDATE() THEN 1 ELSE NULL END)   -- Hari ini
+    ) AS transactions_last_7_days
+FROM 
+    payment_detail pd
+JOIN 
+    payment p ON pd.payment_id = p.uid
+WHERE 
+    pd.status = 'Paid'`;
 
   // Jika schoolId ada, tambahkan filter berdasarkan school_id
   if (schoolId) {
@@ -385,7 +429,7 @@ Dashboard.getTotalPembayaranBebas = async (schoolId, result) => {
     }
 
     // Kembalikan hasil query
-    result(null, res[0]);
+    result(null, res);
   });
 };
 Dashboard.getTotalPaymentThisDay = async (schoolId, result) => {
@@ -548,9 +592,30 @@ WHERE detail LIKE '%Login%'
 };
 Dashboard.getTotalTunggakanBulanan = async (schoolId, result) => {
   let query =
-    "SELECT SUM(amount) as amount, school_id FROM payment WHERE status in ('Pending', 'Verified')";
+   `SELECT 
+    school_id,
+    SUM(pd.amount) AS total_amount,
+    IF(SUM(pd.amount) = 0, 0, 
+        ROUND(SUM(CASE WHEN MONTH(pd.updated_at) = MONTH(CURDATE()) AND YEAR(pd.updated_at) = YEAR(CURDATE()) THEN pd.amount ELSE 0 END) / SUM(pd.amount) * 100, 4)
+    ) AS percent_this_month,
+    IF(SUM(pd.amount) = 0, 0, 
+        ROUND(SUM(CASE WHEN MONTH(pd.updated_at) = MONTH(CURDATE()) - 1 AND YEAR(pd.updated_at) = YEAR(CURDATE()) THEN pd.amount ELSE 0 END) / SUM(pd.amount) * 100, 4)
+    ) AS percent_last_month,
+    JSON_ARRAY(
+        COUNT(CASE WHEN DATE(pd.updated_at) = CURDATE() - INTERVAL 6 DAY THEN 1 ELSE NULL END),  -- 6 hari sebelumnya
+        COUNT(CASE WHEN DATE(pd.updated_at) = CURDATE() - INTERVAL 5 DAY THEN 1 ELSE NULL END),  -- 5 hari sebelumnya
+        COUNT(CASE WHEN DATE(pd.updated_at) = CURDATE() - INTERVAL 4 DAY THEN 1 ELSE NULL END),  -- 4 hari sebelumnya
+        COUNT(CASE WHEN DATE(pd.updated_at) = CURDATE() - INTERVAL 3 DAY THEN 1 ELSE NULL END),  -- 3 hari sebelumnya
+        COUNT(CASE WHEN DATE(pd.updated_at) = CURDATE() - INTERVAL 2 DAY THEN 1 ELSE NULL END),  -- 2 hari sebelumnya
+        COUNT(CASE WHEN DATE(pd.updated_at) = CURDATE() - INTERVAL 1 DAY THEN 1 ELSE NULL END),  -- 1 hari sebelumnya
+        COUNT(CASE WHEN DATE(pd.updated_at) = CURDATE() THEN 1 ELSE NULL END)   -- Hari ini
+    ) AS transactions_last_7_days
+FROM 
+    payment pd
+WHERE 
+    status IN ('Pending', 'Verified')`;
   if (schoolId) {
-    query += " AND school_id = ?";
+    query += ` AND pd.school_id = ${schoolId}`;
   }
 
   db.query(query, [schoolId], (err, res) => {
@@ -560,11 +625,41 @@ Dashboard.getTotalTunggakanBulanan = async (schoolId, result) => {
       return;
     }
 
-    result(null, res[0]);
+    result(null, res);
   });
 };
 Dashboard.getTotalTunggakanBebas = async (schoolId, result) => {
-  let query = `SELECT SUM(pd.amount) as amount, (SELECT SUM(pp.amount) FROM payment pp WHERE pp.type = 'BEBAS' AND pp.status = 'Pending' AND pp.school_id = '${schoolId}') as total_payment, p.school_id FROM payment_detail pd, payment p WHERE pd.payment_id=p.uid AND pd.status = 'Paid'`;
+  let query = `SELECT 
+    SUM(pd.amount) AS amount,
+    p.school_id,
+    (
+        SELECT SUM(pp.amount) 
+        FROM payment pp 
+        WHERE pp.type = 'BEBAS' 
+          AND pp.status = 'Pending' 
+          AND pp.school_id = p.school_id
+    ) AS total_payment,
+    IF(SUM(pd.amount) = 0, 0, 
+        ROUND(SUM(CASE WHEN MONTH(pd.updated_at) = MONTH(CURDATE()) AND YEAR(pd.updated_at) = YEAR(CURDATE()) THEN pd.amount ELSE 0 END) / SUM(pd.amount) * 100, 4)
+    ) AS percent_this_month,
+    IF(SUM(pd.amount) = 0, 0, 
+        ROUND(SUM(CASE WHEN MONTH(pd.updated_at) = MONTH(CURDATE()) - 1 AND YEAR(pd.updated_at) = YEAR(CURDATE()) THEN pd.amount ELSE 0 END) / SUM(pd.amount) * 100, 4)
+    ) AS percent_last_month,
+    JSON_ARRAY(
+        COUNT(CASE WHEN DATE(pd.updated_at) = CURDATE() - INTERVAL 6 DAY THEN 1 ELSE NULL END),  -- 6 hari sebelumnya
+        COUNT(CASE WHEN DATE(pd.updated_at) = CURDATE() - INTERVAL 5 DAY THEN 1 ELSE NULL END),  -- 5 hari sebelumnya
+        COUNT(CASE WHEN DATE(pd.updated_at) = CURDATE() - INTERVAL 4 DAY THEN 1 ELSE NULL END),  -- 4 hari sebelumnya
+        COUNT(CASE WHEN DATE(pd.updated_at) = CURDATE() - INTERVAL 3 DAY THEN 1 ELSE NULL END),  -- 3 hari sebelumnya
+        COUNT(CASE WHEN DATE(pd.updated_at) = CURDATE() - INTERVAL 2 DAY THEN 1 ELSE NULL END),  -- 2 hari sebelumnya
+        COUNT(CASE WHEN DATE(pd.updated_at) = CURDATE() - INTERVAL 1 DAY THEN 1 ELSE NULL END),  -- 1 hari sebelumnya
+        COUNT(CASE WHEN DATE(pd.updated_at) = CURDATE() THEN 1 ELSE NULL END)   -- Hari ini
+    ) AS transactions_last_7_days
+FROM 
+    payment_detail pd
+JOIN 
+    payment p ON pd.payment_id = p.uid
+WHERE 
+    pd.status = 'Paid'`;
   if (schoolId) {
     query += ` AND p.school_id = '${schoolId}'`;
   }
@@ -576,7 +671,7 @@ Dashboard.getTotalTunggakanBebas = async (schoolId, result) => {
       return;
     }
     
-    result(null, res[0]);
+    result(null, res);
   });
 };
 

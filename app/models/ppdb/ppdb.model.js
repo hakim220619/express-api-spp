@@ -389,6 +389,21 @@ FROM calon_siswa_detail
     result(null, res[0]);
   });
 };
+Ppdb.detailPpdbStudentDetailAdmin = async (cs_id, result) => {
+  let query = `SELECT csd.*, cs.full_name, cs.nik, cs.date_of_birth, cs.email, cs.phone, cs.years  FROM calon_siswa_detail csd, calon_siswa cs WHERE csd.cs_id=cs.id
+ and csd.cs_id = '${cs_id}'`;
+ 
+  db.query(query, (err, res) => {
+    if (err) {
+      console.log("error: ", err);
+      result(null, err);
+      return;
+    }
+
+    console.log("users: ", res);
+    result(null, res[0]);
+  });
+};
 Ppdb.detailSiswaBaru = async (id, result) => {
   // Step 1: Query personal_access_tokens to get uid based on the provided id
   let uidQuery = "SELECT * FROM personal_access_tokens WHERE token = ?";

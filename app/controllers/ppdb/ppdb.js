@@ -522,6 +522,18 @@ exports.detailPpdbStudentDetail = (req, res, next) => {
     else res.send(data);
   });
 };
+exports.detailPpdbStudentDetailAdmin = (req, res, next) => {
+  const cs_id = req.body.cs_id;
+
+  Ppdb.detailPpdbStudentDetailAdmin(cs_id, (err, data) => {
+    if (err)
+      res.status(500).send({
+        message:
+          err.message || "Some error occurred while retrieving tutorials.",
+      });
+    else res.send(data);
+  });
+};
 exports.detailSiswaBaru = (req, res, next) => {
   const id = req.body.uid;
 

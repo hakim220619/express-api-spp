@@ -52,10 +52,12 @@ module.exports = (app) => {
   router.get("/list-ppdb", token.authenticateToken, Ppdb.listPpdb);
   router.get("/list-setting-ppdb", token.authenticateToken, Ppdb.listSettingPpdb);
   router.post("/create-setting-ppdb", token.authenticateToken, Ppdb.createSettingPpdb);
+  router.post("/update-ppdb-setting", token.authenticateToken, Ppdb.updatePpdbSetting);
   router.post("/update-ppdb", token.authenticateToken, Ppdb.updatePpdb);
   router.post("/delete-ppdb", token.authenticateToken, Ppdb.delete);
   router.post("/delete-setting-ppdb", token.authenticateToken, Ppdb.deleteSettingPpdb);
   router.post("/detailPpdb", token.authenticateToken, Ppdb.detailPpdb);
+  router.post("/detailPpdbSetting", token.authenticateToken, Ppdb.detailPpdbSetting);
   router.post("/detailPpdbStudentExcel", token.authenticateToken, Ppdb.detailPpdbStudentExcel);
   router.post("/detailPpdbStudentDetail", token.authenticateToken, Ppdb.detailPpdbStudentDetail);
   router.post("/detailSiswaBaru", Ppdb.detailSiswaBaru);

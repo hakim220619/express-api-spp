@@ -125,6 +125,26 @@ Ppdb.update = (newUsers, result) => {
     }
   );
 };
+Ppdb.updatePpdbSetting = (newUsers, result) => {
+  db.query(
+    "UPDATE setting_ppdb SET ? WHERE id = ?",
+    [newUsers, newUsers.id],
+    (err, res) => {
+      if (err) {
+        console.error("Error: ", err);
+        result(err, null);
+        return;
+      }
+      if (res.affectedRows == 0) {
+        // Not found User with the id
+        result({ kind: "not_found" }, null);
+        return;
+      }
+      console.log("Updated User: ", { id: newUsers.id, ...newUsers });
+      result(null, { id: newUsers.uid, ...newUsers });
+    }
+  );
+};
 Ppdb.reviewAndMasukanBySiswa = (id, review, result) => {
   const query = "UPDATE calon_siswa SET review = ? WHERE id = ?";
 
@@ -262,6 +282,19 @@ Ppdb.deleteSettingPpdb = (uid, result) => {
 
 Ppdb.detailPpdb = async (id, result) => {
   let query = "SELECT * from calon_siswa where id = '" + id + "'";
+  db.query(query, (err, res) => {
+    if (err) {
+      console.log("error: ", err);
+      result(null, err);
+      return;
+    }
+
+    console.log("users: ", res);
+    result(null, res[0]);
+  });
+};
+Ppdb.detailPpdbSetting = async (id, result) => {
+  let query = "SELECT * from setting_ppdb where id = '" + id + "'";
   db.query(query, (err, res) => {
     if (err) {
       console.log("error: ", err);

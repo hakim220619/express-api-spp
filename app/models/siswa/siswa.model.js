@@ -74,7 +74,6 @@ Siswa.registerSiswa = (newUsers, result) => {
     // Tambahkan unit_id ke newUsers jika tidak ada, lalu hapus unit_name
     newUsers.unit_id = unitData[0].id;
     delete newUsers.unit_name;
-    console.log(newUsers.school_id, newUsers.unit_id, newUsers.years);
 
     // Query untuk mendapatkan setting_payment berdasarkan school_id, unit_id, dan years
     db.query(

@@ -149,94 +149,109 @@ SettingPembayaran.createPaymentByFree = (newSettingPembayaran, result) => {
 };
 
 SettingPembayaran.createPaymentByMonth = (newSettingPembayaran, result) => {
-  const monthsCount = newSettingPembayaran.months.length;
-  console.log(monthsCount);
+  const monthQuery = "SELECT * FROM months where month_status = 'ON'";
+  db.query(monthQuery, (monthErr, months) => {
+    if (monthErr) {
+      console.log("error fetching months: ", monthErr);
+      return result(monthErr, null);
+    }
+    const monthsCount = newSettingPembayaran.months.length;
+    console.log(monthsCount);
+    console.log(months.length);
 
-  // Menambahkan pengecekan jika jumlah bulan tidak sama dengan 12
-  if (monthsCount !== 12) {
-    return result({ message: "Jumlah bulan harus 12" }, null);
-  }
+    // Menambahkan pengecekan jika jumlah bulan tidak sama dengan 12
+    if (monthsCount !== months.length) {
+      return result({ message: "Jumlah bulan harus 12" }, null);
+    }
 
-  const query =
-    "SELECT id, full_name, major_id, class_id, unit_id FROM users WHERE unit_id = ? and major_id = ? AND class_id = ? AND school_id = ? AND role = '160'";
+    const query =
+      "SELECT id, full_name, major_id, class_id, unit_id FROM users WHERE unit_id = ? and major_id = ? AND class_id = ? AND school_id = ? AND role = '160'";
 
-  db.query(
-    query,
-    [
-      newSettingPembayaran.unit_id,
-      newSettingPembayaran.major_id,
-      newSettingPembayaran.class_id,
-      newSettingPembayaran.school_id,
-    ],
-    (err, users) => {
-      if (err) {
-        console.log("error fetching users: ", err);
-        return result(err, null);
-      }
-      if (!users || users.length === 0) {
-        return result({ message: "User tidak ada" }, null);
-      }
+    db.query(
+      query,
+      [
+        newSettingPembayaran.unit_id,
+        newSettingPembayaran.major_id,
+        newSettingPembayaran.class_id,
+        newSettingPembayaran.school_id,
+      ],
+      (err, users) => {
+        if (err) {
+          console.log("error fetching users: ", err);
+          return result(err, null);
+        }
+        if (!users || users.length === 0) {
+          return result({ message: "User tidak ada" }, null);
+        }
 
-      users.forEach((user) => {
-        // Pengecekan pembayaran sebelum loop `for`
-        const checkQuery =
-          "SELECT id FROM payment WHERE unit_id = ? and user_id = ? AND school_id = ? AND setting_payment_uid = ? AND class_id = ? AND major_id = ?";
-        db.query(
-          checkQuery,
-          [
-            newSettingPembayaran.unit_id,
-            user.id,
-            newSettingPembayaran.school_id,
-            newSettingPembayaran.setting_payment_uid,
-            newSettingPembayaran.class_id,
-            newSettingPembayaran.major_id,
-          ],
-          (checkErr, existingPayments) => {
-            if (checkErr) {
-              console.log("error checking existing payment: ", checkErr);
-              return result(
-                { message: "error checking existing payment: ", checkErr },
-                null
-              );
-            }
-            if (!existingPayments || existingPayments.length === 0) {
-              for (let i = 0; i < monthsCount; i++) {
-                const uniqueUid = `${user.id}${newSettingPembayaran.school_id}${newSettingPembayaran.setting_payment_uid}`; // Membuat UID dari kombinasi data
-                const paymentData = {
-                  unit_id: newSettingPembayaran.unit_id,
-                  uid: uniqueUid,
-                  setting_payment_uid: newSettingPembayaran.setting_payment_uid,
-                  school_id: newSettingPembayaran.school_id,
-                  user_id: user.id,
-                  years: newSettingPembayaran.years,
-                  type: newSettingPembayaran.sp_type,
-                  major_id: newSettingPembayaran.major_id,
-                  class_id: newSettingPembayaran.class_id,
-                  status: "Pending",
-                  created_at: newSettingPembayaran.created_at,
-                  month_id: newSettingPembayaran.months[i].id,
-                  amount: newSettingPembayaran.months[i].payment,
-                };
+        users.forEach((user) => {
+          // Pengecekan pembayaran sebelum loop `for`
+          const checkQuery =
+            "SELECT id FROM payment WHERE unit_id = ? and user_id = ? AND school_id = ? AND setting_payment_uid = ? AND class_id = ? AND major_id = ?";
+          db.query(
+            checkQuery,
+            [
+              newSettingPembayaran.unit_id,
+              user.id,
+              newSettingPembayaran.school_id,
+              newSettingPembayaran.setting_payment_uid,
+              newSettingPembayaran.class_id,
+              newSettingPembayaran.major_id,
+            ],
+            (checkErr, existingPayments) => {
+              if (checkErr) {
+                console.log("error checking existing payment: ", checkErr);
+                return result(
+                  { message: "error checking existing payment: ", checkErr },
+                  null
+                );
+              }
+              if (!existingPayments || existingPayments.length === 0) {
+                for (let i = 0; i < monthsCount; i++) {
+                  const uniqueUid = `${user.id}${newSettingPembayaran.school_id}${newSettingPembayaran.setting_payment_uid}`; // Membuat UID dari kombinasi data
+                  const paymentData = {
+                    unit_id: newSettingPembayaran.unit_id,
+                    uid: uniqueUid,
+                    setting_payment_uid:
+                      newSettingPembayaran.setting_payment_uid,
+                    school_id: newSettingPembayaran.school_id,
+                    user_id: user.id,
+                    years: newSettingPembayaran.years,
+                    type: newSettingPembayaran.sp_type,
+                    major_id: newSettingPembayaran.major_id,
+                    class_id: newSettingPembayaran.class_id,
+                    status: "Pending",
+                    created_at: newSettingPembayaran.created_at,
+                    month_id: newSettingPembayaran.months[i].id,
+                    amount: newSettingPembayaran.months[i].payment,
+                  };
 
-                db.query("INSERT INTO payment SET ?", paymentData, (insertErr, res) => {
-                  if (insertErr) {
-                    console.log("error inserting payment: ", insertErr);
-                    return result(insertErr, null);
-                  } else {
-                    console.log("created payment: ", { id: res.insertId, ...paymentData });
-                  }
-                });
+                  db.query(
+                    "INSERT INTO payment SET ?",
+                    paymentData,
+                    (insertErr, res) => {
+                      if (insertErr) {
+                        console.log("error inserting payment: ", insertErr);
+                        return result(insertErr, null);
+                      } else {
+                        console.log("created payment: ", {
+                          id: res.insertId,
+                          ...paymentData,
+                        });
+                      }
+                    }
+                  );
+                }
               }
             }
-          }
-        );
-      });
+          );
+        });
 
-      result(null, { message: "Payments processed successfully" });
-    }
-  );
+        result(null, { message: "Payments processed successfully" });
+      }
+    );
+  });
 };
-
 
 SettingPembayaran.createPaymentByStudent = (newSettingPembayaran, result) => {
   const query =
@@ -260,81 +275,94 @@ SettingPembayaran.createPaymentByStudent = (newSettingPembayaran, result) => {
         return result({ message: "User tidak ada" }, null);
       }
 
-      const monthsCount = newSettingPembayaran.months.length;
+      // Tambahkan query untuk mendapatkan bulan
+      const monthQuery = "SELECT * FROM months where month_status = 'ON'";
+      db.query(monthQuery, (monthErr, months) => {
+        if (monthErr) {
+          console.log("error fetching months: ", monthErr);
+          return result(monthErr, null);
+        }
 
-      // Tambahkan pengecekan jika monthsCount tidak sama dengan 12
-      if (monthsCount !== 12) {
-        return result(
-          { message: "Jumlah bulan tidak valid. Harus 12 bulan." },
-          null
-        );
-      }
+        const monthsCount = newSettingPembayaran.months.length;
 
-      users.forEach((user) => {
-        const checkQuery =
-          "SELECT id FROM payment WHERE unit_id = ? and user_id = ? AND school_id = ? AND setting_payment_uid = ? AND class_id = ? AND major_id = ?";
+        // Tambahkan pengecekan jika monthsCount tidak sama dengan 12
+        if (monthsCount !== months.length) {
+          return result(
+            { message: "Jumlah bulan tidak valid. Harus 12 bulan." },
+            null
+          );
+        }
 
-        db.query(
-          checkQuery,
-          [
-            newSettingPembayaran.unit_id,
-            user.id,
-            newSettingPembayaran.school_id,
-            newSettingPembayaran.setting_payment_uid,
-            newSettingPembayaran.class_id,
-            newSettingPembayaran.major_id,
-          ],
-          (checkErr, existingPayments) => {
-            if (checkErr) {
-              console.log("error checking existing payment: ", checkErr);
-              return result(
-                { message: "error checking existing payment: ", checkErr },
-                null
-              );
-            }
+        users.forEach((user) => {
+          const checkQuery =
+            "SELECT id FROM payment WHERE unit_id = ? and user_id = ? AND school_id = ? AND setting_payment_uid = ? AND class_id = ? AND major_id = ?";
 
-            if (existingPayments.length === 0) {
-              // Loop untuk setiap bulan
-              for (let i = 0; i < monthsCount; i++) {
-                const paymentData = {
-                  unit_id: newSettingPembayaran.unit_id,
-                  uid: newSettingPembayaran.uid,
-                  setting_payment_uid: newSettingPembayaran.setting_payment_uid,
-                  school_id: newSettingPembayaran.school_id,
-                  user_id: user.id, // Include user_id
-                  years: newSettingPembayaran.years,
-                  type: newSettingPembayaran.sp_type,
-                  major_id: newSettingPembayaran.major_id,
-                  class_id: newSettingPembayaran.class_id,
-                  status: "Pending",
-                  created_at: newSettingPembayaran.created_at,
-                  month_id: newSettingPembayaran.months[i].id,
-                  amount: newSettingPembayaran.months[i].payment,
-                };
+          db.query(
+            checkQuery,
+            [
+              newSettingPembayaran.unit_id,
+              user.id,
+              newSettingPembayaran.school_id,
+              newSettingPembayaran.setting_payment_uid,
+              newSettingPembayaran.class_id,
+              newSettingPembayaran.major_id,
+            ],
+            (checkErr, existingPayments) => {
+              if (checkErr) {
+                console.log("error checking existing payment: ", checkErr);
+                return result(
+                  { message: "error checking existing payment: ", checkErr },
+                  null
+                );
+              }
 
-                db.query("INSERT INTO payment SET ?", paymentData, (insertErr, res) => {
-                  if (insertErr) {
-                    console.log("error inserting payment: ", insertErr);
-                    return result(insertErr, null);
-                  } else {
-                    console.log("created payment: ", {
-                      id: res.insertId,
-                      user_id: user.id, // Include user_id in the result log
-                      ...paymentData,
-                    });
-                  }
-                });
+              if (existingPayments.length === 0) {
+                // Loop untuk setiap bulan
+                for (let i = 0; i < monthsCount; i++) {
+                  const paymentData = {
+                    unit_id: newSettingPembayaran.unit_id,
+                    uid: newSettingPembayaran.uid,
+                    setting_payment_uid:
+                      newSettingPembayaran.setting_payment_uid,
+                    school_id: newSettingPembayaran.school_id,
+                    user_id: user.id, // Include user_id
+                    years: newSettingPembayaran.years,
+                    type: newSettingPembayaran.sp_type,
+                    major_id: newSettingPembayaran.major_id,
+                    class_id: newSettingPembayaran.class_id,
+                    status: "Pending",
+                    created_at: newSettingPembayaran.created_at,
+                    month_id: newSettingPembayaran.months[i].id,
+                    amount: newSettingPembayaran.months[i].payment,
+                  };
+
+                  db.query(
+                    "INSERT INTO payment SET ?",
+                    paymentData,
+                    (insertErr, res) => {
+                      if (insertErr) {
+                        console.log("error inserting payment: ", insertErr);
+                        return result(insertErr, null);
+                      } else {
+                        console.log("created payment: ", {
+                          id: res.insertId,
+                          user_id: user.id, // Include user_id in the result log
+                          ...paymentData,
+                        });
+                      }
+                    }
+                  );
+                }
               }
             }
-          }
-        );
-      });
+          );
+        });
 
-      result(null, { message: "Payments are being processed" });
+        result(null, { message: "Payments are being processed" });
+      });
     }
   );
 };
-
 
 SettingPembayaran.updateSettingPaymentByMonth = (
   newSettingPembayaran,

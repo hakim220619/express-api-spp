@@ -110,7 +110,7 @@ exports.getUnit = (req, res, next) => {
   });
 };
 exports.getListPpdbActive = (req, res, next) => {
-  const school_id = req.query.school_id
+  const school_id = req.query.school_id;
 
   General.getListPpdbActive(school_id, (err, data) => {
     if (err)
@@ -144,10 +144,10 @@ exports.getListPayment = (req, res, next) => {
   });
 };
 exports.getActivityBySchoolId = (req, res, next) => {
-  const school_id = req.query.school_id
+  const school_id = req.query.school_id;
   General.getActivityBySchoolId(school_id, (err, data) => {
     // console.log(data);
-    
+
     if (err)
       res.status(500).send({
         message:
@@ -157,10 +157,10 @@ exports.getActivityBySchoolId = (req, res, next) => {
   });
 };
 exports.forgetPassword = (req, res, next) => {
-  const emailOrWhatsapp = req.body.emailOrWhatsapp
+  const emailOrWhatsapp = req.body.emailOrWhatsapp;
   General.forgetPassword(emailOrWhatsapp, (err, data) => {
     console.log(err);
-    
+
     if (err)
       res.status(500).send({
         message:
@@ -170,10 +170,9 @@ exports.forgetPassword = (req, res, next) => {
   });
 };
 exports.resetNewPassword = (req, res, next) => {
-  const id = req.body.id
-  const newPassword = req.body.newPassword
+  const id = req.body.id;
+  const newPassword = req.body.newPassword;
   General.resetNewPassword(id, newPassword, (err, data) => {
-    
     if (err)
       res.status(500).send({
         message:
@@ -183,10 +182,9 @@ exports.resetNewPassword = (req, res, next) => {
   });
 };
 exports.newPasswordAll = (req, res, next) => {
-  const id = req.body.uid
-  const newPassword = req.body.password
+  const id = req.body.uid;
+  const newPassword = req.body.password;
   General.newPasswordAll(id, newPassword, (err, data) => {
-    
     if (err)
       res.status(500).send({
         message:
@@ -195,44 +193,24 @@ exports.newPasswordAll = (req, res, next) => {
     else res.send(data);
   });
 };
-const multer = require('multer');
 
-// Konfigurasi multer untuk menerima file PDF
-const upload = multer({ storage: multer.memoryStorage() }).single('file');
 
 exports.sendMessages = (req, res) => {
-  upload(req, res, function (err) {
+  const { message, number, school_id } = req.body;
+  // Contoh fungsi sendMessages untuk mengirim pesan WhatsApp
+  General.sendMessages(message, number, school_id, (err, data) => {
     if (err) {
       return res.status(500).send({
-        message: "Error saat mengunggah file.",
+        message: err.message || "Terjadi kesalahan saat mengirim pesan.",
       });
-    }
-
-    const { message, number, school_id } = req.body;
-    const pdfFile = req.file; // File PDF yang diunggah
-
-    if (!pdfFile) {
-      return res.status(400).send({
-        message: "File PDF tidak ditemukan.",
-      });
-    }
-
-    // Contoh fungsi sendMessages untuk mengirim pesan WhatsApp
-    General.sendMessages(message, number, school_id, pdfFile, (err, data) => {
-      if (err) {
-        return res.status(500).send({
-          message: err.message || "Terjadi kesalahan saat mengirim pesan.",
-        });
-      }
-      res.send(data);
-    });
+    } else res.send(data);
   });
 };
 
 exports.sendMessageBroadcast = (req, res, next) => {
-  const dataUsers = req.body.dataUsers
-  const message = req.body.message
-  const school_id = req.body.school_id
+  const dataUsers = req.body.dataUsers;
+  const message = req.body.message;
+  const school_id = req.body.school_id;
 
   // console.log(req);
   General.sendMessageBroadcast(dataUsers, message, school_id, (err, data) => {
@@ -245,7 +223,7 @@ exports.sendMessageBroadcast = (req, res, next) => {
   });
 };
 exports.getDetailClassMajorUsers = (req, res, next) => {
-  const school_id = req.query.school_id
+  const school_id = req.query.school_id;
   // console.log(req);
   General.getDetailClassMajorUsers(school_id, (err, data) => {
     if (err)

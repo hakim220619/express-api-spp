@@ -435,11 +435,10 @@ General.newPasswordAll = async (id, newPassword, result) => {
     });
   }
 };
-General.sendMessages = async (message, phone, school_id, pdfFile) => {
+General.sendMessages = async (message, phone, school_id) => {
   try {
     let failedMessages = [];
     let successMessages = [];
-console.log(pdfFile);
 
     const query = `
       SELECT a.urlWa, a.token_whatsapp, a.sender 
@@ -454,11 +453,10 @@ console.log(pdfFile);
     });
 
     if (queryRes && queryRes.length > 0) {
-      const { urlWa: url, token_whatsapp: token, sender } = queryRes[0];
-// console.log(pdfFile);
+      const { urlWa: url, token_whatsapp: token, sender } = queryRes[0]; 
 
       try {
-        await sendMessage(url, token, phone, message, pdfFile);
+        await sendMessage(url, token, phone, message);
 
         console.log(
           `Pesan berhasil dikirim ke: ${phone}, Message: ${message}`

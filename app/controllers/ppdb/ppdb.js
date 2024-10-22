@@ -4,6 +4,8 @@ const bcrypt = require("bcrypt");
 const multer = require("multer");
 const path = require("path");
 const fs = require("fs");
+const db = require("../../config/db.config");
+
 
 const baseUploadDir = "uploads/school/siswa_baru";
 if (!fs.existsSync(baseUploadDir)) {
@@ -38,7 +40,7 @@ exports.createSettingPpdb = [
   async (req, res) => {
     try {
       // Validasi input request body
-      const { school_id, unit_id, years, amount, status, address, url } =
+      const { school_id, unit_id, years, amount, status, address, url, target } =
         req.body;
 
       // Validasi wajib untuk unit_id, years, dan amount
@@ -61,6 +63,7 @@ exports.createSettingPpdb = [
         years,
         amount,
         address,
+        target,
         url: sanitizedUrl,
         status: status || "ON", // Default status ke "ON" jika tidak diisi
         image: gambar, // Gambar opsional
@@ -363,6 +366,86 @@ exports.updatePpdb = [
   },
 ];
 
+exports.updatePpdbSetting = [
+  upload.single('image'), // Menggunakan upload.single untuk menangani upload file
+  async (req, res) => {
+    if (!req.body) {
+      return res.status(400).send({
+        message: "Content cannot be empty!",
+      });
+    }
+
+    try {
+      const ppdbId = req.body.id; // Mengambil id dari req.body
+
+      // Kueri untuk mengambil data PPDB yang ada
+      let query = "SELECT * FROM setting_ppdb WHERE id = '" + ppdbId + "'";
+      db.query(query, (err, result) => {
+        if (err) {
+          console.log("error: ", err);
+          return res.status(500).send({ message: "Error retrieving PPDB." });
+        }
+console.log(result);
+
+        const existingPpdb = result[0]; // Ambil data PPDB yang ada
+    
+        
+        // Jika data PPDB tidak ditemukan, kirim respons error
+        if (!existingPpdb) {
+          return res.status(404).send({ message: "PPDB not found." });
+        }
+
+        const ppdb = {
+          id: ppdbId,
+          unit_id: req.body.unit_id,
+          target: req.body.target,
+          years: req.body.years,
+          amount: req.body.amount,
+          status: req.body.status,
+          address: req.body.address,
+          updated_at: new Date(),
+        };
+
+        // Jika ada file gambar yang di-upload
+        if (req.file) {
+          // Hapus file gambar lama jika ada
+          const oldImagePath = path.resolve(
+            "uploads",
+            "school",
+            "siswa_baru",
+            existingPpdb.school_id.toString(),
+            existingPpdb.image
+          );
+         
+          fs.unlink(oldImagePath, (err) => {
+            if (err) {
+              console.error("Failed to delete old image:", err);
+            }
+          });
+          
+          ppdb.image = req.file.filename; // Menyimpan path gambar baru
+        }
+
+        // Update PPDB dengan data baru
+        Ppdb.updatePpdbSetting(ppdb, (err, data) => {
+          if (err) {
+            return res.status(500).send({
+              message: err.message || "Some error occurred while updating the Ppdb.",
+            });
+          } else {
+            res.send(data);
+          }
+        });
+      });
+    } catch (error) {
+      res.status(500).send({ message: "Error updating Ppdbs" });
+    }
+  },
+];
+
+
+
+
 // Delete an Admin
 exports.delete = (req, res) => {
   const uid = req.body.data;
@@ -395,6 +478,18 @@ exports.detailPpdb = (req, res, next) => {
   const id = req.body.id;
 
   Ppdb.detailPpdb(id, (err, data) => {
+    if (err)
+      res.status(500).send({
+        message:
+          err.message || "Some error occurred while retrieving tutorials.",
+      });
+    else res.send(data);
+  });
+};
+exports.detailPpdbSetting = (req, res, next) => {
+  const id = req.body.id;
+
+  Ppdb.detailPpdbSetting(id, (err, data) => {
     if (err)
       res.status(500).send({
         message:

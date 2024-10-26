@@ -394,19 +394,19 @@ Dashboard.getTotalPembayaranBebas = async (schoolId, result) => {
     SUM(pd.amount) AS total_amount,
     p.school_id,
     IF(SUM(pd.amount) = 0, 0, 
-        ROUND(SUM(CASE WHEN MONTH(pd.updated_at) = MONTH(CURDATE()) AND YEAR(pd.updated_at) = YEAR(CURDATE()) THEN pd.amount ELSE 0 END) / SUM(pd.amount) * 100, 4)
+        ROUND(SUM(CASE WHEN MONTH(pd.created_at) = MONTH(CURDATE()) AND YEAR(pd.created_at) = YEAR(CURDATE()) THEN pd.amount ELSE 0 END) / SUM(pd.amount) * 100, 4)
     ) AS percent_this_month,
     IF(SUM(pd.amount) = 0, 0, 
-        ROUND(SUM(CASE WHEN MONTH(pd.updated_at) = MONTH(CURDATE()) - 1 AND YEAR(pd.updated_at) = YEAR(CURDATE()) THEN pd.amount ELSE 0 END) / SUM(pd.amount) * 100, 4)
+        ROUND(SUM(CASE WHEN MONTH(pd.created_at) = MONTH(CURDATE()) - 1 AND YEAR(pd.created_at) = YEAR(CURDATE()) THEN pd.amount ELSE 0 END) / SUM(pd.amount) * 100, 4)
     ) AS percent_last_month,
     JSON_ARRAY(
-        COUNT(CASE WHEN DATE(pd.updated_at) = CURDATE() - INTERVAL 6 DAY THEN 1 ELSE NULL END),  -- 6 hari sebelumnya
-        COUNT(CASE WHEN DATE(pd.updated_at) = CURDATE() - INTERVAL 5 DAY THEN 1 ELSE NULL END),  -- 5 hari sebelumnya
-        COUNT(CASE WHEN DATE(pd.updated_at) = CURDATE() - INTERVAL 4 DAY THEN 1 ELSE NULL END),  -- 4 hari sebelumnya
-        COUNT(CASE WHEN DATE(pd.updated_at) = CURDATE() - INTERVAL 3 DAY THEN 1 ELSE NULL END),  -- 3 hari sebelumnya
-        COUNT(CASE WHEN DATE(pd.updated_at) = CURDATE() - INTERVAL 2 DAY THEN 1 ELSE NULL END),  -- 2 hari sebelumnya
-        COUNT(CASE WHEN DATE(pd.updated_at) = CURDATE() - INTERVAL 1 DAY THEN 1 ELSE NULL END),  -- 1 hari sebelumnya
-        COUNT(CASE WHEN DATE(pd.updated_at) = CURDATE() THEN 1 ELSE NULL END)   -- Hari ini
+        COUNT(CASE WHEN DATE(pd.created_at) = CURDATE() - INTERVAL 6 DAY THEN 1 ELSE NULL END),  -- 6 hari sebelumnya
+        COUNT(CASE WHEN DATE(pd.created_at) = CURDATE() - INTERVAL 5 DAY THEN 1 ELSE NULL END),  -- 5 hari sebelumnya
+        COUNT(CASE WHEN DATE(pd.created_at) = CURDATE() - INTERVAL 4 DAY THEN 1 ELSE NULL END),  -- 4 hari sebelumnya
+        COUNT(CASE WHEN DATE(pd.created_at) = CURDATE() - INTERVAL 3 DAY THEN 1 ELSE NULL END),  -- 3 hari sebelumnya
+        COUNT(CASE WHEN DATE(pd.created_at) = CURDATE() - INTERVAL 2 DAY THEN 1 ELSE NULL END),  -- 2 hari sebelumnya
+        COUNT(CASE WHEN DATE(pd.created_at) = CURDATE() - INTERVAL 1 DAY THEN 1 ELSE NULL END),  -- 1 hari sebelumnya
+        COUNT(CASE WHEN DATE(pd.created_at) = CURDATE() THEN 1 ELSE NULL END)   -- Hari ini
     ) AS transactions_last_7_days
 FROM 
     payment_detail pd
@@ -435,27 +435,43 @@ WHERE
 Dashboard.getTotalPaymentThisDay = async (schoolId, result) => {
   // Siapkan query dasar
   let query = `SELECT 
-    SUM(pd.amount) AS amount, 
-    (SELECT SUM(pp.amount) 
-     FROM payment pp 
-     WHERE pp.status = 'Paid' 
-       AND pp.school_id = '${schoolId}' 
-       AND DATE(pp.updated_at) = CURDATE()) AS total_payment, 
-    p.school_id 
+    SUM(pd.amount) AS amount,
+    (SELECT SUM(pp.amount)
+     FROM payment pp
+     WHERE pp.status = 'Paid'
+       AND pp.school_id = '${schoolId}'
+       AND DATE(pp.updated_at) = CURDATE()) AS total_payment,
+    p.school_id,
+    IF(SUM(pd.amount) = 0, 0, 
+        ROUND(SUM(CASE WHEN MONTH(pd.created_at) = MONTH(CURDATE()) AND YEAR(pd.created_at) = YEAR(CURDATE()) THEN pd.amount ELSE 0 END) / SUM(pd.amount) * 100, 4)
+    ) AS percent_this_month,
+    IF(SUM(pd.amount) = 0, 0, 
+        ROUND(SUM(CASE WHEN MONTH(pd.created_at) = MONTH(CURDATE()) - 1 AND YEAR(pd.created_at) = YEAR(CURDATE()) THEN pd.amount ELSE 0 END) / SUM(pd.amount) * 100, 4)
+    ) AS percent_last_month,
+    JSON_ARRAY(
+        COUNT(CASE WHEN DATE(pd.created_at) = CURDATE() - INTERVAL 6 DAY THEN 1 ELSE NULL END),  -- 6 days ago
+        COUNT(CASE WHEN DATE(pd.created_at) = CURDATE() - INTERVAL 5 DAY THEN 1 ELSE NULL END),  -- 5 days ago
+        COUNT(CASE WHEN DATE(pd.created_at) = CURDATE() - INTERVAL 4 DAY THEN 1 ELSE NULL END),  -- 4 days ago
+        COUNT(CASE WHEN DATE(pd.created_at) = CURDATE() - INTERVAL 3 DAY THEN 1 ELSE NULL END),  -- 3 days ago
+        COUNT(CASE WHEN DATE(pd.created_at) = CURDATE() - INTERVAL 2 DAY THEN 1 ELSE NULL END),  -- 2 days ago
+        COUNT(CASE WHEN DATE(pd.created_at) = CURDATE() - INTERVAL 1 DAY THEN 1 ELSE NULL END),  -- 1 day ago
+        COUNT(CASE WHEN DATE(pd.created_at) = CURDATE() THEN 1 ELSE NULL END)                    -- Today
+    ) AS transactions_last_7_days
 FROM 
-    payment_detail pd 
+    payment_detail pd
 JOIN 
-    payment p 
-ON 
-    pd.payment_id = p.uid 
+    payment p ON pd.payment_id = p.uid
 WHERE 
-    pd.status = 'Paid' 
-    AND DATE(pd.created_at) = CURDATE() `;
+    pd.status = 'Paid'
+    AND DATE(pd.created_at) = CURDATE()
+   
+`;
 
   // Jika schoolId ada, tambahkan filter berdasarkan school_id
   if (schoolId) {
-    query += " AND p.school_id = ?";
+    query += ` AND p.school_id = '${schoolId}'`;
   }
+console.log(query);
 
   // Eksekusi query dengan atau tanpa parameter schoolId
   db.query(query, [schoolId], (err, res) => {
@@ -466,12 +482,41 @@ WHERE
     }
 
     // Kembalikan hasil query
-    result(null, res[0]);
+    result(null, res);
   });
 };
 Dashboard.getTotalPaymentThisWeek = async (schoolId, result) => {
   // Siapkan query dasar
-  let query = `SELECT      SUM(pd.amount) AS amount,      (SELECT SUM(pp.amount)       FROM payment pp       WHERE pp.status = 'Paid'         AND pp.school_id = '${schoolId}'          AND YEARWEEK(pp.updated_at, 1) = YEARWEEK(CURDATE(), 1)) AS total_payment,      p.school_id  FROM      payment_detail pd  JOIN      payment p  ON      pd.payment_id = p.uid  WHERE      pd.status = 'Paid' `;
+  let query = `SELECT 
+    SUM(pd.amount) AS amount, 
+    (SELECT SUM(pp.amount) 
+     FROM payment pp 
+     WHERE pp.status = 'Paid'
+       AND pp.school_id = '${schoolId}' 
+       AND YEARWEEK(pp.updated_at, 1) = YEARWEEK(CURDATE(), 1)) AS total_payment, 
+    p.school_id,
+    IF(SUM(pd.amount) = 0, 0, 
+        ROUND(SUM(CASE WHEN MONTH(pd.created_at) = MONTH(CURDATE()) AND YEAR(pd.created_at) = YEAR(CURDATE()) THEN pd.amount ELSE 0 END) / SUM(pd.amount) * 100, 4)
+    ) AS percent_this_month,
+    IF(SUM(pd.amount) = 0, 0, 
+        ROUND(SUM(CASE WHEN MONTH(pd.created_at) = MONTH(CURDATE()) - 1 AND YEAR(pd.created_at) = YEAR(CURDATE()) THEN pd.amount ELSE 0 END) / SUM(pd.amount) * 100, 4)
+    ) AS percent_last_month,
+    JSON_ARRAY(
+        COUNT(CASE WHEN DATE(pd.created_at) = CURDATE() - INTERVAL 6 DAY THEN 1 ELSE NULL END),  -- 6 days ago
+        COUNT(CASE WHEN DATE(pd.created_at) = CURDATE() - INTERVAL 5 DAY THEN 1 ELSE NULL END),  -- 5 days ago
+        COUNT(CASE WHEN DATE(pd.created_at) = CURDATE() - INTERVAL 4 DAY THEN 1 ELSE NULL END),  -- 4 days ago
+        COUNT(CASE WHEN DATE(pd.created_at) = CURDATE() - INTERVAL 3 DAY THEN 1 ELSE NULL END),  -- 3 days ago
+        COUNT(CASE WHEN DATE(pd.created_at) = CURDATE() - INTERVAL 2 DAY THEN 1 ELSE NULL END),  -- 2 days ago
+        COUNT(CASE WHEN DATE(pd.created_at) = CURDATE() - INTERVAL 1 DAY THEN 1 ELSE NULL END),  -- 1 day ago
+        COUNT(CASE WHEN DATE(pd.created_at) = CURDATE() THEN 1 ELSE NULL END)                    -- Today
+    ) AS transactions_last_7_days
+FROM 
+    payment_detail pd 
+JOIN 
+    payment p ON pd.payment_id = p.uid 
+WHERE 
+    pd.status = 'Paid'
+ `;
 
   // Jika schoolId ada, tambahkan filter berdasarkan school_id
   if (schoolId) {
@@ -489,7 +534,7 @@ Dashboard.getTotalPaymentThisWeek = async (schoolId, result) => {
     }
 
     // Kembalikan hasil query
-    result(null, res[0]);
+    result(null, res);
   });
 };
 Dashboard.getTotalPaymentThisMonth = async (schoolId, result) => {
@@ -499,16 +544,34 @@ Dashboard.getTotalPaymentThisMonth = async (schoolId, result) => {
     (SELECT SUM(pp.amount)  
      FROM payment pp  
      WHERE pp.status = 'Paid'    
-     AND pp.school_id = '${schoolId}' 
-     AND MONTH(pp.updated_at) = MONTH(CURDATE()) 
-     AND YEAR(pp.updated_at) = YEAR(CURDATE())) AS total_payment, 
-    p.school_id  
-FROM payment_detail pd  
-JOIN payment p  
-ON pd.payment_id = p.uid  
-WHERE pd.status = 'Paid' 
-AND MONTH(pd.created_at) = MONTH(CURDATE()) 
-AND YEAR(pd.created_at) = YEAR(CURDATE())`;
+       AND pp.school_id = '${schoolId}' 
+       AND MONTH(pp.updated_at) = MONTH(CURDATE()) 
+       AND YEAR(pp.updated_at) = YEAR(CURDATE())) AS total_payment, 
+    p.school_id,
+    IF(SUM(pd.amount) = 0, 0, 
+        ROUND(SUM(CASE WHEN MONTH(pd.created_at) = MONTH(CURDATE()) AND YEAR(pd.created_at) = YEAR(CURDATE()) THEN pd.amount ELSE 0 END) / SUM(pd.amount) * 100, 4)
+    ) AS percent_this_month,
+    IF(SUM(pd.amount) = 0, 0, 
+        ROUND(SUM(CASE WHEN MONTH(pd.created_at) = MONTH(CURDATE()) - 1 AND YEAR(pd.created_at) = YEAR(CURDATE()) THEN pd.amount ELSE 0 END) / SUM(pd.amount) * 100, 4)
+    ) AS percent_last_month,
+    JSON_ARRAY(
+        COUNT(CASE WHEN DATE(pd.created_at) = CURDATE() - INTERVAL 6 DAY THEN 1 ELSE NULL END),  -- 6 days ago
+        COUNT(CASE WHEN DATE(pd.created_at) = CURDATE() - INTERVAL 5 DAY THEN 1 ELSE NULL END),  -- 5 days ago
+        COUNT(CASE WHEN DATE(pd.created_at) = CURDATE() - INTERVAL 4 DAY THEN 1 ELSE NULL END),  -- 4 days ago
+        COUNT(CASE WHEN DATE(pd.created_at) = CURDATE() - INTERVAL 3 DAY THEN 1 ELSE NULL END),  -- 3 days ago
+        COUNT(CASE WHEN DATE(pd.created_at) = CURDATE() - INTERVAL 2 DAY THEN 1 ELSE NULL END),  -- 2 days ago
+        COUNT(CASE WHEN DATE(pd.created_at) = CURDATE() - INTERVAL 1 DAY THEN 1 ELSE NULL END),  -- 1 day ago
+        COUNT(CASE WHEN DATE(pd.created_at) = CURDATE() THEN 1 ELSE NULL END)                    -- Today
+    ) AS transactions_last_7_days
+FROM 
+    payment_detail pd  
+JOIN 
+    payment p ON pd.payment_id = p.uid  
+WHERE 
+    pd.status = 'Paid' 
+    AND MONTH(pd.created_at) = MONTH(CURDATE()) 
+    AND YEAR(pd.created_at) = YEAR(CURDATE())
+`;
 
   // Jika schoolId ada, tambahkan filter berdasarkan school_id
   if (schoolId) {
@@ -526,7 +589,7 @@ AND YEAR(pd.created_at) = YEAR(CURDATE())`;
     }
 
     // Kembalikan hasil query
-    result(null, res[0]);
+    result(null, res);
   });
 };
 Dashboard.getTotalPaymentThisYears = async (schoolId, result) => {
@@ -536,14 +599,32 @@ Dashboard.getTotalPaymentThisYears = async (schoolId, result) => {
     (SELECT SUM(pp.amount)
      FROM payment pp
      WHERE pp.status = 'Paid'
-     AND pp.school_id = '${schoolId}'
-     AND YEAR(pp.updated_at) = YEAR(CURDATE())) AS total_payment,
-    p.school_id
-FROM payment_detail pd
-JOIN payment p
-ON pd.payment_id = p.uid
-WHERE pd.status = 'Paid'
-AND YEAR(pd.created_at) = YEAR(CURDATE())`;
+       AND pp.school_id = '${schoolId}'
+       AND YEAR(pp.updated_at) = YEAR(CURDATE())) AS total_payment,
+    p.school_id,
+    IF(SUM(pd.amount) = 0, 0, 
+        ROUND(SUM(CASE WHEN MONTH(pd.created_at) = MONTH(CURDATE()) AND YEAR(pd.created_at) = YEAR(CURDATE()) THEN pd.amount ELSE 0 END) / SUM(pd.amount) * 100, 4)
+    ) AS percent_this_month,
+    IF(SUM(pd.amount) = 0, 0, 
+        ROUND(SUM(CASE WHEN MONTH(pd.created_at) = MONTH(CURDATE()) - 1 AND YEAR(pd.created_at) = YEAR(CURDATE()) THEN pd.amount ELSE 0 END) / SUM(pd.amount) * 100, 4)
+    ) AS percent_last_month,
+    JSON_ARRAY(
+        COUNT(CASE WHEN DATE(pd.created_at) = CURDATE() - INTERVAL 6 DAY THEN 1 ELSE NULL END),  -- 6 days ago
+        COUNT(CASE WHEN DATE(pd.created_at) = CURDATE() - INTERVAL 5 DAY THEN 1 ELSE NULL END),  -- 5 days ago
+        COUNT(CASE WHEN DATE(pd.created_at) = CURDATE() - INTERVAL 4 DAY THEN 1 ELSE NULL END),  -- 4 days ago
+        COUNT(CASE WHEN DATE(pd.created_at) = CURDATE() - INTERVAL 3 DAY THEN 1 ELSE NULL END),  -- 3 days ago
+        COUNT(CASE WHEN DATE(pd.created_at) = CURDATE() - INTERVAL 2 DAY THEN 1 ELSE NULL END),  -- 2 days ago
+        COUNT(CASE WHEN DATE(pd.created_at) = CURDATE() - INTERVAL 1 DAY THEN 1 ELSE NULL END),  -- 1 day ago
+        COUNT(CASE WHEN DATE(pd.created_at) = CURDATE() THEN 1 ELSE NULL END)                    -- Today
+    ) AS transactions_last_7_days
+FROM 
+    payment_detail pd
+JOIN 
+    payment p ON pd.payment_id = p.uid
+WHERE 
+    pd.status = 'Paid'
+    AND YEAR(pd.created_at) = YEAR(CURDATE())
+`;
 
   // Jika schoolId ada, tambahkan filter berdasarkan school_id
   if (schoolId) {
@@ -561,7 +642,7 @@ AND YEAR(pd.created_at) = YEAR(CURDATE())`;
     }
 
     // Kembalikan hasil query
-    result(null, res[0]);
+    result(null, res);
   });
 };
 Dashboard.getTotalLoginMmLogs = async (schoolId, result) => {
@@ -596,19 +677,19 @@ Dashboard.getTotalTunggakanBulanan = async (schoolId, result) => {
     school_id,
     SUM(pd.amount) AS total_amount,
     IF(SUM(pd.amount) = 0, 0, 
-        ROUND(SUM(CASE WHEN MONTH(pd.updated_at) = MONTH(CURDATE()) AND YEAR(pd.updated_at) = YEAR(CURDATE()) THEN pd.amount ELSE 0 END) / SUM(pd.amount) * 100, 4)
+        ROUND(SUM(CASE WHEN MONTH(pd.created_at) = MONTH(CURDATE()) AND YEAR(pd.created_at) = YEAR(CURDATE()) THEN pd.amount ELSE 0 END) / SUM(pd.amount) * 100, 4)
     ) AS percent_this_month,
     IF(SUM(pd.amount) = 0, 0, 
-        ROUND(SUM(CASE WHEN MONTH(pd.updated_at) = MONTH(CURDATE()) - 1 AND YEAR(pd.updated_at) = YEAR(CURDATE()) THEN pd.amount ELSE 0 END) / SUM(pd.amount) * 100, 4)
+        ROUND(SUM(CASE WHEN MONTH(pd.created_at) = MONTH(CURDATE()) - 1 AND YEAR(pd.created_at) = YEAR(CURDATE()) THEN pd.amount ELSE 0 END) / SUM(pd.amount) * 100, 4)
     ) AS percent_last_month,
     JSON_ARRAY(
-        COUNT(CASE WHEN DATE(pd.updated_at) = CURDATE() - INTERVAL 6 DAY THEN 1 ELSE NULL END),  -- 6 hari sebelumnya
-        COUNT(CASE WHEN DATE(pd.updated_at) = CURDATE() - INTERVAL 5 DAY THEN 1 ELSE NULL END),  -- 5 hari sebelumnya
-        COUNT(CASE WHEN DATE(pd.updated_at) = CURDATE() - INTERVAL 4 DAY THEN 1 ELSE NULL END),  -- 4 hari sebelumnya
-        COUNT(CASE WHEN DATE(pd.updated_at) = CURDATE() - INTERVAL 3 DAY THEN 1 ELSE NULL END),  -- 3 hari sebelumnya
-        COUNT(CASE WHEN DATE(pd.updated_at) = CURDATE() - INTERVAL 2 DAY THEN 1 ELSE NULL END),  -- 2 hari sebelumnya
-        COUNT(CASE WHEN DATE(pd.updated_at) = CURDATE() - INTERVAL 1 DAY THEN 1 ELSE NULL END),  -- 1 hari sebelumnya
-        COUNT(CASE WHEN DATE(pd.updated_at) = CURDATE() THEN 1 ELSE NULL END)   -- Hari ini
+        COUNT(CASE WHEN DATE(pd.created_at) = CURDATE() - INTERVAL 6 DAY THEN 1 ELSE NULL END),  -- 6 hari sebelumnya
+        COUNT(CASE WHEN DATE(pd.created_at) = CURDATE() - INTERVAL 5 DAY THEN 1 ELSE NULL END),  -- 5 hari sebelumnya
+        COUNT(CASE WHEN DATE(pd.created_at) = CURDATE() - INTERVAL 4 DAY THEN 1 ELSE NULL END),  -- 4 hari sebelumnya
+        COUNT(CASE WHEN DATE(pd.created_at) = CURDATE() - INTERVAL 3 DAY THEN 1 ELSE NULL END),  -- 3 hari sebelumnya
+        COUNT(CASE WHEN DATE(pd.created_at) = CURDATE() - INTERVAL 2 DAY THEN 1 ELSE NULL END),  -- 2 hari sebelumnya
+        COUNT(CASE WHEN DATE(pd.created_at) = CURDATE() - INTERVAL 1 DAY THEN 1 ELSE NULL END),  -- 1 hari sebelumnya
+        COUNT(CASE WHEN DATE(pd.created_at) = CURDATE() THEN 1 ELSE NULL END)   -- Hari ini
     ) AS transactions_last_7_days
 FROM 
     payment pd
@@ -637,22 +718,22 @@ Dashboard.getTotalTunggakanBebas = async (schoolId, result) => {
         FROM payment pp 
         WHERE pp.type = 'BEBAS' 
           AND pp.status = 'Pending' 
-          AND pp.school_id = p.school_id
+          AND pp.school_id = '${schoolId}'
     ) AS total_payment,
-    IF(SUM(pd.amount) = 0, 0, 
-        ROUND(SUM(CASE WHEN MONTH(pd.updated_at) = MONTH(CURDATE()) AND YEAR(pd.updated_at) = YEAR(CURDATE()) THEN pd.amount ELSE 0 END) / SUM(pd.amount) * 100, 4)
+    IF(SUM(pd.amount) = 0, 0,
+        ROUND(SUM(CASE WHEN MONTH(pd.created_at) = MONTH(CURDATE()) AND YEAR(pd.created_at) = YEAR(CURDATE()) THEN pd.amount ELSE 0 END) / SUM(pd.amount) * 100, 4)
     ) AS percent_this_month,
-    IF(SUM(pd.amount) = 0, 0, 
-        ROUND(SUM(CASE WHEN MONTH(pd.updated_at) = MONTH(CURDATE()) - 1 AND YEAR(pd.updated_at) = YEAR(CURDATE()) THEN pd.amount ELSE 0 END) / SUM(pd.amount) * 100, 4)
+    IF(SUM(pd.amount) = 0, 0,
+        ROUND(SUM(CASE WHEN MONTH(pd.created_at) = MONTH(CURDATE()) - 1 AND YEAR(pd.created_at) = YEAR(CURDATE()) THEN pd.amount ELSE 0 END) / SUM(pd.amount) * 100, 4)
     ) AS percent_last_month,
     JSON_ARRAY(
-        COUNT(CASE WHEN DATE(pd.updated_at) = CURDATE() - INTERVAL 6 DAY THEN 1 ELSE NULL END),  -- 6 hari sebelumnya
-        COUNT(CASE WHEN DATE(pd.updated_at) = CURDATE() - INTERVAL 5 DAY THEN 1 ELSE NULL END),  -- 5 hari sebelumnya
-        COUNT(CASE WHEN DATE(pd.updated_at) = CURDATE() - INTERVAL 4 DAY THEN 1 ELSE NULL END),  -- 4 hari sebelumnya
-        COUNT(CASE WHEN DATE(pd.updated_at) = CURDATE() - INTERVAL 3 DAY THEN 1 ELSE NULL END),  -- 3 hari sebelumnya
-        COUNT(CASE WHEN DATE(pd.updated_at) = CURDATE() - INTERVAL 2 DAY THEN 1 ELSE NULL END),  -- 2 hari sebelumnya
-        COUNT(CASE WHEN DATE(pd.updated_at) = CURDATE() - INTERVAL 1 DAY THEN 1 ELSE NULL END),  -- 1 hari sebelumnya
-        COUNT(CASE WHEN DATE(pd.updated_at) = CURDATE() THEN 1 ELSE NULL END)   -- Hari ini
+        COUNT(CASE WHEN DATE(pd.created_at) = CURDATE() - INTERVAL 6 DAY THEN 1 ELSE NULL END),  -- 6 hari sebelumnya
+        COUNT(CASE WHEN DATE(pd.created_at) = CURDATE() - INTERVAL 5 DAY THEN 1 ELSE NULL END),  -- 5 hari sebelumnya
+        COUNT(CASE WHEN DATE(pd.created_at) = CURDATE() - INTERVAL 4 DAY THEN 1 ELSE NULL END),  -- 4 hari sebelumnya
+        COUNT(CASE WHEN DATE(pd.created_at) = CURDATE() - INTERVAL 3 DAY THEN 1 ELSE NULL END),  -- 3 hari sebelumnya
+        COUNT(CASE WHEN DATE(pd.created_at) = CURDATE() - INTERVAL 2 DAY THEN 1 ELSE NULL END),  -- 2 hari sebelumnya
+        COUNT(CASE WHEN DATE(pd.created_at) = CURDATE() - INTERVAL 1 DAY THEN 1 ELSE NULL END),  -- 1 hari sebelumnya
+        COUNT(CASE WHEN DATE(pd.created_at) = CURDATE() THEN 1 ELSE NULL END)   -- Hari ini
     ) AS transactions_last_7_days
 FROM 
     payment_detail pd
@@ -663,6 +744,7 @@ WHERE
   if (schoolId) {
     query += ` AND p.school_id = '${schoolId}'`;
   }
+// console.log(query);
 
   db.query(query, [schoolId], (err, res) => {
     if (err) {

@@ -152,11 +152,14 @@ General.getActivityBySchoolId = async (school_id, result) => {
   });
 };
 General.getListPpdbActive = async (school_id, result) => {
-  let query = "SELECT sp.*, s.school_name, u.unit_name from setting_ppdb sp, school s, unit u where sp.school_id=s.id AND sp.unit_id=u.id ";
+  let query =
+    "SELECT sp.*, s.school_name, u.unit_name from setting_ppdb sp, school s, unit u where sp.school_id=s.id AND sp.unit_id=u.id ";
   if (school_id) {
     query += ` AND sp.school_id = '${school_id}'`;
   }
   query += `order by sp.created_at desc`;
+  console.log(query);
+
   db.query(query, (err, res) => {
     if (err) {
       console.log("error: ", err);
@@ -453,14 +456,12 @@ General.sendMessages = async (message, phone, school_id) => {
     });
 
     if (queryRes && queryRes.length > 0) {
-      const { urlWa: url, token_whatsapp: token, sender } = queryRes[0]; 
+      const { urlWa: url, token_whatsapp: token, sender } = queryRes[0];
 
       try {
         await sendMessage(url, token, phone, message);
 
-        console.log(
-          `Pesan berhasil dikirim ke: ${phone}, Message: ${message}`
-        );
+        console.log(`Pesan berhasil dikirim ke: ${phone}, Message: ${message}`);
 
         const logData = {
           school_id: school_id,
@@ -515,7 +516,6 @@ General.sendMessages = async (message, phone, school_id) => {
     };
   }
 };
-
 
 General.sendMessageBroadcast = async (
   dataUsers,
@@ -1282,7 +1282,7 @@ General.cekTransaksiPaymentSiswaBaru = async (result) => {
 };
 General.cekTransaksiSuccesMidtransByUserIdByMonth = async (userId, result) => {
   try {
-    const query = `SELECT p.*, u.full_name, u.phone, s.school_name, st.sp_name FROM payment p, users u, school s, setting_payment st WHERE p.user_id=u.id AND p.school_id=s.id AND p.setting_payment_uid=st.uid AND p.status = 'Verified' AND p.metode_pembayaran = 'Online' AND p.redirect_url IS NOT NULL and p.user_id = '${userId}' GROUP BY p.order_id`;
+    const query = `SELECT p.*, u.full_name, u.phone, s.school_name, st.sp_name, m.month FROM payment p, users u, school s, setting_payment st, months m WHERE p.user_id=u.id AND p.school_id=s.id AND p.setting_payment_uid=st.uid AND p.month_id=m.id AND p.status = 'Verified' AND p.metode_pembayaran = 'Online' AND p.redirect_url IS NOT NULL and p.user_id = '${userId}'`;
 
     // Fetch payment records where metode_pembayaran is Midtrans and status is Verified
     db.query(query, async (err, rows) => {
@@ -1479,12 +1479,20 @@ General.cekTransaksiSuccesMidtransByUserIdByMonth = async (userId, result) => {
               console.log(
                 `Payment processed and status updated for order_id: ${payment.order_id}`
               );
+              // First, collect all months from the `rows` array where each row corresponds to a payment
+              let monthsList = [...new Set(rows.map((row) => row.month))]; // Removes duplicates
+              console.log(monthsList);
+
+              // Join the month names into a single string for message display
+              const formattedMonths = monthsList.join(", ");
+              console.log(formattedMonths);
+
               db.query(
                 `SELECT tm.*, a.urlWa, a.token_whatsapp, a.sender 
-                   FROM template_message tm, aplikasi a 
-                   WHERE tm.school_id=a.school_id 
-                   AND tm.deskripsi like '%cekTransaksiSuccesMidtransByUserIdByMonth%'  
-                   AND tm.school_id = '${payment.school_id}'`,
+     FROM template_message tm, aplikasi a 
+     WHERE tm.school_id=a.school_id 
+     AND tm.deskripsi like '%cekTransaksiSuccesMidtransByUserIdByMonth%'  
+     AND tm.school_id = '${payment.school_id}'`,
                 (err, queryRes) => {
                   if (err) {
                     console.error(
@@ -1492,7 +1500,6 @@ General.cekTransaksiSuccesMidtransByUserIdByMonth = async (userId, result) => {
                       err
                     );
                   } else {
-                    // Ambil url, token dan informasi pengirim dari query result
                     const {
                       urlWa: url,
                       token_whatsapp: token,
@@ -1500,10 +1507,11 @@ General.cekTransaksiSuccesMidtransByUserIdByMonth = async (userId, result) => {
                       message: template_message,
                     } = queryRes[0];
 
-                    // Data yang ingin diganti dalam template_message
+                    // Data to replace in template_message, including the formatted months
                     let replacements = {
                       nama_lengkap: payment.full_name,
                       nama_pembayaran: payment.sp_name,
+                      bulan: formattedMonths, // Replaces bulan with the list of months
                       tahun: payment.years,
                       kelas: payment.class_name,
                       id_pembayaran: payment.order_id,
@@ -1512,6 +1520,7 @@ General.cekTransaksiSuccesMidtransByUserIdByMonth = async (userId, result) => {
                       total_midtrans: formatRupiah(dataResponse.gross_amount),
                     };
 
+                    // Determine payment type for `jenis_pembayaran_midtrans`
                     if (dataResponse.payment_type == "bank_transfer") {
                       replacements.jenis_pembayaran_midtrans =
                         dataResponse.va_numbers
@@ -1524,20 +1533,21 @@ General.cekTransaksiSuccesMidtransByUserIdByMonth = async (userId, result) => {
                         dataResponse.acquirer || "";
                     }
 
-                    // Fungsi untuk menggantikan setiap placeholder di template
+                    // Replace placeholders in the template
                     const formattedMessage = template_message.replace(
                       /\$\{(\w+)\}/g,
                       (_, key) => replacements[key] || ""
                     );
 
-                    // Output hasil format pesan untuk debugging
+                    // Debugging output
                     console.log(formattedMessage);
 
-                    // Mengirim pesan setelah semua data pembayaran diperbarui
+                    // Send message with all payment details
                     sendMessage(url, token, payment.phone, formattedMessage);
                   }
                 }
               );
+
               await paymentConnection.commit();
             }
           } catch (error) {

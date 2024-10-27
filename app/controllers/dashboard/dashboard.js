@@ -1,8 +1,4 @@
 const Dashboard = require("../../models/dashboard/dashboard.model.js");
-const { v4: uuidv4 } = require("uuid");
-const bcrypt = require("bcrypt");
-const multer = require("multer");
-const upload = multer();
 
 // Retrieve all Admins from the database with conditions
 exports.listPaymentByMonths = (req, res, next) => {

@@ -713,13 +713,15 @@ Dashboard.getTotalTunggakanBebas = async (schoolId, result) => {
   let query = `SELECT 
     SUM(pd.amount) AS amount,
     p.school_id,
+   IFNULL(
     (
         SELECT SUM(pp.amount) 
         FROM payment pp 
         WHERE pp.type = 'BEBAS' 
           AND pp.status = 'Pending' 
-          AND pp.school_id = '${schoolId}'
-    ) AS total_payment,
+          AND pp.school_id = p.school_id
+    ), 0
+) AS total_payment,
     IF(SUM(pd.amount) = 0, 0,
         ROUND(SUM(CASE WHEN MONTH(pd.created_at) = MONTH(CURDATE()) AND YEAR(pd.created_at) = YEAR(CURDATE()) THEN pd.amount ELSE 0 END) / SUM(pd.amount) * 100, 4)
     ) AS percent_this_month,

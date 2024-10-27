@@ -5,6 +5,9 @@ const multer = require("multer");
 const path = require("path");
 const fs = require("fs");
 
+const XLSX = require("xlsx");
+const dataupload = multer({ dest: "uploads/" });
+
 // Ensure the uploads directory exists
 const baseUploadDir = "uploads/school/siswa";
 if (!fs.existsSync(baseUploadDir)) {
@@ -324,9 +327,7 @@ exports.detailSiswa = (req, res, next) => {
     res.send(data);
   });
 };
-const XLSX = require("xlsx");
-const { log } = require("util");
-const dataupload = multer({ dest: "uploads/" });
+
 exports.uploadSiswa = [
   dataupload.single("file"), // Middleware for handling file upload
   async (req, res, next) => {

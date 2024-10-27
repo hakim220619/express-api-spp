@@ -172,6 +172,20 @@ exports.getTotalLoginMmLogs = (req, res, next) => {
     }
   );
 };
+exports.getCountMonthAndFree = (req, res, next) => {
+  const school_id = req.query.school_id;
+
+  Dashboard.getCountMonthAndFree(
+    school_id,
+    (err, data) => {
+      if (err)
+        res.status(500).send({
+          message: err.message || "Some error occurred while retrieving Data.",
+        });
+      else res.send(data);
+    }
+  );
+};
 exports.getTotalTunggakanBulanan = (req, res, next) => {
   const school_id = req.query.school_id;
 

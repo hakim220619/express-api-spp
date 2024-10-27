@@ -288,8 +288,7 @@ JOIN
 
 Dashboard.getTotalPembayaranBulanan = async (schoolId, result) => {
   // Siapkan query dasar
-  let query =
-    `SELECT 
+  let query = `SELECT 
     IFNULL(SUM(amount), 0) AS total_amount,
     school_id,
     IF(IFNULL(SUM(amount), 0) = 0, 0, 
@@ -318,7 +317,7 @@ WHERE
   if (schoolId) {
     query += ` AND school_id = '${schoolId}'`;
   }
-// console.log(query);
+  // console.log(query);
 
   // Eksekusi query dengan atau tanpa parameter schoolId
   db.query(query, [schoolId], (err, res) => {
@@ -338,17 +337,54 @@ Dashboard.getTotalTunggakanBulananBySiswa = async (
   result
 ) => {
   // Siapkan query dasar
-  let query =
-    "SELECT SUM(amount) as amount, school_id, user_id FROM payment WHERE status IN ('Pending', 'Verified') and type = 'BULANAN'";
+  let query = `SELECT 
+    school_id,
+     (SELECT SUM(p.amount) FROM payment p WHERE p.status = 'Paid' AND p.user_id=pd.user_id) as lunas,
+    IFNULL(SUM(pd.amount), 0) AS total_amount,
+    IF(
+        IFNULL(SUM(pd.amount), 0) = 0, 
+        0, 
+        ROUND(SUM(CASE 
+                    WHEN MONTH(pd.updated_at) = MONTH(CURDATE()) 
+                    AND YEAR(pd.updated_at) = YEAR(CURDATE()) 
+                    THEN pd.amount 
+                    ELSE 0 
+                  END) / IFNULL(SUM(pd.amount), 1) * 100, 4)
+    ) AS percent_this_month,
+    IF(
+        IFNULL(SUM(pd.amount), 0) = 0, 
+        0, 
+        ROUND(SUM(CASE 
+                    WHEN MONTH(pd.updated_at) = MONTH(CURDATE()) - 1 
+                    AND YEAR(pd.updated_at) = YEAR(CURDATE()) 
+                    THEN pd.amount 
+                    ELSE 0 
+                  END) / IFNULL(SUM(pd.amount), 1) * 100, 4)
+    ) AS percent_last_month,
+    JSON_ARRAY(
+        IFNULL(COUNT(CASE WHEN DATE(pd.updated_at) = CURDATE() - INTERVAL 6 DAY AND pd.status = 'Paid' THEN 1 END), 0),  -- 6 hari sebelumnya
+        IFNULL(COUNT(CASE WHEN DATE(pd.updated_at) = CURDATE() - INTERVAL 5 DAY AND pd.status = 'Paid' THEN 1 END), 0),  -- 5 hari sebelumnya
+        IFNULL(COUNT(CASE WHEN DATE(pd.updated_at) = CURDATE() - INTERVAL 4 DAY AND pd.status = 'Paid' THEN 1 END), 0),  -- 4 hari sebelumnya
+        IFNULL(COUNT(CASE WHEN DATE(pd.updated_at) = CURDATE() - INTERVAL 3 DAY AND pd.status = 'Paid' THEN 1 END), 0),  -- 3 hari sebelumnya
+        IFNULL(COUNT(CASE WHEN DATE(pd.updated_at) = CURDATE() - INTERVAL 2 DAY AND pd.status = 'Paid' THEN 1 END), 0),  -- 2 hari sebelumnya
+        IFNULL(COUNT(CASE WHEN DATE(pd.updated_at) = CURDATE() - INTERVAL 1 DAY AND pd.status = 'Paid' THEN 1 END), 0),  -- 1 hari sebelumnya
+        IFNULL(COUNT(CASE WHEN DATE(pd.updated_at) = CURDATE() AND pd.status = 'Paid' THEN 1 END), 0)                   -- Hari ini
+    ) AS transactions_last_7_days
+FROM 
+    payment pd
+WHERE 
+    pd.status IN ('Pending', 'Verified', 'Paid')
+    AND pd.type = 'BULANAN'
+`;
 
   // Jika schoolId ada, tambahkan filter berdasarkan school_id
   if (schoolId) {
-    query += ` AND school_id = '${schoolId}'`;
+    query += ` AND pd.school_id = '${schoolId}'`;
   }
   if (user_id) {
-    query += ` AND user_id = '${user_id}'`;
+    query += ` AND pd.user_id = '${user_id}'`;
   }
-  // console.log(query);
+  console.log(query);
 
   // Eksekusi query dengan atau tanpa parameter schoolId
   db.query(query, [schoolId], (err, res) => {
@@ -359,24 +395,56 @@ Dashboard.getTotalTunggakanBulananBySiswa = async (
     }
 
     // Kembalikan hasil query
-    result(null, res[0]);
+    result(null, res);
   });
 };
 Dashboard.getTotalTunggakanFreeBySiswa = async (schoolId, user_id, result) => {
   // Siapkan query dasar
-  let query = `SELECT 
+  let query = `SELECT
     pd.user_id,
-    (  COALESCE((SELECT SUM(amount) FROM payment WHERE type='BEBAS' AND status='Pending' AND user_id = pd.user_id), 0) - SUM(pd.amount)) AS total_amount
-FROM 
-    payment_detail pd
-WHERE 
-    pd.status NOT IN ('Pending', 'Verified')`;
+    ppp.school_id,
+    (COALESCE((SELECT SUM(amount) FROM payment WHERE type = 'BEBAS' AND status = 'Pending' AND user_id = pd.user_id), 0) - SUM(pd.amount)) AS total_amount,
+    IF(
+        IFNULL(SUM(pd.amount), 0) = 0, 
+        0, 
+        ROUND(SUM(CASE 
+                    WHEN MONTH(pd.created_at) = MONTH(CURDATE()) 
+                    AND YEAR(pd.created_at) = YEAR(CURDATE()) 
+                    THEN pd.amount 
+                    ELSE 0 
+                  END) / IFNULL(SUM(pd.amount), 1) * 100, 4)
+    ) AS percent_this_month,
+    IF(
+        IFNULL(SUM(pd.amount), 0) = 0, 
+        0, 
+        ROUND(SUM(CASE 
+                    WHEN MONTH(pd.created_at) = MONTH(CURDATE()) - 1 
+                    AND YEAR(pd.created_at) = YEAR(CURDATE()) 
+                    THEN pd.amount 
+                    ELSE 0 
+                  END) / IFNULL(SUM(pd.amount), 1) * 100, 4)
+    ) AS percent_last_month,
+    JSON_ARRAY(
+        IFNULL(COUNT(CASE WHEN DATE(pd.created_at) = CURDATE() - INTERVAL 6 DAY AND pd.status = 'Paid' THEN 1 END), 0),  -- 6 hari sebelumnya
+        IFNULL(COUNT(CASE WHEN DATE(pd.created_at) = CURDATE() - INTERVAL 5 DAY AND pd.status = 'Paid' THEN 1 END), 0),  -- 5 hari sebelumnya
+        IFNULL(COUNT(CASE WHEN DATE(pd.created_at) = CURDATE() - INTERVAL 4 DAY AND pd.status = 'Paid' THEN 1 END), 0),  -- 4 hari sebelumnya
+        IFNULL(COUNT(CASE WHEN DATE(pd.created_at) = CURDATE() - INTERVAL 3 DAY AND pd.status = 'Paid' THEN 1 END), 0),  -- 3 hari sebelumnya
+        IFNULL(COUNT(CASE WHEN DATE(pd.created_at) = CURDATE() - INTERVAL 2 DAY AND pd.status = 'Paid' THEN 1 END), 0),  -- 2 hari sebelumnya
+        IFNULL(COUNT(CASE WHEN DATE(pd.created_at) = CURDATE() - INTERVAL 1 DAY AND pd.status = 'Paid' THEN 1 END), 0),  -- 1 hari sebelumnya
+        IFNULL(COUNT(CASE WHEN DATE(pd.created_at) = CURDATE() AND pd.status = 'Paid' THEN 1 END), 0)                   -- Hari ini
+    ) AS transactions_last_7_days
+FROM
+    payment_detail pd, payment ppp
+WHERE
+pd.payment_id=ppp.uid
+     AND pd.status IN ('Verified', 'Paid')
+`;
 
   if (user_id) {
     query += ` AND pd.user_id = '${user_id}'`;
   }
   query += `GROUP BY pd.user_id`;
-  // console.log(query);
+  console.log(query);
 
   // Eksekusi query dengan atau tanpa parameter schoolId
   db.query(query, [schoolId], (err, res) => {
@@ -387,13 +455,12 @@ WHERE
     }
 
     // Kembalikan hasil query
-    result(null, res[0]);
+    result(null, res);
   });
 };
 Dashboard.getTotalPembayaranBebas = async (schoolId, result) => {
   // Siapkan query dasar
-  let query =
-    `SELECT 
+  let query = `SELECT 
     IFNULL(SUM(pd.amount), 0) AS total_amount,
     p.school_id,
     IF(IFNULL(SUM(pd.amount), 0) = 0, 0, 
@@ -476,7 +543,7 @@ WHERE
   if (schoolId) {
     query += ` AND p.school_id = '${schoolId}'`;
   }
-// console.log(query);
+  // console.log(query);
 
   // Eksekusi query dengan atau tanpa parameter schoolId
   db.query(query, [schoolId], (err, res) => {
@@ -676,9 +743,50 @@ WHERE detail LIKE '%Login%'
     result(null, res);
   });
 };
+Dashboard.getCountMonthAndFree = async (schoolId, result) => {
+  let query = `
+    SELECT JSON_ARRAY(
+  IFNULL(COUNT(CASE WHEN MONTH(p.updated_at) = 1 THEN 1 ELSE NULL END), 0),  -- Januari
+  IFNULL(COUNT(CASE WHEN MONTH(p.updated_at) = 2 THEN 1 ELSE NULL END), 0),  -- Februari
+  IFNULL(COUNT(CASE WHEN MONTH(p.updated_at) = 3 THEN 1 ELSE NULL END), 0),  -- Maret
+  IFNULL(COUNT(CASE WHEN MONTH(p.updated_at) = 4 THEN 1 ELSE NULL END), 0),  -- April
+  IFNULL(COUNT(CASE WHEN MONTH(p.updated_at) = 5 THEN 1 ELSE NULL END), 0),  -- Mei
+  IFNULL(COUNT(CASE WHEN MONTH(p.updated_at) = 6 THEN 1 ELSE NULL END), 0),  -- Juni
+  IFNULL(COUNT(CASE WHEN MONTH(p.updated_at) = 7 THEN 1 ELSE NULL END), 0),  -- Juli
+  IFNULL(COUNT(CASE WHEN MONTH(p.updated_at) = 8 THEN 1 ELSE NULL END), 0),  -- Agustus
+  IFNULL(COUNT(CASE WHEN MONTH(p.updated_at) = 9 THEN 1 ELSE NULL END), 0),  -- September
+  IFNULL(COUNT(CASE WHEN MONTH(p.updated_at) = 10 THEN 1 ELSE NULL END), 0), -- Oktober
+  IFNULL(COUNT(CASE WHEN MONTH(p.updated_at) = 11 THEN 1 ELSE NULL END), 0), -- November
+  IFNULL(COUNT(CASE WHEN MONTH(p.updated_at) = 12 THEN 1 ELSE NULL END), 0)  -- Desember
+) AS bulanan, (SELECT JSON_ARRAY(
+  IFNULL(COUNT(CASE WHEN MONTH(pd.created_at) = 1 THEN 1 ELSE NULL END), 0),  -- Januari
+IFNULL(COUNT(CASE WHEN MONTH(pd.created_at) = 2 THEN 1 ELSE NULL END), 0),  -- Februari
+IFNULL(COUNT(CASE WHEN MONTH(pd.created_at) = 3 THEN 1 ELSE NULL END), 0),  -- Maret
+IFNULL(COUNT(CASE WHEN MONTH(pd.created_at) = 4 THEN 1 ELSE NULL END), 0),  -- April
+IFNULL(COUNT(CASE WHEN MONTH(pd.created_at) = 5 THEN 1 ELSE NULL END), 0),  -- Mei
+IFNULL(COUNT(CASE WHEN MONTH(pd.created_at) = 6 THEN 1 ELSE NULL END), 0),  -- Juni
+IFNULL(COUNT(CASE WHEN MONTH(pd.created_at) = 7 THEN 1 ELSE NULL END), 0),  -- Juli
+IFNULL(COUNT(CASE WHEN MONTH(pd.created_at) = 8 THEN 1 ELSE NULL END), 0),  -- Agustus
+IFNULL(COUNT(CASE WHEN MONTH(pd.created_at) = 9 THEN 1 ELSE NULL END), 0),  -- September
+IFNULL(COUNT(CASE WHEN MONTH(pd.created_at) = 10 THEN 1 ELSE NULL END), 0), -- Oktober
+IFNULL(COUNT(CASE WHEN MONTH(pd.created_at) = 11 THEN 1 ELSE NULL END), 0), -- November
+IFNULL(COUNT(CASE WHEN MONTH(pd.created_at) = 12 THEN 1 ELSE NULL END), 0)  -- Desember
+) AS transactions_per_month FROM payment_detail pd, payment pp WHERE pd.payment_id=pp.uid AND pp.school_id = '${schoolId}') as bebas, p.years FROM payment p WHERE p.school_id = '${schoolId}'
+  `;
+
+  db.query(query, [schoolId], (err, res) => {
+    if (err) {
+      console.log("Error: ", err);
+      result(null, err);
+      return;
+    }
+
+    result(null, res);
+  });
+};
+
 Dashboard.getTotalTunggakanBulanan = async (schoolId, result) => {
-  let query =
-   `SELECT 
+  let query = `SELECT 
     school_id,
     IFNULL(SUM(pd.amount), 0) AS total_amount,
     IF(IFNULL(SUM(pd.amount), 0) = 0, 0, 
@@ -714,6 +822,9 @@ WHERE
     result(null, res);
   });
 };
+
+
+
 Dashboard.getTotalTunggakanBebas = async (schoolId, result) => {
   let query = `SELECT 
     IFNULL(SUM(pd.amount), 0) AS amount,
@@ -751,7 +862,6 @@ WHERE
   if (schoolId) {
     query += ` AND p.school_id = '${schoolId}'`;
   }
-// console.log(query);
 
   db.query(query, [schoolId], (err, res) => {
     if (err) {
@@ -759,7 +869,7 @@ WHERE
       result(null, err);
       return;
     }
-    
+
     result(null, res);
   });
 };

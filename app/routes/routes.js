@@ -135,6 +135,7 @@ module.exports = (app) => {
   router.get("/get-total-payment-this-month", token.authenticateToken, Dashboard.getTotalPaymentThisMonth);
   router.get("/get-total-payment-this-years", token.authenticateToken, Dashboard.getTotalPaymentThisYears);
   router.get("/get-total-login-mmLogs", token.authenticateToken, Dashboard.getTotalLoginMmLogs);
+  router.get("/getCountMonthAndFree", token.authenticateToken, Dashboard.getCountMonthAndFree);
   //Pembayaran
   router.get("/list-payment-pay-byMonth", token.authenticateToken, Pembayaran.listPembayaranPayByMonth);
   router.get("/list-payment-pay-byFree", token.authenticateToken, Pembayaran.listPembayaranPayByFree);

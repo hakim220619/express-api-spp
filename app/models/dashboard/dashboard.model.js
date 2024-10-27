@@ -318,6 +318,7 @@ WHERE
   if (schoolId) {
     query += ` AND school_id = '${schoolId}'`;
   }
+// console.log(query);
 
   // Eksekusi query dengan atau tanpa parameter schoolId
   db.query(query, [schoolId], (err, res) => {
@@ -347,7 +348,7 @@ Dashboard.getTotalTunggakanBulananBySiswa = async (
   if (user_id) {
     query += ` AND user_id = '${user_id}'`;
   }
-  console.log(query);
+  // console.log(query);
 
   // Eksekusi query dengan atau tanpa parameter schoolId
   db.query(query, [schoolId], (err, res) => {
@@ -375,7 +376,7 @@ WHERE
     query += ` AND pd.user_id = '${user_id}'`;
   }
   query += `GROUP BY pd.user_id`;
-  console.log(query);
+  // console.log(query);
 
   // Eksekusi query dengan atau tanpa parameter schoolId
   db.query(query, [schoolId], (err, res) => {
@@ -475,7 +476,7 @@ WHERE
   if (schoolId) {
     query += ` AND p.school_id = '${schoolId}'`;
   }
-console.log(query);
+// console.log(query);
 
   // Eksekusi query dengan atau tanpa parameter schoolId
   db.query(query, [schoolId], (err, res) => {

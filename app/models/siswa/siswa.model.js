@@ -286,7 +286,7 @@ Siswa.update = (newUsers, result) => {
 
 Siswa.listSiswa = (fullName, school_id, major, clas, unit_id, result) => {
   let query =
-    "SELECT ROW_NUMBER() OVER () AS no, u.*, r.role_name, s.school_name, c.class_name, m.major_name, ut.unit_name  FROM users u, role r, school s, class c, major m, unit ut WHERE u.role=r.id AND u.school_id=s.id AND u.class_id=c.id and u.major_id=m.id and u.unit_id=ut.id and u.role = '160'";
+    "SELECT ROW_NUMBER() OVER () AS no, u.*, r.role_name, s.school_name, c.class_name, m.major_name, ut.unit_name, s.address as school_address FROM users u, role r, school s, class c, major m, unit ut WHERE u.role=r.id AND u.school_id=s.id AND u.class_id=c.id and u.major_id=m.id and u.unit_id=ut.id and u.role = '160'";
 
   if (fullName) {
     query += ` AND u.full_name like '%${fullName}%'`;

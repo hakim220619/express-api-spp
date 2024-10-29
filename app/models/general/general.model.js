@@ -2173,6 +2173,79 @@ General.getClass = async (schoolId, result) => {
     result(null, res);
   });
 };
+General.getDataMaster = async (schoolId, result) => {
+  // Siapkan query dasar
+  let query = `SELECT 
+    COUNT(id) AS stats,
+    'tabler:school' AS icon, 
+    'Sekolah' AS title,
+    'primary' AS color
+FROM unit 
+WHERE unit_status = 'ON' AND school_id = '${schoolId}'
+
+UNION ALL
+
+SELECT 
+    COUNT(id) AS stats,
+    'tabler:building-pavilion' AS icon, 
+    'Kelas' AS title,
+    'secondary' AS color
+FROM class 
+WHERE class_status = 'ON' AND school_id = '${schoolId}'
+
+UNION ALL
+
+SELECT 
+    COUNT(id) AS stats,
+    'tabler:building-skyscraper' AS icon, 
+    'Jurusan' AS title,
+    'info' AS color
+FROM major 
+WHERE major_status = 'ON' AND school_id = '${schoolId}'
+
+UNION ALL
+
+SELECT 
+    COUNT(id) AS stats,
+    'tabler:user-heart' AS icon, 
+    'Siswa' AS title,
+    'success' AS color
+FROM users 
+WHERE STATUS = 'ON' AND role = '160' AND school_id = '${schoolId}'
+
+UNION ALL
+
+SELECT 
+    COUNT(id) AS stats,
+    'tabler:users' AS icon, 
+    'Admin' AS title,
+    'warning' AS color
+FROM users 
+WHERE STATUS = 'ON' AND role != '160' AND school_id = '${schoolId}'
+
+UNION ALL
+
+SELECT 
+    COUNT(id) AS stats,
+    'tabler:users-group' AS icon, 
+    'Siswa Baru' AS title,
+    'error' AS color
+FROM calon_siswa 
+WHERE STATUS = 'Registered' AND school_id = '${schoolId}'
+ `;
+
+  // Eksekusi query dengan atau tanpa parameter schoolId
+  db.query(query, [schoolId], (err, res) => {
+    if (err) {
+      console.log("Error: ", err);
+      result(null, err);
+      return;
+    }
+
+    // Kembalikan hasil query
+    result(null, res);
+  });
+};
 General.getMonths = async (schoolId, result) => {
   // Siapkan query dasar
   let query = "SELECT * FROM months WHERE month_status = 'ON'";
@@ -2180,7 +2253,7 @@ General.getMonths = async (schoolId, result) => {
   // Jika schoolId ada, tambahkan filter berdasarkan school_id
   const params = [];
   if (schoolId) {
-    query += " AND school_id = ?";
+    query += ` AND school_id = '${schoolId}'`;
     params.push(schoolId);
   }
 

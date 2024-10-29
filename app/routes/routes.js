@@ -198,6 +198,7 @@ module.exports = (app) => {
   router.get("/rolePermissions", general.rolePermissions);
   router.get("/getMenuActive", token.authenticateToken, general.getMenuActive);
   router.get("/getPdfByIdPaymentMonth", token.authenticateToken, general.getPdfByIdPaymentMonth);
+  router.get("/getDataMaster", token.authenticateToken, general.getDataMaster);
   router.get("/getUnits", general.getUnit);
   router.get("/getListPpdbActive", general.getListPpdbActive);
   router.post("/forgot-password", general.forgetPassword);

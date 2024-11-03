@@ -102,6 +102,7 @@ exports.login = async (req, res) => {
     // Send response
     res.status(200).send({
       accessToken,
+      refreshToken: accessToken,
       userData: user,
     });
   } catch (err) {
@@ -148,9 +149,20 @@ exports.checklogin = async (req, res) => {
 };
 exports.refreshToken = async (req, res) => {
   const AccessToken = req.headers["authorization"];
-  console.log(AccessToken);
   Login.checklogin(AccessToken, (err, data) => {
     console.log(data);
+
+    if (err != 200)
+      res.status(500).send({
+        message:
+          err.message || "Some error occurred while retrieving ChekLogin.",
+      });
+    else res.status(200).send(data);
+  });
+};
+exports.logout = async (req, res) => {
+  const AccessToken = req.headers["authorization"];
+  Login.logout(AccessToken, (err, data) => {
 
     if (err != 200)
       res.status(500).send({

@@ -708,7 +708,16 @@ const { ur } = require("@faker-js/faker");
 require("dotenv").config();
 General.cekTransaksiSuccesMidtrans = async (result) => {
   try {
-    const query = `SELECT p.*, u.full_name, u.phone, s.school_name, st.sp_name FROM payment p, users u, school s, setting_payment st WHERE p.user_id=u.id AND p.school_id=s.id AND p.setting_payment_uid=st.uid AND p.status = 'Verified' AND p.metode_pembayaran = 'Online' AND p.redirect_url IS NOT NULL GROUP BY p.order_id`;
+    const query = `SELECT p.*, u.full_name, u.phone, s.school_name, st.sp_name, m.month, c.class_name
+FROM payment p, users u, school s, setting_payment st, months m, class c
+WHERE p.user_id=u.id 
+AND p.school_id=s.id 
+AND p.setting_payment_uid=st.uid 
+AND p.month_id=m.id
+AND p.class_id=c.id
+AND p.status = 'Verified' 
+AND p.metode_pembayaran = 'Online' 
+AND p.redirect_url IS NOT NULL`;
 
     // Fetch payment records where metode_pembayaran is Midtrans and status is Verified
     db.query(query, async (err, rows) => {
@@ -751,7 +760,7 @@ General.cekTransaksiSuccesMidtrans = async (result) => {
         "base64"
       );
       try {
-        const paymentPromises = rows.map(async (payment) => {
+        const paymentPromises = rows.map(async (payment, index) => {
           // console.log(payment);
 
           try {
@@ -876,6 +885,7 @@ General.cekTransaksiSuccesMidtrans = async (result) => {
                   console.log("Payment status updated successfully:", results);
                 }
               );
+
               // Wait for all affiliate transactions to complete
               // await Promise.all(transactionPromises);
               // Commit the transaction
@@ -907,65 +917,79 @@ General.cekTransaksiSuccesMidtrans = async (result) => {
               console.log(
                 `Payment processed and status updated for order_id: ${payment.order_id}`
               );
-              db.query(
-                `SELECT tm.*, a.urlWa, a.token_whatsapp, a.sender 
+
+              const filteredRows = rows.filter(
+                (row) => row.order_id === payment.order_id
+              );
+              let monthsList = [
+                ...new Set(filteredRows.map((row) => row.month)),
+              ]; // Removes duplicates
+
+              // Join the month names into a single string for message display
+              const formattedMonths = monthsList.join(", ");
+              if (index == 1) {
+                db.query(
+                  `SELECT tm.*, a.urlWa, a.token_whatsapp, a.sender 
                      FROM template_message tm, aplikasi a 
                      WHERE tm.school_id=a.school_id 
-                     AND tm.deskripsi like '%cekTransaksiSuccesMidtrans%'  
+                     AND tm.deskripsi = 'cekTransaksiSuccesMidtrans'  
                      AND tm.school_id = '${payment.school_id}'`,
-                (err, queryRes) => {
-                  if (err) {
-                    console.error(
-                      "Error fetching template and WhatsApp details: ",
-                      err
-                    );
-                  } else {
-                    // Ambil url, token dan informasi pengirim dari query result
-                    const {
-                      urlWa: url,
-                      token_whatsapp: token,
-                      sender,
-                      message: template_message,
-                    } = queryRes[0];
+                  (err, queryRes) => {
+                    if (err) {
+                      console.error(
+                        "Error fetching template and WhatsApp details: ",
+                        err
+                      );
+                    } else {
+                      // Ambil url, token dan informasi pengirim dari query result
+                      const {
+                        urlWa: url,
+                        token_whatsapp: token,
+                        sender,
+                        message: template_message,
+                      } = queryRes[0];
+// console.log(payment);
 
-                    // Data yang ingin diganti dalam template_message
-                    let replacements = {
-                      nama_lengkap: payment.full_name,
-                      nama_pembayaran: payment.sp_name,
-                      tahun: payment.years,
-                      kelas: payment.class_name,
-                      id_pembayaran: payment.order_id,
-                      nama_sekolah: payment.school_name,
-                      jenis_pembayaran_midtrans: "",
-                      total_midtrans: formatRupiah(dataResponse.gross_amount),
-                    };
+                      // Data yang ingin diganti dalam template_message
+                      let replacements = {
+                        nama_lengkap: payment.full_name,
+                        nama_pembayaran: payment.sp_name,
+                        bulan: formattedMonths, // Replaces bulan with the list of months
+                        tahun: payment.years,
+                        kelas: payment.class_name,
+                        id_pembayaran: payment.order_id,
+                        nama_sekolah: payment.school_name,
+                        jenis_pembayaran_midtrans: "",
+                        total_midtrans: formatRupiah(dataResponse.gross_amount),
+                      };
 
-                    if (dataResponse.payment_type == "bank_transfer") {
-                      replacements.jenis_pembayaran_midtrans =
-                        dataResponse.va_numbers
-                          ? dataResponse.va_numbers[0].bank
-                          : "";
-                    } else if (dataResponse.payment_type == "echannel") {
-                      replacements.jenis_pembayaran_midtrans = "Mandiri";
-                    } else if (dataResponse.payment_type == "qris") {
-                      replacements.jenis_pembayaran_midtrans =
-                        dataResponse.acquirer || "";
+                      if (dataResponse.payment_type == "bank_transfer") {
+                        replacements.jenis_pembayaran_midtrans =
+                          dataResponse.va_numbers
+                            ? dataResponse.va_numbers[0].bank
+                            : "";
+                      } else if (dataResponse.payment_type == "echannel") {
+                        replacements.jenis_pembayaran_midtrans = "Mandiri";
+                      } else if (dataResponse.payment_type == "qris") {
+                        replacements.jenis_pembayaran_midtrans =
+                          dataResponse.acquirer || "";
+                      }
+
+                      // Fungsi untuk menggantikan setiap placeholder di template
+                      const formattedMessage = template_message.replace(
+                        /\$\{(\w+)\}/g,
+                        (_, key) => replacements[key] || ""
+                      );
+
+                      // Output hasil format pesan untuk debugging
+                      console.log(formattedMessage);
+
+                      // Mengirim pesan setelah semua data pembayaran diperbarui
+                      sendMessage(url, token, payment.phone, formattedMessage);
                     }
-
-                    // Fungsi untuk menggantikan setiap placeholder di template
-                    const formattedMessage = template_message.replace(
-                      /\$\{(\w+)\}/g,
-                      (_, key) => replacements[key] || ""
-                    );
-
-                    // Output hasil format pesan untuk debugging
-                    console.log(formattedMessage);
-
-                    // Mengirim pesan setelah semua data pembayaran diperbarui
-                    sendMessage(url, token, payment.phone, formattedMessage);
                   }
-                }
-              );
+                );
+              }
             }
             await paymentConnection.commit();
           } catch (error) {
@@ -1282,7 +1306,17 @@ General.cekTransaksiPaymentSiswaBaru = async (result) => {
 };
 General.cekTransaksiSuccesMidtransByUserIdByMonth = async (userId, result) => {
   try {
-    const query = `SELECT p.*, u.full_name, u.phone, s.school_name, st.sp_name, m.month FROM payment p, users u, school s, setting_payment st, months m WHERE p.user_id=u.id AND p.school_id=s.id AND p.setting_payment_uid=st.uid AND p.month_id=m.id AND p.status = 'Verified' AND p.metode_pembayaran = 'Online' AND p.redirect_url IS NOT NULL and p.user_id = '${userId}'`;
+    const query = `SELECT p.*, u.full_name, u.phone, s.school_name, st.sp_name, m.month, c.class_name
+FROM payment p, users u, school s, setting_payment st, months m, class c
+WHERE p.user_id=u.id 
+AND p.school_id=s.id 
+AND p.setting_payment_uid=st.uid 
+AND p.month_id=m.id 
+AND p.class_id=c.id
+AND p.status = 'Verified' 
+AND p.metode_pembayaran = 'Online' 
+AND p.redirect_url IS NOT NULL 
+and p.user_id = '${userId}'`;
 
     // Fetch payment records where metode_pembayaran is Midtrans and status is Verified
     db.query(query, async (err, rows) => {
@@ -1325,7 +1359,9 @@ General.cekTransaksiSuccesMidtransByUserIdByMonth = async (userId, result) => {
         "base64"
       );
       try {
-        const paymentPromises = rows.map(async (payment) => {
+        const paymentPromises = rows.map(async (payment, index) => {
+          // console.log(payment);
+          
           let paymentConnection;
           try {
             const url = `${dataAplikasi[0].urlCekTransaksiMidtrans}/v2/${payment.order_id}/status`;
@@ -1339,8 +1375,6 @@ General.cekTransaksiSuccesMidtransByUserIdByMonth = async (userId, result) => {
             });
 
             const dataResponse = response.data;
-            // console.log(dataResponse);
-            // console.log(payment);
             if (dataResponse.transaction_status == "expire") {
               await paymentConnection.query(
                 "UPDATE payment SET order_id = ?, metode_pembayaran = ?, redirect_url = ?, status = ? WHERE order_id = ?",
@@ -1481,72 +1515,71 @@ General.cekTransaksiSuccesMidtransByUserIdByMonth = async (userId, result) => {
               );
               // First, collect all months from the `rows` array where each row corresponds to a payment
               let monthsList = [...new Set(rows.map((row) => row.month))]; // Removes duplicates
-              console.log(monthsList);
 
               // Join the month names into a single string for message display
               const formattedMonths = monthsList.join(", ");
-              console.log(formattedMonths);
-
-              db.query(
-                `SELECT tm.*, a.urlWa, a.token_whatsapp, a.sender 
+              if (index == 1) {
+                db.query(
+                  `SELECT tm.*, a.urlWa, a.token_whatsapp, a.sender 
      FROM template_message tm, aplikasi a 
      WHERE tm.school_id=a.school_id 
      AND tm.deskripsi like '%cekTransaksiSuccesMidtransByUserIdByMonth%'  
      AND tm.school_id = '${payment.school_id}'`,
-                (err, queryRes) => {
-                  if (err) {
-                    console.error(
-                      "Error fetching template and WhatsApp details: ",
-                      err
-                    );
-                  } else {
-                    const {
-                      urlWa: url,
-                      token_whatsapp: token,
-                      sender,
-                      message: template_message,
-                    } = queryRes[0];
+                  (err, queryRes) => {
+                    if (err) {
+                      console.error(
+                        "Error fetching template and WhatsApp details: ",
+                        err
+                      );
+                    } else {
+                      const {
+                        urlWa: url,
+                        token_whatsapp: token,
+                        sender,
+                        message: template_message,
+                      } = queryRes[0];
 
-                    // Data to replace in template_message, including the formatted months
-                    let replacements = {
-                      nama_lengkap: payment.full_name,
-                      nama_pembayaran: payment.sp_name,
-                      bulan: formattedMonths, // Replaces bulan with the list of months
-                      tahun: payment.years,
-                      kelas: payment.class_name,
-                      id_pembayaran: payment.order_id,
-                      nama_sekolah: payment.school_name,
-                      jenis_pembayaran_midtrans: "",
-                      total_midtrans: formatRupiah(dataResponse.gross_amount),
-                    };
+                      // Data to replace in template_message, including the formatted months
+                      let replacements = {
+                        nama_lengkap: payment.full_name,
+                        nama_pembayaran: payment.sp_name,
+                        bulan: formattedMonths, // Replaces bulan with the list of months
+                        tahun: payment.years,
+                        kelas: payment.class_name,
+                        id_pembayaran: payment.order_id,
+                        nama_sekolah: payment.school_name,
+                        jenis_pembayaran_midtrans: "",
+                        total_midtrans: formatRupiah(dataResponse.gross_amount),
+                      };
 
-                    // Determine payment type for `jenis_pembayaran_midtrans`
-                    if (dataResponse.payment_type == "bank_transfer") {
-                      replacements.jenis_pembayaran_midtrans =
-                        dataResponse.va_numbers
-                          ? dataResponse.va_numbers[0].bank
-                          : "";
-                    } else if (dataResponse.payment_type == "echannel") {
-                      replacements.jenis_pembayaran_midtrans = "Mandiri";
-                    } else if (dataResponse.payment_type == "qris") {
-                      replacements.jenis_pembayaran_midtrans =
-                        dataResponse.acquirer || "";
+                      // Determine payment type for `jenis_pembayaran_midtrans`
+                      if (dataResponse.payment_type == "bank_transfer") {
+                        replacements.jenis_pembayaran_midtrans =
+                          dataResponse.va_numbers
+                            ? dataResponse.va_numbers[0].bank
+                            : "";
+                      } else if (dataResponse.payment_type == "echannel") {
+                        replacements.jenis_pembayaran_midtrans = "Mandiri";
+                      } else if (dataResponse.payment_type == "qris") {
+                        replacements.jenis_pembayaran_midtrans =
+                          dataResponse.acquirer || "";
+                      }
+
+                      // Replace placeholders in the template
+                      const formattedMessage = template_message.replace(
+                        /\$\{(\w+)\}/g,
+                        (_, key) => replacements[key] || ""
+                      );
+
+                      // Debugging output
+                      console.log(formattedMessage);
+
+                      // Send message with all payment details
+                      sendMessage(url, token, payment.phone, formattedMessage);
                     }
-
-                    // Replace placeholders in the template
-                    const formattedMessage = template_message.replace(
-                      /\$\{(\w+)\}/g,
-                      (_, key) => replacements[key] || ""
-                    );
-
-                    // Debugging output
-                    console.log(formattedMessage);
-
-                    // Send message with all payment details
-                    sendMessage(url, token, payment.phone, formattedMessage);
                   }
-                }
-              );
+                );
+              }
 
               await paymentConnection.commit();
             }
@@ -1582,7 +1615,17 @@ General.cekTransaksiSuccesMidtransByUserIdByMonth = async (userId, result) => {
 
 General.cekTransaksiSuccesMidtransByUserIdFree = async (userId, result) => {
   try {
-    const query = `SELECT pd.*, p.school_id, p.years, u.full_name, u.phone, s.school_name, st.sp_name FROM payment_detail pd, payment p, users u, school s, setting_payment st WHERE pd.payment_id=p.uid AND pd.user_id=u.id AND p.school_id=s.id AND pd.setting_payment_uid=st.uid AND pd.status = 'Verified' AND pd.metode_pembayaran = 'Online' AND pd.redirect_url IS NOT NULL and pd.user_id = '${userId}'`;
+    const query = `SELECT pd.*, p.school_id, p.years, u.full_name, u.phone, s.school_name, st.sp_name, c.class_name
+FROM payment_detail pd, payment p, users u, school s, setting_payment st, class c
+WHERE pd.payment_id=p.uid 
+AND pd.user_id=u.id 
+AND p.school_id=s.id 
+AND pd.setting_payment_uid=st.uid 
+AND p.class_id=c.id
+AND pd.status = 'Verified' 
+AND pd.metode_pembayaran = 'Online' 
+AND pd.redirect_url IS NOT NULL 
+and pd.user_id = '${userId}'`;
 
     // Fetch payment records where metode_pembayaran is Midtrans and status is Verified
     db.query(query, async (err, rows) => {
@@ -1858,7 +1901,16 @@ General.cekTransaksiSuccesMidtransByUserIdFree = async (userId, result) => {
 
 General.cekTransaksiSuccesMidtransFree = async (result) => {
   try {
-    const query = `SELECT pd.*, p.school_id, p.years, u.full_name, u.phone, s.school_name, st.sp_name FROM payment_detail pd, payment p, users u, school s, setting_payment st WHERE pd.payment_id=p.uid AND pd.user_id=u.id AND p.school_id=s.id AND pd.setting_payment_uid=st.uid AND pd.status = 'Verified' AND pd.metode_pembayaran = 'Online' AND pd.redirect_url IS NOT NULL`;
+    const query = `SELECT pd.*, p.school_id, p.years, u.full_name, u.phone, s.school_name, st.sp_name, c.class_name
+FROM payment_detail pd, payment p, users u, school s, setting_payment st, class c
+WHERE pd.payment_id=p.uid 
+AND pd.user_id=u.id 
+AND p.school_id=s.id 
+AND pd.setting_payment_uid=st.uid 
+AND p.class_id=c.id
+AND pd.status = 'Verified' 
+AND pd.metode_pembayaran = 'Online' 
+AND pd.redirect_url IS NOT NULL`;
 
     // Fetch payment records where metode_pembayaran is Midtrans and status is Verified
     db.query(query, async (err, rows) => {
@@ -2026,7 +2078,6 @@ General.cekTransaksiSuccesMidtransFree = async (result) => {
                       sender,
                       message: template_message,
                     } = queryRes[0];
-                    console.log(payment);
 
                     // Memeriksa jenis pembayaran dan mengisi placeholder dengan data yang sesuai
                     let replacements = {
@@ -2059,7 +2110,6 @@ General.cekTransaksiSuccesMidtransFree = async (result) => {
                     );
 
                     // Output hasil format pesan untuk debugging
-                    console.log(formattedMessage);
 
                     // Mengirim pesan setelah semua data pembayaran diperbarui
                     sendMessage(url, token, payment.phone, formattedMessage);

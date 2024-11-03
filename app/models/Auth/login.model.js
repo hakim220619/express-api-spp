@@ -157,7 +157,7 @@ Login.loginSiswaBaruAction = async (req, res) => {
             db.query(queryAccesToke, data, (err, res) => {
               if (err) {
                 console.log("error: ", err);
-                result(err, null);
+                res(err, null);
                 return;
               }
             });
@@ -214,5 +214,41 @@ Login.checklogin = async (req, res) => {
     console.log(err);
   }
 };
+Login.logout = async (req, res) => {
+  try {
+    const token = req.replace("Bearer ", "");
+    db.query(
+      `DELETE FROM personal_access_tokens WHERE token = '${token}'`,
+      (err, result) => {
+        if (err) {
+          res.status(500).json({
+            status: 500,
+            message: "An error occurred while logging out.",
+          });
+          return;
+        }
+
+        if (result.affectedRows === 0) {
+          res(404, {
+            status: 404,
+            message: "Token not found or already deleted.",
+          });
+        } else {
+          res(200, {
+            status: 200,
+            message: "Logout successful. Token deleted.",
+          });
+        }
+      }
+    );
+  } catch (err) {
+    console.error(err);
+    res(500, {
+      status: 500,
+      message: "An unexpected error occurred.",
+    });
+  }
+};
+
 
 module.exports = Login;

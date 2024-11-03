@@ -28,6 +28,7 @@ module.exports = (app) => {
   router.post("/register", Register.register);
   router.get("/checklogin", token.authenticateToken, Login.checklogin);
   router.get("/refresh-token", token.authenticateToken, Login.refreshToken);
+  router.post("/logout", token.authenticateToken, Login.logout);
   //Admin
   router.get("/list-admin", token.authenticateToken, Admin.listAdmin);
   router.post("/create-admin", token.authenticateToken, Admin.createAdmin);

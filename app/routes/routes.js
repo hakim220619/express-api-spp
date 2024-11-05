@@ -5,6 +5,7 @@ module.exports = (app) => {
   const Register = require("../controllers/Auth/register.js");
   const Login = require("../controllers/Auth/login.js");
   const Kelas = require("../controllers/kelas/kelas.js");
+  const Kas = require("../controllers/kas/kas.js");
   const Jurusan = require("../controllers/jurusan/jurusan.js");
   const Bulan = require("../controllers/bulan/bulan.js");
   const Sekolah = require("../controllers/sekolah/sekolah.js");
@@ -76,13 +77,19 @@ module.exports = (app) => {
   router.post("/update-kelas", token.authenticateToken, Kelas.updateKelas);
   router.post("/delete-kelas", token.authenticateToken, Kelas.delete);
   router.post("/detailKelas", token.authenticateToken, Kelas.detailKelas);
+  //Kas
+  router.get("/list-kas", token.authenticateToken, Kas.listKas);
+  router.post("/create-kas", token.authenticateToken, Kas.createKas);
+  router.post("/update-kas", token.authenticateToken, Kas.updateKas);
+  router.post("/delete-kas", token.authenticateToken, Kas.delete);
+  router.post("/detailKas", token.authenticateToken, Kas.detailKas);
   //permission
   router.get("/list-permission", token.authenticateToken, Permission.listPermission);
   router.post("/create-permission", token.authenticateToken, Permission.createPermission);
   router.post("/update-permission", token.authenticateToken, Permission.updatePermission);
   router.post("/delete-permission", token.authenticateToken, Permission.delete);
   router.post("/detailPermission", token.authenticateToken, Permission.detailPermission);
-  //permission
+  //templateMessage
   router.get("/list-templateMessage", token.authenticateToken, TemplateMessage.listTemplateMessage);
   router.post("/create-templateMessage", token.authenticateToken, TemplateMessage.createTemplateMessage);
   router.post("/update-templateMessage", token.authenticateToken, TemplateMessage.updateTemplateMessage);

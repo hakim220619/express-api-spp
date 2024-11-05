@@ -400,7 +400,7 @@ Pembayaran.updatePaymentPendingByAdmin = async (newPayment, result) => {
           school_id: dataUsers.school_id,
           user_id: newPayment.admin_id,
           deskripsi: `Kas Masuk Berhasil oleh ID Admin: ${newPayment.admin_id}, dengan id pembayaran bulanan: ${paymentData.id}`,
-          type: "KREDIT",
+          type: "DEBIT",
           amount: paymentData.total_payment,
           flag: 0,
           years: paymentData.years,
@@ -497,7 +497,6 @@ Pembayaran.updatePaymentPendingByAdmin = async (newPayment, result) => {
           return replacements[key] || "";
         }
       );
-      console.log(formattedMessage);
       
       // Kirim pesan setelah semua pembayaran diperbarui
       await sendMessage(url, token, dataUsers.phone, formattedMessage);
@@ -674,7 +673,7 @@ Pembayaran.updatePaymentPendingByAdminFree = async (newPayment, result) => {
       school_id: data.school_id,
       user_id: newPayment.admin_id,
       deskripsi: `Kas Masuk Berhasil oleh ID Admin: ${newPayment.admin_id}, dengan id pembayaran bulanan: ${data.id}`,
-      type: "KREDIT",
+      type: "DEBIT",
       amount: newPayment.total_amount,
       flag: 0,
       years: data.years,

@@ -721,9 +721,10 @@ Dashboard.getTotalLoginMmLogs = async (schoolId, result) => {
   let query = `SELECT 
     CASE 
         WHEN TIME(created_at) < '12:00:00' THEN 'Sebelum 12 siang'
-        WHEN TIME(created_at) > '12:00:00' THEN 'Sesudah 12 siang'
+        WHEN TIME(created_at) >= '12:00:00' THEN 'Sesudah 12 siang'
     END AS waktu,
-    COUNT(*) AS total
+    COUNT(*) AS total,
+    ROUND((COUNT(*) * 100.0 / (SELECT COUNT(*) FROM mm_logs WHERE detail LIKE '%Login%' AND school_id = '530')), 2) AS percent
 FROM mm_logs
 WHERE detail LIKE '%Login%'
 `;

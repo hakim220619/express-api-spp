@@ -163,6 +163,8 @@ module.exports = (app) => {
   //Report
   router.get("/list-report", token.authenticateToken, Report.listReport);
   router.get("/list-report-free", token.authenticateToken, Report.listReportFree);
+  router.get("/list-report-date", token.authenticateToken, Report.listReportDate);
+  router.get("/list-report-class", token.authenticateToken, Report.listReportClass);
   //Tunggakan
   router.get("/list-tunggakan", token.authenticateToken, Tunggakan.listTunggakan);
   router.post("/sendTunggakanSiswa", token.authenticateToken, Tunggakan.sendTunggakanSiswa);

@@ -37,3 +37,34 @@ exports.listReportFree = (req, res, next) => {
     else res.send(data);
   });
 };
+exports.listReportDate = (req, res, next) => {
+  const dataAll = {
+    full_name: req.query.q,
+    school_id: req.query.school_id,
+    date_first: req.query.date_first,
+    date_last: req.query.date_last,
+  };
+
+  Report.listReportDate(dataAll, (err, data) => {
+    if (err)
+      res.status(500).send({
+        message: err.message || "Some error occurred while retrieving Data.",
+      });
+    else res.send(data);
+  });
+};
+exports.listReportClass = (req, res, next) => {
+  const dataAll = {
+    full_name: req.query.q,
+    school_id: req.query.school_id,
+    class_id: req.query.class_id
+  };
+
+  Report.listReportClass(dataAll, (err, data) => {
+    if (err)
+      res.status(500).send({
+        message: err.message || "Some error occurred while retrieving Data.",
+      });
+    else res.send(data);
+  });
+};

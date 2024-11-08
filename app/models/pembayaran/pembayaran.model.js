@@ -230,7 +230,6 @@ Pembayaran.updatePaymentPendingAdmin = (newPayment, result) => {
 
   // Iterasi melalui setiap item dalam dataPayment
   dataPayment.forEach((paymentData) => {
-    
     db.query(
       "UPDATE payment SET order_id = ?, metode_pembayaran = ?, redirect_url = ?, status = ?, updated_at = ? WHERE id = ?",
       [
@@ -273,7 +272,7 @@ Pembayaran.updatePaymentPendingAdmin = (newPayment, result) => {
           totalMonth = totalMonth.replace(/,\s*$/, "");
 
           // Lakukan query SELECT sebelum mengirim pesan
-          
+
           db.query(
             `SELECT tm.*, a.urlWa, a.token_whatsapp, a.sender 
                    FROM template_message tm, aplikasi a 
@@ -478,7 +477,6 @@ Pembayaran.updatePaymentPendingByAdmin = async (newPayment, result) => {
         message: template_message,
       } = queryRes[0];
 
-
       // Data yang ingin diganti dalam template_message
       const replacements = {
         nama_lengkap: dataUsers.full_name,
@@ -497,7 +495,7 @@ Pembayaran.updatePaymentPendingByAdmin = async (newPayment, result) => {
           return replacements[key] || "";
         }
       );
-      
+
       // Kirim pesan setelah semua pembayaran diperbarui
       await sendMessage(url, token, dataUsers.phone, formattedMessage);
     }
@@ -520,13 +518,180 @@ Pembayaran.updatePaymentPendingByAdmin = async (newPayment, result) => {
   }
 };
 
-Pembayaran.updateSuccess = (newPayment, result) => {
-  const { dataPayment } = newPayment; // Ekstrak dataPayment dari newPayment
+Pembayaran.updateSuccess = async (newPayment, result) => {
+  const { dataPayment, dataUsers, order_id, redirect_url } = newPayment; // Ekstrak dataPayment dari newPayment
   let completedUpdates = 0; // Untuk menghitung jumlah update yang sudah selesai
   let errors = []; // Untuk menyimpan error jika ada
 
+  const { DB_HOST, DB_NAME, DB_USER, DB_PASSWORD } = process.env;
+  const pool = mysql.createPool({
+    host: DB_HOST,
+    user: DB_USER,
+    password: DB_PASSWORD,
+    database: DB_NAME,
+    waitForConnections: true,
+    connectionLimit: 10,
+    queueLimit: 0,
+  });
+
+  let paymentConnection;
+  paymentConnection = await pool.getConnection();
   // Iterasi melalui setiap item dalam dataPayment
-  dataPayment.forEach((paymentData) => {
+  dataPayment.forEach(async (paymentData, index) => {
+    const [schoolRes] = await paymentConnection.query(
+      "SELECT * FROM school WHERE id = ?",
+      [dataUsers.school_id]
+    );
+    if (schoolRes.length === 0) {
+      throw new Error("School not found");
+    }
+
+    const balance = schoolRes[0].balance;
+    // console.log(balance);
+
+    if (balance <= 10000) {
+      throw new Error("Saldo tidak cukup");
+    }
+    // console.log(balance);
+
+    const [affiliateRes] = await paymentConnection.query(
+      "SELECT * FROM affiliate WHERE school_id = ?",
+      [dataUsers.school_id] // Use appropriate user_id or school_id
+    );
+    let total_affiliate = 0;
+
+    // Iterate through each affiliate record and sum the amount
+    affiliateRes.forEach((affiliate) => {
+      total_affiliate += affiliate.amount * dataPayment.length; // Accumulate the amount
+    });
+
+    if (balance < total_affiliate) {
+      throw new Error("Saldo tidak cukup aff");
+    }
+
+    // console.log(affiliateRes);
+
+    if (affiliateRes.length === 0) {
+      throw new Error("No affiliates found");
+    }
+
+    const newBalance = balance - total_affiliate;
+    // console.log(newBalance);
+
+    await paymentConnection.query(
+      "UPDATE school SET balance = ? WHERE id = ?",
+      [newBalance, dataUsers.school_id]
+    );
+
+    // Handle affiliate transactions
+    affiliateRes.map(async (affiliate) => {
+      const totalByAff =
+        affiliate.debit + affiliate.amount * dataPayment.length; // Adjust as necessary
+
+      // Update the debit in the database
+      await paymentConnection.query(
+        "UPDATE affiliate SET debit = ? WHERE id = ?",
+        [totalByAff, affiliate.id]
+      );
+
+      // Insert the payment transaction
+      await paymentConnection.query(
+        "INSERT INTO payment_transactions (user_id, school_id, payment_id, amount, type, state, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)",
+        [
+          affiliate.user_id,
+          dataUsers.user_id, // or the appropriate school_id
+          paymentData.id,
+          affiliate.amount,
+          "BULANAN",
+          "IN",
+          new Date(),
+        ]
+      );
+    });
+
+    const kasData = {
+      school_id: dataUsers.school_id,
+      user_id: dataUsers.user_id,
+      deskripsi: `Kas Masuk Berhasil oleh ID Users: ${dataUsers.user_id}, dengan id pembayaran bulanan: ${paymentData.id}`,
+      type: "DEBIT",
+      amount: paymentData.total_payment + total_affiliate,
+      flag: 0,
+      years: paymentData.years,
+    };
+
+    await insertKas(kasData).then((response) => {
+      console.log(response);
+    });
+
+    // Log the transaction
+    const logData = {
+      school_id: dataUsers.school_id,
+      user_id: dataUsers.user_id,
+      activity: "updatePaymentPendingByAdminFree",
+      detail: `Pembayaran berhasil oleh ID Users: ${dataUsers.user_id}, dengan id pembayaran bulanan: ${paymentData.id}`,
+      action: "Update",
+      status: true,
+    };
+
+    await insertMmLogs(logData);
+    // Commit the transaction
+
+    let monthsList = [...new Set(dataPayment.map((row) => row.month))]; // Removes duplicates
+
+    // Join the month names into a single string for message display
+    const formattedMonths = monthsList.join(", ");
+    if (index == 1) {
+      db.query(
+        `SELECT tm.*, a.urlWa, a.token_whatsapp, a.sender 
+FROM template_message tm, aplikasi a 
+WHERE tm.school_id=a.school_id 
+AND tm.deskripsi like '%cekTransaksiSuccesMidtransByUserIdByMonth%'  
+AND tm.school_id = '${dataUsers.school_id}'`,
+        (err, queryRes) => {
+          if (err) {
+            console.error(
+              "Error fetching template and WhatsApp details: ",
+              err
+            );
+          } else {
+            const {
+              urlWa: url,
+              token_whatsapp: token,
+              sender,
+              message: template_message,
+            } = queryRes[0];
+
+            // Data to replace in template_message, including the formatted months
+            let replacements = {
+              nama_lengkap: dataUsers.full_name,
+              nama_pembayaran: dataUsers.sp_name,
+              bulan: formattedMonths, // Replaces bulan with the list of months
+              tahun: paymentData.years,
+              kelas: dataUsers.class_name,
+              id_pembayaran: order_id,
+              nama_sekolah: dataUsers.school_name,
+              jenis_pembayaran_midtrans: "Qris",
+              total_midtrans: formatRupiah(
+                paymentData.total_payment * dataPayment.length
+              ),
+            };
+
+            // Replace placeholders in the template
+            const formattedMessage = template_message.replace(
+              /\$\{(\w+)\}/g,
+              (_, key) => replacements[key] || ""
+            );
+
+            // Debugging output
+            console.log(formattedMessage);
+
+            // Send message with all payment details
+            sendMessage(url, token, dataUsers.phone, formattedMessage);
+          }
+        }
+      );
+    }
+
     db.query(
       "UPDATE payment SET order_id = ?, metode_pembayaran = ?, redirect_url = ?, status = ?, updated_at = ? WHERE id = ?",
       [
@@ -841,23 +1006,178 @@ Pembayaran.updateSiswaFree = (newPayment, result) => {
     }
   );
 };
-Pembayaran.updateSuccessFree = (newPayment, result) => {
-  const data = newPayment.dataPayment;
+Pembayaran.updateSuccessFree = async (newPayment, result) => {
+  const { dataPayment, order_id, redirect_url, total_amount } = newPayment;
   const uid = `${uuidv4()}-${Date.now()}`;
+  console.log(newPayment);
 
+  const { DB_HOST, DB_NAME, DB_USER, DB_PASSWORD } = process.env;
+  const pool = mysql.createPool({
+    host: DB_HOST,
+    user: DB_USER,
+    password: DB_PASSWORD,
+    database: DB_NAME,
+    waitForConnections: true,
+    connectionLimit: 10,
+    queueLimit: 0,
+  });
+
+  let paymentConnection;
+  paymentConnection = await pool.getConnection();
+
+  const [schoolRes] = await paymentConnection.query(
+    "SELECT * FROM school WHERE id = ?",
+    [dataPayment.school_id]
+  );
+  if (schoolRes.length === 0) {
+    throw new Error("School not found");
+  }
+
+  const balance = schoolRes[0].balance;
+  // console.log(balance);
+
+  if (balance <= 10000) {
+    throw new Error("Saldo tidak cukup");
+  }
+
+  const [affiliateRes] = await paymentConnection.query(
+    "SELECT * FROM affiliate WHERE school_id = ?",
+    [dataPayment.school_id] // Use appropriate user_id or school_id
+  );
+  let total_affiliate = 0;
+
+  // Iterate through each affiliate record and sum the amount
+  affiliateRes.forEach((affiliate) => {
+    total_affiliate += affiliate.amount; // Accumulate the amount
+  });
+
+  if (balance < total_affiliate) {
+    throw new Error("Saldo tidak cukup aff");
+  }
+
+  // console.log(affiliateRes);
+
+  if (affiliateRes.length === 0) {
+    throw new Error("No affiliates found");
+  }
+
+  const newBalance = balance - total_affiliate;
+  console.log(newBalance);
+
+  await paymentConnection.query("UPDATE school SET balance = ? WHERE id = ?", [
+    newBalance,
+    dataPayment.school_id,
+  ]);
+
+  // Handle affiliate transactions
+  affiliateRes.map(async (affiliate) => {
+    const totalByAff = affiliate.debit + affiliate.amount; // Adjust as necessary
+
+    // Update the debit in the database
+    await paymentConnection.query(
+      "UPDATE affiliate SET debit = ? WHERE id = ?",
+      [totalByAff, affiliate.id]
+    );
+
+    // Insert the payment transaction
+    await paymentConnection.query(
+      "INSERT INTO payment_transactions (user_id, school_id, payment_id, amount, type, state, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)",
+      [
+        affiliate.user_id,
+        dataPayment.user_id, // or the appropriate school_id
+        dataPayment.id,
+        affiliate.amount,
+        "BULANAN",
+        "IN",
+        new Date(),
+      ]
+    );
+  });
+
+  const kasData = {
+    school_id: dataPayment.school_id,
+    user_id: dataPayment.user_id,
+    deskripsi: `Kas Masuk Berhasil oleh ID Users: ${dataPayment.user_id}, dengan id pembayaran bulanan: ${dataPayment.id}`,
+    type: "DEBIT",
+    amount: total_amount + total_affiliate,
+    flag: 0,
+    years: dataPayment.years,
+  };
+
+  await insertKas(kasData).then((response) => {
+    console.log(response);
+  });
+
+  // Log the transaction
+  const logData = {
+    school_id: dataPayment.school_id,
+    user_id: dataPayment.user_id,
+    activity: "updatePaymentPendingByAdminFree",
+    detail: `Pembayaran berhasil oleh ID Users: ${dataPayment.user_id}, dengan id pembayaran bulanan: ${dataPayment.id}`,
+    action: "Update",
+    status: true,
+  };
+
+  await insertMmLogs(logData);
+
+  db.query(
+    `SELECT tm.*, a.urlWa, a.token_whatsapp, a.sender 
+     FROM template_message tm, aplikasi a 
+     WHERE tm.school_id=a.school_id 
+     AND tm.deskripsi like '%cekTransaksiSuccesMidtransByUserIdFree%'  
+     AND tm.school_id = '${dataPayment.school_id}'`,
+    (err, queryRes) => {
+      if (err) {
+        console.error("Error fetching template and WhatsApp details: ", err);
+      } else {
+        // Ambil url, token dan informasi pengirim dari query result
+        const {
+          urlWa: url,
+          token_whatsapp: token,
+          sender,
+          message: template_message,
+        } = queryRes[0];
+
+        // Memeriksa jenis pembayaran dan mengisi placeholder dengan data yang sesuai
+        let replacements = {
+          nama_lengkap: dataPayment.full_name,
+          nama_pembayaran: dataPayment.sp_name,
+          tahun: dataPayment.years,
+          kelas: dataPayment.class_name,
+          id_pembayaran: order_id,
+          nama_sekolah: dataPayment.school_name,
+          jenis_pembayaran_midtrans: "Qris",
+          total_midtrans: formatRupiah(total_amount),
+        };
+
+
+        // Fungsi untuk menggantikan setiap placeholder di template
+        const formattedMessage = template_message.replace(
+          /\$\{(\w+)\}/g,
+          (_, key) => replacements[key] || ""
+        );
+
+        // Output hasil format pesan untuk debugging
+        console.log(formattedMessage);
+
+        // Mengirim pesan setelah semua data pembayaran diperbarui
+        sendMessage(url, token, dataPayment.phone, formattedMessage);
+      }
+    }
+  );
   db.query(
     "INSERT INTO payment_detail (order_id, metode_pembayaran, redirect_url, status, created_at, uid, user_id, payment_id, setting_payment_uid, type, amount) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
     [
-      newPayment.order_id, // order_id
+      order_id, // order_id
       "Online", // metode_pembayaran
-      newPayment.redirect_url, // redirect_url
+      redirect_url, // redirect_url
       "Paid", // status
       new Date(), // updated_at
       uid, // new field uid
-      data.user_id, // new field user_id
-      data.uid, // new field payment_id
-      data.setting_payment_uid, // new field setting_payment_uid
-      data.type, // new field type
+      dataPayment.user_id, // new field user_id
+      dataPayment.uid, // new field payment_id
+      dataPayment.setting_payment_uid, // new field setting_payment_uid
+      dataPayment.type, // new field type
       newPayment.total_amount, // new field amount
     ],
     (err, res) => {
@@ -869,20 +1189,6 @@ Pembayaran.updateSuccessFree = (newPayment, result) => {
           id: res.insertId,
           ...newPayment,
         });
-        sendMessage(
-          data.phone,
-          `*Halo ${data.full_name},*
-          
-Pembayaran dengan ID Pesanan ${newPayment.order_id} untuk ${data.sp_name} ${
-            data.years
-          } sebesar ${formatRupiah(
-            newPayment.total_amount + data.affiliate
-          )} telah berhasil.
-Terima kasih telah melakukan pembayaran. Semoga Anda selalu sehat dan sukses!
-          
-*Salam hormat,*
-*Tim Keuangan Sekolah ${data.school_name}*`
-        );
         result(null, {
           message: "Payment inserted successfully",
           id: res.insertId,

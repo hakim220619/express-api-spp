@@ -1691,6 +1691,14 @@ and pd.user_id = '${userId}'`;
           const dataResponse = response.data;
           // console.log(dataResponse);
 
+          if (dataResponse.transaction_status == "expire") {
+            await paymentConnection.query(
+              "DELETE FROM `payment_detail` WHERE order_id = ?",
+              [dataResponse.order_id] // Adding order_id in the WHERE clause
+            );
+            console.log("succes update");
+          }
+
           if (dataResponse.status_code == 200) {
             // Get a new connection for each payment processing
             const paymentConnection = await pool.getConnection();
@@ -1975,6 +1983,14 @@ AND pd.redirect_url IS NOT NULL`;
             connectionLimit: 10,
             queueLimit: 0,
           });
+
+          if (dataResponse.transaction_status == "expire") {
+            await paymentConnection.query(
+              "DELETE FROM `payment_detail` WHERE order_id = ?",
+              [dataResponse.order_id] // Adding order_id in the WHERE clause
+            );
+            console.log("succes update");
+          }
           if (dataResponse.status_code == 200) {
             // Get a new connection for each payment processing
             const paymentConnection = await pool.getConnection();

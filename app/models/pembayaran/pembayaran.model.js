@@ -640,7 +640,7 @@ Pembayaran.updateSuccess = async (newPayment, result) => {
 
     // Join the month names into a single string for message display
     const formattedMonths = monthsList.join(", ");
-    if (index == 1) {
+    if (index < 1) {
       db.query(
         `SELECT tm.*, a.urlWa, a.token_whatsapp, a.sender 
 FROM template_message tm, aplikasi a 

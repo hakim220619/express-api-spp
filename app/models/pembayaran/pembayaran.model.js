@@ -599,7 +599,7 @@ Pembayaran.updateSuccess = async (newPayment, result) => {
         "INSERT INTO payment_transactions (user_id, school_id, payment_id, amount, type, state, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)",
         [
           affiliate.user_id,
-          dataUsers.user_id, // or the appropriate school_id
+          dataUsers.school_id, // or the appropriate school_id
           paymentData.id,
           affiliate.amount,
           "BULANAN",
@@ -1084,7 +1084,7 @@ Pembayaran.updateSuccessFree = async (newPayment, result) => {
       "INSERT INTO payment_transactions (user_id, school_id, payment_id, amount, type, state, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)",
       [
         affiliate.user_id,
-        dataPayment.user_id, // or the appropriate school_id
+        dataPayment.school_id, // or the appropriate school_id
         dataPayment.id,
         affiliate.amount,
         "BULANAN",

@@ -863,7 +863,7 @@ AND p.redirect_url IS NOT NULL`;
                     "INSERT INTO payment_transactions (user_id, school_id, payment_id, amount, type, state, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)",
                     [
                       affiliate.user_id,
-                      payment.user_id, // or the appropriate school_id
+                      payment.school_id, // or the appropriate school_id
                       payment.id,
                       affiliate.amount,
                       "BULANAN",
@@ -1461,7 +1461,7 @@ and p.user_id = '${userId}'`;
                     "INSERT INTO payment_transactions (user_id, school_id, payment_id, amount, type, state, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)",
                     [
                       affiliate.user_id,
-                      payment.user_id, // or the appropriate school_id
+                      payment.school_id, // or the appropriate school_id
                       payment.id,
                       affiliate.amount,
                       "BULANAN",
@@ -1770,7 +1770,7 @@ and pd.user_id = '${userId}'`;
                     "INSERT INTO payment_transactions (user_id, school_id, payment_id, amount, type, state, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)",
                     [
                       affiliate.user_id,
-                      payment.user_id, // or the appropriate school_id
+                      payment.school_id, // or the appropriate school_id
                       payment.id,
                       affiliate.amount,
                       "BULANAN",
@@ -2061,7 +2061,7 @@ AND pd.redirect_url IS NOT NULL`;
                     "INSERT INTO payment_transactions (user_id, school_id, payment_id, amount, type, state, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)",
                     [
                       affiliate.user_id,
-                      payment.user_id, // or the appropriate school_id
+                      payment.school_id, // or the appropriate school_id
                       payment.id,
                       affiliate.amount,
                       "BULANAN",

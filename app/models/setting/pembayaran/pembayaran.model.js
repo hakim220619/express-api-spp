@@ -276,7 +276,7 @@ SettingPembayaran.createPaymentByStudent = (newSettingPembayaran, result) => {
       }
 
       // Tambahkan query untuk mendapatkan bulan
-      const monthQuery = "SELECT * FROM months where month_status = 'ON'";
+      const monthQuery = `SELECT * FROM months where school_id = '${newSettingPembayaran.school_id}' and month_status = 'ON'`;
       db.query(monthQuery, (monthErr, months) => {
         if (monthErr) {
           console.log("error fetching months: ", monthErr);

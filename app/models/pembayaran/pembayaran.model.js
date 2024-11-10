@@ -279,7 +279,7 @@ Pembayaran.updatePaymentPendingAdmin = (newPayment, result) => {
                    WHERE tm.school_id=a.school_id 
                    AND tm.deskripsi like '%updatePaymentPendingAdmin%'  
                    AND tm.school_id = '${dataUsers.school_id}'`,
-            (err, queryRes) => {
+            async (err, queryRes) => {
               if (err) {
                 console.error(
                   "Error fetching template and WhatsApp details: ",
@@ -314,6 +314,15 @@ Pembayaran.updatePaymentPendingAdmin = (newPayment, result) => {
                 );
                 // Kirim pesan setelah semua pembayaran diperbarui
                 sendMessage(url, token, dataUsers.phone, formattedMessage);
+                const logData = {
+                  school_id: dataUsers.school_id,
+                  user_id: dataUsers.id,
+                  activity: "SendMessage",
+                  detail: formattedMessage,
+                  action: "Insert",
+                  status: true,
+                };
+                await insertMmLogs(logData);
               }
             }
           );
@@ -415,7 +424,7 @@ Pembayaran.updatePaymentPendingByAdmin = async (newPayment, result) => {
           user_id: newPayment.admin_id,
           activity: "updatePaymentPendingByAdmin",
           detail: `Pembayaran berhasil oleh ID Admin: ${newPayment.admin_id}, dengan id pembayaran bulanan: ${paymentData.id}`,
-          action: "Insert",
+          action: "Update",
           status: true,
         };
         await insertMmLogs(logData);
@@ -464,7 +473,7 @@ Pembayaran.updatePaymentPendingByAdmin = async (newPayment, result) => {
       `SELECT tm.*, a.urlWa, a.token_whatsapp, a.sender 
        FROM template_message tm, aplikasi a 
        WHERE tm.school_id=a.school_id 
-       AND tm.deskripsi LIKE '%updatePaymentPendingByAdmin%'  
+       AND tm.deskripsi = 'updatePaymentPendingByAdmin'  
        AND tm.school_id = ?`,
       [dataUsers.school_id]
     );
@@ -498,6 +507,16 @@ Pembayaran.updatePaymentPendingByAdmin = async (newPayment, result) => {
 
       // Kirim pesan setelah semua pembayaran diperbarui
       await sendMessage(url, token, dataUsers.phone, formattedMessage);
+
+      const logData = {
+        school_id: dataUsers.school_id,
+        user_id: newPayment.admin_id,
+        activity: "SendMessage",
+        detail: formattedMessage,
+        action: "Insert",
+        status: true,
+      };
+      await insertMmLogs(logData);
     }
     // Check results
     if (errors.length > 0) {
@@ -640,6 +659,7 @@ Pembayaran.updateSuccess = async (newPayment, result) => {
 
     // Join the month names into a single string for message display
     const formattedMonths = monthsList.join(", ");
+    
     if (index < 1) {
       db.query(
         `SELECT tm.*, a.urlWa, a.token_whatsapp, a.sender 
@@ -647,7 +667,7 @@ FROM template_message tm, aplikasi a
 WHERE tm.school_id=a.school_id 
 AND tm.deskripsi like '%cekTransaksiSuccesMidtransByUserIdByMonth%'  
 AND tm.school_id = '${dataUsers.school_id}'`,
-        (err, queryRes) => {
+        async (err, queryRes) => {
           if (err) {
             console.error(
               "Error fetching template and WhatsApp details: ",
@@ -687,6 +707,17 @@ AND tm.school_id = '${dataUsers.school_id}'`,
 
             // Send message with all payment details
             sendMessage(url, token, dataUsers.phone, formattedMessage);
+            // Log the transaction
+            const logData = {
+              school_id: dataUsers.school_id,
+              user_id: dataUsers.user_id,
+              activity: "SendMessage",
+              detail: formattedMessage,
+              action: "Insert",
+              status: true,
+            };
+
+            await insertMmLogs(logData);
           }
         }
       );
@@ -854,7 +885,7 @@ Pembayaran.updatePaymentPendingByAdminFree = async (newPayment, result) => {
       user_id: newPayment.admin_id,
       activity: "updatePaymentPendingByAdminFree",
       detail: `Pembayaran berhasil oleh ID Admin: ${newPayment.admin_id}, dengan id pembayaran bulanan: ${data.id}`,
-      action: "Insert",
+      action: "Update",
       status: true,
     };
     await insertMmLogs(logData);
@@ -862,9 +893,9 @@ Pembayaran.updatePaymentPendingByAdminFree = async (newPayment, result) => {
       `SELECT tm.*, a.urlWa, a.token_whatsapp, a.sender 
        FROM template_message tm, aplikasi a 
        WHERE tm.school_id=a.school_id 
-       AND tm.deskripsi like '%updatePaymentPendingByAdminFree%'  
+       AND tm.deskripsi = 'updatePaymentPendingByAdminFree'  
        AND tm.school_id = '${data.school_id}'`,
-      (err, queryRes) => {
+      async (err, queryRes) => {
         if (err) {
           console.error("Error fetching template and WhatsApp details: ", err);
         } else {
@@ -897,6 +928,16 @@ Pembayaran.updatePaymentPendingByAdminFree = async (newPayment, result) => {
 
           // Kirim pesan setelah semua pembayaran diperbarui
           sendMessage(url, token, data.phone, formattedMessage);
+
+          const logData = {
+            school_id: data.school_id,
+            user_id: newPayment.admin_id,
+            activity: "SendMessage",
+            detail: formattedMessage,
+            action: "Insert",
+            status: true,
+          };
+          await insertMmLogs(logData);
         }
       }
     );
@@ -956,7 +997,7 @@ Pembayaran.updateSiswaFree = (newPayment, result) => {
            WHERE tm.school_id=a.school_id 
            AND tm.deskripsi like '%updateSiswaFree%'  
            AND tm.school_id = '${data.school_id}'`,
-          (err, queryRes) => {
+          async (err, queryRes) => {
             if (err) {
               console.error(
                 "Error fetching template and WhatsApp details: ",
@@ -994,6 +1035,16 @@ Pembayaran.updateSiswaFree = (newPayment, result) => {
 
               // Kirim pesan setelah semua pembayaran diperbarui
               sendMessage(url, token, data.phone, formattedMessage);
+
+              const logData = {
+                school_id: data.school_id,
+                user_id: data.user_id,
+                activity: "SendMessage",
+                detail: formattedMessage,
+                action: "Insert",
+                status: true,
+              };
+              await insertMmLogs(logData);
             }
           }
         );
@@ -1126,7 +1177,7 @@ Pembayaran.updateSuccessFree = async (newPayment, result) => {
      WHERE tm.school_id=a.school_id 
      AND tm.deskripsi like '%cekTransaksiSuccesMidtransByUserIdFree%'  
      AND tm.school_id = '${dataPayment.school_id}'`,
-    (err, queryRes) => {
+    async (err, queryRes) => {
       if (err) {
         console.error("Error fetching template and WhatsApp details: ", err);
       } else {
@@ -1150,7 +1201,6 @@ Pembayaran.updateSuccessFree = async (newPayment, result) => {
           total_midtrans: formatRupiah(total_amount),
         };
 
-
         // Fungsi untuk menggantikan setiap placeholder di template
         const formattedMessage = template_message.replace(
           /\$\{(\w+)\}/g,
@@ -1162,6 +1212,17 @@ Pembayaran.updateSuccessFree = async (newPayment, result) => {
 
         // Mengirim pesan setelah semua data pembayaran diperbarui
         sendMessage(url, token, dataPayment.phone, formattedMessage);
+
+        const logData = {
+          school_id: dataPayment.school_id,
+          user_id: dataPayment.user_id,
+          activity: "SendMessage",
+          detail: formattedMessage,
+          action: "Insert",
+          status: true,
+        };
+      
+        await insertMmLogs(logData);
       }
     }
   );

@@ -1367,9 +1367,9 @@ WHERE
   }
 };
 
-General.cekTransaksiPaymentSiswaBaru = async (result) => {
+General.cekTransaksiPaymentSiswaBaru = async (school_id, result) => {
   try {
-    const query = `SELECT p.*, s.school_name FROM calon_siswa p, school s WHERE p.school_id=s.id AND p.status_pembayaran = 'Pending' AND p.redirect_url IS NOT NULL GROUP BY p.order_id`;
+    const query = `SELECT p.*, s.school_name FROM calon_siswa p, school s WHERE p.school_id=s.id AND p.status_pembayaran = 'Pending' AND p.redirect_url IS NOT NULL AND p.school_id = '${school_id}' GROUP BY p.order_id ORDER BY p.created_at DESC`;
 
     // Fetch payment records where metode_pembayaran is Midtrans and status is Verified
     db.query(query, async (err, rows) => {
@@ -1405,7 +1405,7 @@ General.cekTransaksiPaymentSiswaBaru = async (result) => {
 
       const [dataAplikasi] = await paymentConnection.query(
         "SELECT * FROM aplikasi WHERE school_id = ?",
-        [rows[0].school_id]
+        [school_id]
       );
 
       const midtransServerKey = dataAplikasi[0].serverKey;
@@ -1414,7 +1414,7 @@ General.cekTransaksiPaymentSiswaBaru = async (result) => {
       );
       try {
         const paymentPromises = rows.map(async (payment) => {
-          // console.log(payment);
+          console.log(payment);
 
           try {
             let paymentConnection;
@@ -1565,8 +1565,8 @@ General.cekTransaksiPaymentSiswaBaru = async (result) => {
                 `SELECT tm.*, a.urlWa, a.token_whatsapp, a.sender
                      FROM template_message tm, aplikasi a
                      WHERE tm.school_id=a.school_id
-                     AND tm.deskripsi like '%cekTransaksiPaymentSiswaBaru%'
-                     AND tm.school_id = '${payment.school_id}'`,
+                     AND tm.deskripsi = 'cekTransaksiPaymentSiswaBaru'
+                     AND tm.school_id = '${school_id}'`,
                 (err, queryRes) => {
                   if (err) {
                     console.error(

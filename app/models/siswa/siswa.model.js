@@ -46,19 +46,20 @@ const axios = require("axios");
 
 Siswa.registerSiswa = (newUsers, result) => {
   // Tentukan query dan parameter berdasarkan apakah ada unit_id atau tidak
-  let queryUnit = `SELECT * FROM unit WHERE `;
-  let paramsUnit = [];
+  let queryUnit = `SELECT * FROM unit WHERE school_id = '${newUsers.school_id}' and `;
+
+  console.log(newUsers.unit_name);
 
   if (newUsers.unit_id) {
-    queryUnit += `id = ?`;
-    paramsUnit.push(newUsers.unit_id);
+    // Cek apakah newUsers.unit_id ada dan terdefinisi
+    queryUnit += `id = '${newUsers.unit_id}'`;
   } else {
-    queryUnit += `unit_name LIKE ?`;
-    paramsUnit.push(`%${newUsers.unit_name}%`);
+    queryUnit += `unit_name = '${newUsers.unit_name}'`;
   }
 
+
   // Eksekusi query untuk mendapatkan data unit
-  db.query(queryUnit, paramsUnit, (err, unitData) => {
+  db.query(queryUnit, (err, unitData) => {
     if (err) {
       console.log("Unit Query error: ", err);
       result(err, null);
@@ -117,6 +118,8 @@ Siswa.registerSiswa = (newUsers, result) => {
                 `SELECT * FROM affiliate WHERE school_id = ?`,
                 [newUsers.school_id],
                 (err, affiliateData) => {
+                  console.log(affiliateData);
+                  
                   if (err) {
                     console.log("Affiliate Query error: ", err);
                     result(err, null);

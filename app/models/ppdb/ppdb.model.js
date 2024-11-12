@@ -392,7 +392,7 @@ FROM calon_siswa_detail
 Ppdb.detailPpdbStudentDetailAdmin = async (cs_id, result) => {
   let query = `SELECT csd.*, cs.full_name, cs.nik, cs.date_of_birth, cs.email, cs.phone, cs.years  FROM calon_siswa_detail csd, calon_siswa cs WHERE csd.cs_id=cs.id
  and csd.cs_id = '${cs_id}'`;
- 
+
   db.query(query, (err, res) => {
     if (err) {
       console.log("error: ", err);
@@ -619,6 +619,8 @@ Ppdb.verifikasiSiswaBaru = async (id, result) => {
   }
 };
 
+const { v4: uuidv4 } = require("uuid"); // Pastikan modul uuid telah diimpor
+
 Ppdb.terimaSiswaBaru = async (id, result) => {
   try {
     // Step 1: Select the student by id to get date_of_birth and nik
@@ -636,60 +638,69 @@ Ppdb.terimaSiswaBaru = async (id, result) => {
         result({ message: "Student not found" }, null);
         return;
       }
-      // Step 7: Update username and hashed password for the student with the given id
-      let updateQuery = "UPDATE calon_siswa SET status = ? WHERE id = ?";
 
-      db.query(updateQuery, ["Accepted", id], (updateErr, updateRes) => {
-        if (updateErr) {
-          console.log("Error while updating student: ", updateErr);
-          result(null, updateErr);
+      const studentData = res[0];
+      const {
+        nisn,
+        unit_id,
+        school_id,
+        full_name,
+        email,
+        address,
+        phone,
+        major_id,
+        class_id,
+        date_of_birth,
+      } = studentData;
+
+      // Generate password and hash it
+      const password = "12345678"; // Replace this with the password generation logic
+      const hashedPassword = await bcrypt.hash(password, 10);
+
+      // Step 3: Create the user data to insert
+      const newUsers = {
+        uid: uuidv4(),
+        nisn: nisn,
+        unit_id: unit_id,
+        school_id: school_id,
+        full_name: full_name.toUpperCase(),
+        email: email,
+        address: address,
+        phone: phone,
+        major_id: major_id,
+        class_id: class_id,
+        password: hashedPassword,
+        role: 160,
+        status: "ON",
+        created_at: new Date(),
+        date_of_birth: date_of_birth,
+      };
+      console.log(newUsers);
+
+      db.query("INSERT INTO users SET ?", newUsers, (err, res) => {
+        if (err) {
+          console.log("Error inserting into users: ", err);
+          result(err, null);
           return;
         }
-        // db.query(
-        //   `SELECT tm.*, a.urlWa, a.token_whatsapp, a.sender
-        //    FROM template_message tm, aplikasi a
-        //    WHERE tm.school_id=a.school_id
-        //    AND tm.deskripsi LIKE '%verifikasiSiswa%'
-        //    AND tm.school_id = ?`,
-        //   [school_id],
-        //   (err, queryRes) => {
-        //     if (err) {
-        //       console.log("Query error: ", err);
-        //       result(err, null);
-        //       return;
-        //     }
 
-        //     if (queryRes.length > 0) {
-        //       const {
-        //         urlWa: url,
-        //         token_whatsapp: token,
-        //         sender,
-        //         message: template_message,
-        //       } = queryRes[0];
+        console.log("User created: ", { id: res.insertId, ...newUsers });
+        result(null, { id: res.insertId, ...newUsers });
 
-        //       // Data to replace in the template message
-        //       const replacements = {
-        //         username: username,
-        //         password: randomPassword,
-        //         tanggal_lahir: tahun + '-' + bulan + '-' + tanggal,
-        //         nik: nik,
-        //       };
+        // Step 7: Update the student's status in calon_siswa
+        let updateQuery = "UPDATE calon_siswa SET status = ? WHERE id = ?";
+        db.query(updateQuery, ["Accepted", id], (updateErr, updateRes) => {
+          if (updateErr) {
+            console.log("Error while updating student: ", updateErr);
+            result(null, updateErr);
+            return;
+          }
 
-        //       // Replace placeholders in the template_message
-        //       const formattedMessage = template_message.replace(
-        //         /\$\{(\w+)\}/g,
-        //         (_, key) => {
-        //           return replacements[key] || "";
-        //         }
-        //       );
-        //       // Send message after creating the payment
-        //       sendMessage(url, token, phone, formattedMessage);
-        //     }
-        //   }
-        // );
-        // Optionally, return the updated student data or a success message
-        result(null, {
-          message: "Student updated successfully",
+          // Optionally, add the logic to send a message using WhatsApp API here if needed
+
+          result(null, {
+            message: "Student updated successfully",
+          });
         });
       });
     });
@@ -698,6 +709,7 @@ Ppdb.terimaSiswaBaru = async (id, result) => {
     result(null, error);
   }
 };
+
 Ppdb.tolakSiswaBaru = async (id, result) => {
   try {
     // Step 1: Select the student by id to get date_of_birth and nik

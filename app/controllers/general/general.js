@@ -247,7 +247,10 @@ exports.cekTransaksiSuccesMidtrans = (req, res, next) => {
 };
 exports.cekTransaksiPaymentSiswaBaru = (req, res, next) => {
   // console.log(req);
-  General.cekTransaksiPaymentSiswaBaru((err, data) => {
+  const school_id = req.query.school_id
+  console.log(school_id);
+  
+  General.cekTransaksiPaymentSiswaBaru(school_id, (err, data) => {
     if (err)
       res.status(500).send({
         message:

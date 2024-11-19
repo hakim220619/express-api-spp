@@ -55,6 +55,19 @@ General.getSchool = async (result) => {
     result(null, res);
   });
 };
+General.getAplikasiBySchool = async (school_id, result) => {
+  let query = `SELECT * from aplikasi where school_id = '${school_id}'`;
+  db.query(query, (err, res) => {
+    if (err) {
+      console.log("error: ", err);
+      result(null, err);
+      return;
+    }
+
+    // console.log("role: ", res);
+    result(null, res);
+  });
+};
 General.getUsersAffiliate = async (result) => {
   let query =
     "SELECT u.id, u.full_name, s.school_name, u.school_id from users u, school s where u.school_id=s.id AND u.role = '180'";
@@ -743,7 +756,7 @@ WHERE
     p.status = 'Verified'
     AND p.metode_pembayaran = 'Online'
     AND p.redirect_url IS NOT NULL
-    AND p.school_id = '531'
+    AND p.school_id = '${school_id}'
 
 UNION ALL
 

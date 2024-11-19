@@ -25,19 +25,24 @@ Dashboard.listPaymentByMonths = (sp_name, school_id, user_id, result) => {
     sp.sp_name,
     ut.unit_name,
     p.unit_id,
-
-    -- Aggregating amounts from the payment table
-    SUM(CASE WHEN p.status = 'Pending' THEN p.amount ELSE 0 END) AS pending,
-    SUM(CASE WHEN p.status = 'Verified' THEN p.amount ELSE 0 END) AS verified,
-    SUM(CASE WHEN p.status = 'Paid' THEN p.amount ELSE 0 END) AS paid,
+      -- Aggregating amounts from the payment table
+   ((SELECT SUM(pp.amount) FROM payment pp WHERE pp.user_id=p.user_id AND pp.status = 'Paid' AND pp.setting_payment_uid=p.setting_payment_uid) + (SELECT SUM(af.amount) * (SELECT COUNT(pp.id) FROM payment pp WHERE pp.user_id=p.user_id AND pp.status = 'Paid' AND pp.setting_payment_uid=p.setting_payment_uid) FROM affiliate af WHERE af.school_id=p.school_id )) as paid,
+   
+   ((SELECT SUM(pp.amount) FROM payment pp WHERE pp.user_id=p.user_id AND pp.status = 'Verified' AND pp.setting_payment_uid=p.setting_payment_uid) + (SELECT SUM(af.amount) * (SELECT COUNT(pp.id) FROM payment pp WHERE pp.user_id=p.user_id AND pp.status = 'Verified' AND pp.setting_payment_uid=p.setting_payment_uid) FROM affiliate af WHERE af.school_id=p.school_id )) as verified,
+   
+      ((SELECT SUM(pp.amount) FROM payment pp WHERE pp.user_id=p.user_id AND pp.status = 'Pending' AND pp.setting_payment_uid=p.setting_payment_uid) + (SELECT SUM(af.amount) * (SELECT COUNT(pp.id) FROM payment pp WHERE pp.user_id=p.user_id AND pp.status = 'Pending' AND pp.setting_payment_uid=p.setting_payment_uid) FROM affiliate af WHERE af.school_id=p.school_id )) as pending,
+   -- end
+    (SELECT COUNT(ppp.id) FROM payment ppp WHERE ppp.status = 'Pending' AND ppp.user_id = p.user_id AND ppp.setting_payment_uid=p.setting_payment_uid) as total,
+    
+(SELECT SUM(af.amount) * (SELECT COUNT(ppp.id) FROM payment ppp WHERE ppp.status = 'Pending' AND ppp.user_id = p.user_id AND ppp.setting_payment_uid=p.setting_payment_uid) FROM affiliate af WHERE af.school_id=p.school_id) as affiliate,
+   
 
     -- Calculating status_lunas based on aggregated values in the payment table
-    CASE
-        WHEN SUM(CASE WHEN p.status = 'Pending' THEN p.amount ELSE 0 END) = 0
-             AND SUM(CASE WHEN p.status = 'Verified' THEN p.amount ELSE 0 END) = 0 THEN 'Paid'
-        WHEN SUM(CASE WHEN p.status = 'Pending' THEN p.amount ELSE 0 END) = 0 THEN 'Verified'
-        ELSE 'Pending'
-    END AS status_lunas,
+      CASE
+            WHEN SUM(CASE WHEN p.status = 'Pending' THEN (p.amount + (SELECT SUM(af.amount) * (SELECT COUNT(ppp.id) FROM payment ppp WHERE ppp.status != 'Paid'  AND ppp.user_id = p.user_id) FROM affiliate af WHERE af.school_id=p.school_id)) ELSE 0 END) > 0 THEN 'Pending'
+            WHEN SUM(CASE WHEN p.status = 'Verified' THEN p.amount ELSE 0 END) > 0 THEN 'Verified'
+            ELSE 'Paid'
+        END AS status_lunas,
 
     -- Subquery for detail_pending specific to type 'BEBAS'
     (SELECT SUM(CASE WHEN pd.status = 'Pending' THEN pd.amount ELSE 0 END)
@@ -166,19 +171,24 @@ Dashboard.listPaymentByMonthsByAdmin = (
     sp.sp_name,
     ut.unit_name,
     p.unit_id,
-
-    -- Aggregating amounts from the payment table
-    SUM(CASE WHEN p.status = 'Pending' THEN p.amount ELSE 0 END) AS pending,
-    SUM(CASE WHEN p.status = 'Verified' THEN p.amount ELSE 0 END) AS verified,
-    SUM(CASE WHEN p.status = 'Paid' THEN p.amount ELSE 0 END) AS paid,
+     -- Aggregating amounts from the payment table
+   ((SELECT SUM(pp.amount) FROM payment pp WHERE pp.user_id=p.user_id AND pp.status = 'Paid' AND pp.setting_payment_uid=p.setting_payment_uid) + (SELECT SUM(af.amount) * (SELECT COUNT(pp.id) FROM payment pp WHERE pp.user_id=p.user_id AND pp.status = 'Paid' AND pp.setting_payment_uid=p.setting_payment_uid) FROM affiliate af WHERE af.school_id=p.school_id )) as paid,
+   
+   ((SELECT SUM(pp.amount) FROM payment pp WHERE pp.user_id=p.user_id AND pp.status = 'Verified' AND pp.setting_payment_uid=p.setting_payment_uid) + (SELECT SUM(af.amount) * (SELECT COUNT(pp.id) FROM payment pp WHERE pp.user_id=p.user_id AND pp.status = 'Verified' AND pp.setting_payment_uid=p.setting_payment_uid) FROM affiliate af WHERE af.school_id=p.school_id )) as verified,
+   
+      ((SELECT SUM(pp.amount) FROM payment pp WHERE pp.user_id=p.user_id AND pp.status = 'Pending' AND pp.setting_payment_uid=p.setting_payment_uid) + (SELECT SUM(af.amount) * (SELECT COUNT(pp.id) FROM payment pp WHERE pp.user_id=p.user_id AND pp.status = 'Pending' AND pp.setting_payment_uid=p.setting_payment_uid) FROM affiliate af WHERE af.school_id=p.school_id )) as pending,
+   -- end
+    (SELECT COUNT(ppp.id) FROM payment ppp WHERE ppp.status = 'Pending' AND ppp.user_id = p.user_id AND ppp.setting_payment_uid=p.setting_payment_uid) as total,
+    
+(SELECT SUM(af.amount) * (SELECT COUNT(ppp.id) FROM payment ppp WHERE ppp.status = 'Pending' AND ppp.user_id = p.user_id AND ppp.setting_payment_uid=p.setting_payment_uid) FROM affiliate af WHERE af.school_id=p.school_id) as affiliate,
+   
 
     -- Calculating status_lunas based on aggregated values in the payment table
-    CASE
-        WHEN SUM(CASE WHEN p.status = 'Pending' THEN p.amount ELSE 0 END) = 0
-             AND SUM(CASE WHEN p.status = 'Verified' THEN p.amount ELSE 0 END) = 0 THEN 'Paid'
-        WHEN SUM(CASE WHEN p.status = 'Pending' THEN p.amount ELSE 0 END) = 0 THEN 'Verified'
-        ELSE 'Pending'
-    END AS status_lunas,
+      CASE
+            WHEN SUM(CASE WHEN p.status = 'Pending' THEN (p.amount + (SELECT SUM(af.amount) * (SELECT COUNT(ppp.id) FROM payment ppp WHERE ppp.status != 'Paid'  AND ppp.user_id = p.user_id) FROM affiliate af WHERE af.school_id=p.school_id)) ELSE 0 END) > 0 THEN 'Pending'
+            WHEN SUM(CASE WHEN p.status = 'Verified' THEN p.amount ELSE 0 END) > 0 THEN 'Verified'
+            ELSE 'Paid'
+        END AS status_lunas,
 
     -- Subquery for detail_pending specific to type 'BEBAS'
     (SELECT SUM(CASE WHEN pd.status = 'Pending' THEN pd.amount ELSE 0 END)
@@ -274,6 +284,7 @@ JOIN
   }
 
   query += `GROUP BY p.setting_payment_uid ORDER BY p.type DESC`;
+  // console.log(query);
 
   db.query(query, (err, res) => {
     if (err) {
@@ -823,8 +834,6 @@ WHERE
     result(null, res);
   });
 };
-
-
 
 Dashboard.getTotalTunggakanBebas = async (schoolId, result) => {
   let query = `SELECT 

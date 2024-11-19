@@ -73,7 +73,7 @@ JOIN
     query += ` AND p.uid = '${id_payment}'`;
   }
   query += "ORDER BY mt.month_number ASC";
-  // console.log(query);
+  console.log(query);
 
   db.query(query, (err, res) => {
     if (err) {

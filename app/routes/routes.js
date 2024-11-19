@@ -187,6 +187,7 @@ module.exports = (app) => {
   router.post("/detailSettingPembayaranByUidFree", token.authenticateToken, SettingPembayaran.detailSettingPembayaranByUidFree);
 
   //General
+  router.get("/getAplikasiBySchool", token.authenticateToken, general.getAplikasiBySchool);
   router.get("/getSchool", token.authenticateToken, general.getSchool);
   router.get("/getUsersAffiliate", token.authenticateToken, general.getUsersAffiliate);
   router.get("/getRole", token.authenticateToken, general.getRole);

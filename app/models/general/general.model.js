@@ -1459,7 +1459,7 @@ General.cekTransaksiPaymentSiswaBaru = async (school_id, result) => {
               // Check school balance
               const [schoolRes] = await paymentConnection.query(
                 "SELECT * FROM school WHERE id = ?",
-                [payment.school_id]
+                [school_id]
               );
 
               if (schoolRes.length === 0) {
@@ -1476,7 +1476,7 @@ General.cekTransaksiPaymentSiswaBaru = async (school_id, result) => {
               // Get affiliate data
               const [affiliateRes] = await paymentConnection.query(
                 "SELECT * FROM affiliate WHERE school_id = ?",
-                [payment.school_id] // Use appropriate user_id or school_id
+                [school_id] // Use appropriate user_id or school_id
               );
               let total_affiliate = 0;
 
@@ -1502,7 +1502,7 @@ General.cekTransaksiPaymentSiswaBaru = async (school_id, result) => {
               // // Update school balance
               await paymentConnection.query(
                 "UPDATE school SET balance = ? WHERE id = ?",
-                [newBalance, payment.school_id]
+                [newBalance, school_id]
               );
 
               // Handle affiliate transactions
@@ -1521,7 +1521,7 @@ General.cekTransaksiPaymentSiswaBaru = async (school_id, result) => {
                   "INSERT INTO payment_transactions (user_id, school_id, payment_id, amount, type, state, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)",
                   [
                     affiliate.user_id,
-                    payment.school_id, // or the appropriate school_id
+                    school_id, // or the appropriate school_id
                     payment.id,
                     affiliate.amount,
                     "REGISTRASI",
@@ -1546,7 +1546,7 @@ General.cekTransaksiPaymentSiswaBaru = async (school_id, result) => {
               // await Promise.all(transactionPromises);
               // Commit the transaction
               const kasData = {
-                school_id: payment.school_id,
+                school_id: school_id,
                 user_id: payment.id,
                 deskripsi: `Kas Masuk Berhasil oleh ID Users: ${payment.id}, dengan id pembayaran registrasi: ${payment.no_registrasi}`,
                 type: "DEBIT",
@@ -1562,7 +1562,7 @@ General.cekTransaksiPaymentSiswaBaru = async (school_id, result) => {
 
               // Log the transaction
               const logData = {
-                school_id: payment.school_id,
+                school_id: school_id,
                 user_id: payment.id,
                 activity: "cekTransaksiPaymentSiswaBaru",
                 detail: `Pembayaran berhasil oleh ID Users: ${payment.id}, dengan id pembayaran registrasi: ${payment.no_registrasi}`,
@@ -1684,6 +1684,7 @@ and p.user_id = '${userId}'`;
         result(err, null);
         return;
       }
+// console.log(rows);
 
       if (rows.length === 0) {
         console.log("No verified payments found.");
@@ -1714,6 +1715,8 @@ and p.user_id = '${userId}'`;
       );
 
       const midtransServerKey = dataAplikasi[0].serverKey;
+      console.log(midtransServerKey);
+      
       const authHeader = Buffer.from(midtransServerKey + ":").toString(
         "base64"
       );
@@ -1734,6 +1737,8 @@ and p.user_id = '${userId}'`;
             });
 
             const dataResponse = response.data;
+            console.log(dataResponse);
+            
             if (dataResponse.transaction_status == "expire") {
               await paymentConnection.query(
                 "UPDATE payment SET order_id = ?, metode_pembayaran = ?, redirect_url = ?, status = ? WHERE order_id = ?",

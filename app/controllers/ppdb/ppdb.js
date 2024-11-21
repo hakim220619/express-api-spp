@@ -50,9 +50,6 @@ exports.createSettingPpdb = [
         });
       }
 
-      // Manipulasi URL: Mengganti spasi dengan tanda "-"
-      const sanitizedUrl = url ? url.trim().replace(/\s+/g, "-") : null;
-
       // Cek apakah ada file gambar yang diupload
       const gambar = req.file ? req.file.filename : null; // Simpan nama file jika ada
 
@@ -64,7 +61,7 @@ exports.createSettingPpdb = [
         amount,
         address,
         target,
-        url: sanitizedUrl,
+        url: url,
         status: status || "ON", // Default status ke "ON" jika tidak diisi
         image: gambar, // Gambar opsional
         created_at: new Date(), // Timestamp saat data dibuat

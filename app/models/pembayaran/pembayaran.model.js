@@ -73,7 +73,7 @@ JOIN
     query += ` AND p.uid = '${id_payment}'`;
   }
   query += "ORDER BY mt.month_number ASC";
-  console.log(query);
+  // console.log(query);
 
   db.query(query, (err, res) => {
     if (err) {
@@ -227,9 +227,12 @@ Pembayaran.updatePaymentPendingAdmin = (newPayment, result) => {
   let errors = []; // Untuk menyimpan error jika ada
   let totalMonth = ""; // Untuk menjumlahkan bulan dari dataPayment
   let totalPayment = 0; // Untuk menjumlahkan total pembayaran dari dataPayment
+// console.log(dataPayment);
 
   // Iterasi melalui setiap item dalam dataPayment
   dataPayment.forEach((paymentData) => {
+    // console.log(paymentData);
+    
     db.query(
       "UPDATE payment SET order_id = ?, metode_pembayaran = ?, redirect_url = ?, status = ?, updated_at = ? WHERE id = ?",
       [

@@ -76,7 +76,6 @@ exports.updateBulan = [
         month_status: req.body.data.month_status,
         updated_at: new Date(),
       }); 
-      console.log(req.body.data);
       
       Bulan.update(bulan, (err, data) => {
         if (err) {
@@ -111,7 +110,6 @@ exports.delete = (req, res) => {
 
 exports.detailBulan = (req, res, next) => {
   const uid = req.body.uid;
-  // console.log(req);
   Bulan.detailBulan(uid, (err, data) => {
     if (err)
       res.status(500).send({

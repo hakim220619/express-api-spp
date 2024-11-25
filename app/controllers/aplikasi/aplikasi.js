@@ -46,7 +46,6 @@ const upload = multer({
   limits: { fileSize: 1024 * 1024 * 5 }, // Limit to 5MB
   fileFilter: fileFilter, // Use the file filter
 });
-// console.log(upload);
 
 // Update existing Admin
 exports.updateAplikasi = [
@@ -82,7 +81,6 @@ exports.updateAplikasi = [
         address: req.body.address,
         phone: req.body.phone,
       };
-      console.log(school);
 
       // Log file upload path for debugging
       console.log(
@@ -121,7 +119,6 @@ exports.listAplikasi = (req, res, next) => {
 };
 exports.detailAplikasi = (req, res, next) => {
   const uid = req.body.uid;
-  // console.log(req);
   Aplikasi.detailAplikasi(uid, (err, data) => {
     if (err)
       res.status(500).send({
@@ -133,7 +130,6 @@ exports.detailAplikasi = (req, res, next) => {
 };
 exports.detailSettingAplikasi = (req, res, next) => {
   const school_id = req.body.school_id;
-  // console.log(req);
   Aplikasi.detailSettingAplikasi(school_id, (err, data) => {
     if (err)
       res.status(500).send({

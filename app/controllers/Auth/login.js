@@ -150,7 +150,6 @@ exports.checklogin = async (req, res) => {
 exports.refreshToken = async (req, res) => {
   const AccessToken = req.headers["authorization"];
   Login.checklogin(AccessToken, (err, data) => {
-    console.log(data);
 
     if (err != 200)
       res.status(500).send({

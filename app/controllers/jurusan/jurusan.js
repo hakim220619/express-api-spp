@@ -80,7 +80,6 @@ exports.updateJurusan = [
         major_status: req.body.data.major_status,
         updated_at: new Date(),
       }); 
-      console.log(req.body.data);
       
       Jurusan.update(jurusan, (err, data) => {
         if (err) {
@@ -115,7 +114,6 @@ exports.delete = (req, res) => {
 
 exports.detailJurusan = (req, res, next) => {
   const uid = req.body.uid;
-  // console.log(req);
   Jurusan.detailJurusan(uid, (err, data) => {
     if (err)
       res.status(500).send({

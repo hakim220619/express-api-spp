@@ -15,7 +15,6 @@ const storage = multer.diskStorage({
   destination: function (req, file, cb) {
     const schoolId = req.body.school_id; // Get the school ID from the request body
     const uploadPath = path.join(baseUploadDir, schoolId.toString()); // Construct the folder path
-    console.log(schoolId);
 
     // Ensure the specific school directory exists
     if (!fs.existsSync(uploadPath)) {
@@ -114,7 +113,6 @@ exports.updateAdmin = [
         message: "Content cannot be empty!",
       });
     }
-    console.log(req.body);
 
     Admin.detailAdmin(req.body.uid, async (err, existingAdmin) => {
       if (err) {

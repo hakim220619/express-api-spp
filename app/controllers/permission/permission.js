@@ -28,7 +28,6 @@ exports.createPermission = [
         message: "Content cannot be empty!",
       });
     }
-console.log(req.body);
 
     try {
       // Create new admin object
@@ -113,7 +112,6 @@ exports.delete = (req, res) => {
 
 exports.detailPermission = (req, res, next) => {
   const id = req.body.id;
-  console.log(req.body);
   Permission.detailPermission(id, (err, data) => {
     if (err)
       res.status(500).send({

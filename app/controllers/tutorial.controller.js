@@ -78,8 +78,6 @@ exports.update = (req, res) => {
     });
   }
 
-  console.log(req.body);
-
   Tutorial.updateById(req.params.id, new Tutorial(req.body), (err, data) => {
     if (err) {
       if (err.kind === "not_found") {

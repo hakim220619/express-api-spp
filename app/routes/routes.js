@@ -212,6 +212,7 @@ module.exports = (app) => {
   router.get("/getDataMaster", token.authenticateToken, general.getDataMaster);
   router.get("/getUnits", general.getUnit);
   router.get("/getListPpdbActive", general.getListPpdbActive);
+  router.get("/get-list-balance-by-userId",token.authenticateToken, general.getListBalanceByUserId);
   router.post("/forgot-password", general.forgetPassword);
   router.post("/reset-new-password", general.resetNewPassword);
   router.post("/new-password-all",  token.authenticateToken, general.newPasswordAll);

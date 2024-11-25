@@ -113,7 +113,6 @@ exports.delete = (req, res) => {
 
 exports.detailKelas = (req, res, next) => {
   const uid = req.body.uid;
-  // console.log(req);
   Kelas.detailKelas(uid, (err, data) => {
     if (err)
       res.status(500).send({

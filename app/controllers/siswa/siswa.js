@@ -17,7 +17,6 @@ if (!fs.existsSync(baseUploadDir)) {
 // Multer setup for file uploads
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
-    console.log(req.body);
 
     const schoolId = req.body.school_id; // Get the school ID from the request body
     const uploadPath = path.join(baseUploadDir, schoolId.toString()); // Construct the folder path

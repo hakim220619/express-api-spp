@@ -118,7 +118,6 @@ exports.delete = (req, res) => {
 
 exports.detailKas = (req, res, next) => {
   const uid = req.body.uid;
-  // console.log(req);
   Kas.detailKas(uid, (err, data) => {
     if (err)
       res.status(500).send({

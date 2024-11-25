@@ -382,7 +382,6 @@ exports.updatePpdbSetting = [
           console.log("error: ", err);
           return res.status(500).send({ message: "Error retrieving PPDB." });
         }
-console.log(result);
 
         const existingPpdb = result[0]; // Ambil data PPDB yang ada
     

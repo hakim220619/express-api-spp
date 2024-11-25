@@ -92,7 +92,6 @@ exports.delete = (req, res) => {
 
 exports.detailUnit = (req, res, next) => {
   const uid = req.body.uid;
-  // console.log(req);
   Unit.detailUnit(uid, (err, data) => {
     if (err)
       res.status(500).send({

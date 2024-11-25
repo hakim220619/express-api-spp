@@ -967,6 +967,8 @@ Pembayaran.updatePaymentPendingByAdminFree = async (newPayment, result) => {
 };
 
 Pembayaran.updateSiswaFree = (newPayment, result) => {
+  console.log(newPayment);
+  
   const data = newPayment.dataPayment;
   const uid = `${uuidv4()}-${Date.now()}`;
 

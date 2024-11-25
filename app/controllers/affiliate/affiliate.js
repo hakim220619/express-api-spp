@@ -66,7 +66,6 @@ exports.updateAffiliate = [
         major_status: req.body.data.major_status,
         updated_at: new Date(),
       }); 
-      console.log(req.body.data);
       
       Affiliate.update(jurusan, (err, data) => {
         if (err) {
@@ -101,7 +100,6 @@ exports.delete = (req, res) => {
 
 exports.detailAffiliate = (req, res, next) => {
   const uid = req.body.uid;
-  // console.log(req);
   Affiliate.detailAffiliate(uid, (err, data) => {
     if (err)
       res.status(500).send({

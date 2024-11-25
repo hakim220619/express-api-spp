@@ -11,8 +11,6 @@ exports.listPaymentByMonths = (req, res, next) => {
     school_id,
     user_id,
     (err, data) => {
-      console.log(data);
-
       if (err)
         res.status(500).send({
           message: err.message || "Some error occurred while retrieving Data.",
@@ -245,7 +243,6 @@ exports.getTransaksiAffiliateBySchool = (req, res, next) => {
 
 exports.detailBulan = (req, res, next) => {
   const uid = req.body.uid;
-  // console.log(req);
   Dashboard.detailBulan(uid, (err, data) => {
     if (err)
       res.status(500).send({

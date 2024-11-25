@@ -135,6 +135,7 @@ JOIN
   }
 
   query += `GROUP BY p.setting_payment_uid ORDER BY p.type DESC`;
+// console.log(query);
 
   db.query(query, (err, res) => {
     if (err) {
@@ -395,7 +396,7 @@ WHERE
   if (user_id) {
     query += ` AND pd.user_id = '${user_id}'`;
   }
-  console.log(query);
+  // console.log(query);
 
   // Eksekusi query dengan atau tanpa parameter schoolId
   db.query(query, [schoolId], (err, res) => {
@@ -455,7 +456,7 @@ pd.payment_id=ppp.uid
     query += ` AND pd.user_id = '${user_id}'`;
   }
   query += `GROUP BY pd.user_id`;
-  console.log(query);
+  // console.log(query);
 
   // Eksekusi query dengan atau tanpa parameter schoolId
   db.query(query, [schoolId], (err, res) => {

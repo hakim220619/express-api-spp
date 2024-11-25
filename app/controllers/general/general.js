@@ -7,7 +7,6 @@ const General = require("../../models/general/general.model");
 // Retrieve all Tutorials from the database (with condition).
 exports.roleAdmin = (req, res, next) => {
   const role_name = req.body.role_name;
-  // console.log(role_name);
   Role.getRoleAdmin(role_name, (err, data) => {
     if (err)
       res.status(500).send({
@@ -19,8 +18,6 @@ exports.roleAdmin = (req, res, next) => {
 };
 exports.getRoleNoDeve = (req, res, next) => {
   const { role_name } = req.body;
-
-  // console.log(role_name);
   Role.getRoleNoDeve(role_name, (err, data) => {
     if (err)
       res.status(500).send({
@@ -33,7 +30,7 @@ exports.getRoleNoDeve = (req, res, next) => {
 
 exports.findUsersByUid = (req, res, next) => {
   const uid = req.body.uid;
-  // console.log(req);
+
   General.findUsersByUid(uid, (err, data) => {
     if (err)
       res.status(500).send({
@@ -44,7 +41,7 @@ exports.findUsersByUid = (req, res, next) => {
   });
 };
 exports.getstatus = (req, res, next) => {
-  // console.log(req);
+
   General.getstatus((err, data) => {
     if (err)
       res.status(500).send({
@@ -55,7 +52,7 @@ exports.getstatus = (req, res, next) => {
   });
 };
 exports.getSchool = (req, res, next) => {
-  // console.log(req);
+
   General.getSchool((err, data) => {
     if (err)
       res.status(500).send({
@@ -66,7 +63,7 @@ exports.getSchool = (req, res, next) => {
   });
 };
 exports.getAplikasiBySchool = (req, res, next) => {
-  // console.log(req);
+
   const school_id = req.query.school_id
   General.getAplikasiBySchool(school_id, (err, data) => {
     if (err)
@@ -78,7 +75,7 @@ exports.getAplikasiBySchool = (req, res, next) => {
   });
 };
 exports.getUsersAffiliate = (req, res, next) => {
-  // console.log(req);
+
   General.getUsersAffiliate((err, data) => {
     if (err)
       res.status(500).send({
@@ -89,7 +86,7 @@ exports.getUsersAffiliate = (req, res, next) => {
   });
 };
 exports.getRole = (req, res, next) => {
-  // console.log(req);
+
   General.getRole((err, data) => {
     if (err)
       res.status(500).send({
@@ -100,7 +97,7 @@ exports.getRole = (req, res, next) => {
   });
 };
 exports.getTypePayment = (req, res, next) => {
-  // console.log(req);
+
   General.getTypePayment((err, data) => {
     if (err)
       res.status(500).send({
@@ -111,7 +108,7 @@ exports.getTypePayment = (req, res, next) => {
   });
 };
 exports.getUnit = (req, res, next) => {
-  // console.log(req);
+
   General.getUnit((err, data) => {
     if (err)
       res.status(500).send({
@@ -133,8 +130,21 @@ exports.getListPpdbActive = (req, res, next) => {
     else res.send(data);
   });
 };
+exports.getListBalanceByUserId = (req, res, next) => {
+  const school_id = req.query.school_id;
+  const user_id = req.query.user_id;
+
+  General.getListBalanceByUserId(school_id, user_id, (err, data) => {
+    if (err)
+      res.status(500).send({
+        message:
+          err.message || "Some error occurred while retrieving tutorials.",
+      });
+    else res.send(data);
+  });
+};
 exports.getYears = (req, res, next) => {
-  // console.log(req);
+
   General.getYears((err, data) => {
     if (err)
       res.status(500).send({
@@ -145,7 +155,7 @@ exports.getYears = (req, res, next) => {
   });
 };
 exports.getListPayment = (req, res, next) => {
-  // console.log(req);
+
   General.getListPayment((err, data) => {
     if (err)
       res.status(500).send({
@@ -158,7 +168,6 @@ exports.getListPayment = (req, res, next) => {
 exports.getActivityBySchoolId = (req, res, next) => {
   const school_id = req.query.school_id;
   General.getActivityBySchoolId(school_id, (err, data) => {
-    // console.log(data);
 
     if (err)
       res.status(500).send({
@@ -224,7 +233,7 @@ exports.sendMessageBroadcast = (req, res, next) => {
   const message = req.body.message;
   const school_id = req.body.school_id;
 
-  // console.log(req);
+
   General.sendMessageBroadcast(dataUsers, message, school_id, (err, data) => {
     if (err)
       res.status(500).send({
@@ -236,7 +245,7 @@ exports.sendMessageBroadcast = (req, res, next) => {
 };
 exports.getDetailClassMajorUsers = (req, res, next) => {
   const school_id = req.query.school_id;
-  // console.log(req);
+
   General.getDetailClassMajorUsers(school_id, (err, data) => {
     if (err)
       res.status(500).send({
@@ -258,9 +267,8 @@ exports.cekTransaksiSuccesMidtrans = (req, res, next) => {
   });
 };
 exports.cekTransaksiPaymentSiswaBaru = (req, res, next) => {
-  // console.log(req);
+
   const school_id = req.query.school_id
-  console.log(school_id);
   
   General.cekTransaksiPaymentSiswaBaru(school_id, (err, data) => {
     if (err)
@@ -293,7 +301,6 @@ exports.cekTransaksiSuccesMidtransByUserIdFree = (req, res, next) => {
 };
 exports.cekTransaksiSuccesMidtransByUserIdByMonth = (req, res, next) => {
   const userId = req.query.user_id;
-// console.log(userId);
 
   if (!userId) {
     return res.status(400).send({
@@ -314,7 +321,7 @@ exports.cekTransaksiSuccesMidtransByUserIdByMonth = (req, res, next) => {
 };
 
 exports.cekTransaksiSuccesMidtransFree = (req, res, next) => {
-  // console.log(req);
+
   General.cekTransaksiSuccesMidtransFree((err, data) => {
     if (err)
       res.status(500).send({
@@ -325,7 +332,7 @@ exports.cekTransaksiSuccesMidtransFree = (req, res, next) => {
   });
 };
 exports.cekFunction = (req, res, next) => {
-  // console.log(req);
+
   General.cekFunction((err, data) => {
     if (err)
       res.status(500).send({

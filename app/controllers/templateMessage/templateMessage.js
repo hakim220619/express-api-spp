@@ -28,7 +28,6 @@ exports.createTemplateMessage = [
         message: "Content cannot be empty!",
       });
     }
-console.log(req.body);
 
     try {
       // Create new admin object

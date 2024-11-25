@@ -171,7 +171,7 @@ General.getListPpdbActive = async (school_id, result) => {
     query += ` AND sp.school_id = '${school_id}'`;
   }
   query += `order by sp.created_at desc`;
-  console.log(query);
+  // console.log(query);
 
   db.query(query, (err, res) => {
     if (err) {
@@ -182,6 +182,28 @@ General.getListPpdbActive = async (school_id, result) => {
 
     // console.log("role: ", res);
     result(null, res);
+  });
+};
+General.getListBalanceByUserId = async (school_id, user_id, result) => {
+  let query =
+    "select saldo from users where 1=1 ";
+  if (school_id) {
+    query += ` AND school_id = '${school_id}'`;
+  }
+  if (user_id) {
+    query += ` AND id = '${user_id}'`;
+  }
+  // console.log(query);
+
+  db.query(query, (err, res) => {
+    if (err) {
+      console.log("error: ", err);
+      result(null, err);
+      return;
+    }
+
+    console.log("data: ", res);
+    result(null, res[0]);
   });
 };
 

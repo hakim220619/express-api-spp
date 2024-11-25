@@ -301,7 +301,7 @@ exports.updateSettingPaymentByMonth = [
         created_at: new Date(),
         months,
       });
-      // console.log(st_pembayaran);
+      
 
       SettingPembayaran.updateSettingPaymentByMonth(
         st_pembayaran,
@@ -343,7 +343,7 @@ exports.updateSettingPaymentByFree = [
         created_at: new Date(),
         amount,
       });
-      // console.log(st_pembayaran);
+      
 
       SettingPembayaran.updateSettingPaymentByFree(
         st_pembayaran,
@@ -401,7 +401,6 @@ exports.createPaymentByFreeStudent = [
         major_id,
         amount,
       };
-      // console.log('asd');
       
 
       SettingPembayaran.createPaymentByFreeStudent(
@@ -449,7 +448,6 @@ exports.deleteDetail = (req, res) => {
     setting_payment_uid,
     user_id,
     (err, data) => {
-      // console.log(data);
 
       if (err) {
         return res.status(500).send({
@@ -465,7 +463,7 @@ exports.deleteDetail = (req, res) => {
 
 exports.detailSettingPembayaran = (req, res, next) => {
   const uid = req.body.uid;
-  // console.log(req);
+
   SettingPembayaran.detailSettingPembayaran(uid, (err, data) => {
     if (err)
       res.status(500).send({
@@ -477,7 +475,7 @@ exports.detailSettingPembayaran = (req, res, next) => {
 };
 exports.detailSettingPembayaranByUid = (req, res, next) => {
   const uid = req.body.uid;
-  // console.log(req);
+
   SettingPembayaran.detailSettingPembayaranByUid(uid, (err, data) => {
     if (err)
       res.status(500).send({
@@ -489,7 +487,6 @@ exports.detailSettingPembayaranByUid = (req, res, next) => {
 };
 exports.detailSettingPembayaranByUidFree = (req, res, next) => {
   const uid = req.body.id;
-  console.log(req.body);
   SettingPembayaran.detailSettingPembayaranByUidFree(uid, (err, data) => {
     if (err)
       res.status(500).send({

@@ -17,7 +17,7 @@ exports.listPembayaranPayByMonth = (req, res, next) => {
     user_id,
     id_payment,
     (err, data) => {
-      // console.log(data);
+      
 
       if (err)
         res.status(500).send({
@@ -39,7 +39,7 @@ exports.listPembayaranPayByFree = (req, res, next) => {
     id_payment,
     setting_payment_uid,
     (err, data) => {
-      // console.log(data);
+      
 
       if (err)
         res.status(500).send({
@@ -61,7 +61,7 @@ exports.listPembayaranPayByFreeDetail = (req, res, next) => {
     user_id,
     id_payment,
     (err, data) => {
-      // console.log(data);
+      
 
       if (err)
         res.status(500).send({
@@ -122,7 +122,7 @@ exports.createPaymentPendingByAdmin = [
     }
 
     const { dataUsers, dataPayment, admin_id, total_affiliate } = req.body;
-    // console.log(req.body);
+    
 
     try {
       // Create new admin object
@@ -161,7 +161,7 @@ exports.createPaymentSuccess = [
     }
 
     const { dataUsers, dataPayment, order_id, redirect_url } = req.body;
-    // console.log(req.body);
+    
 
     try {
       // Create new admin object
@@ -199,7 +199,7 @@ exports.createPaymentSuccessFree = [
     }
 
     const { dataPayment, order_id, redirect_url, total_amount} = req.body;
-    // console.log(req.body);
+    
 
     try {
       // Create new admin object
@@ -237,7 +237,7 @@ exports.createPaymentPendingFree = [
     }
 
     const { dataPayment, order_id, redirect_url, total_amount} = req.body;
-    // console.log(req.body);
+    
 
     try {
       // Create new admin object
@@ -275,7 +275,7 @@ exports.createPaymentPendingByAdminFree = [
     }
 
     const { dataPayment, total_amount, admin_id, } = req.body;
-    // console.log(req.body);
+    
 
     try {
       // Create new admin object

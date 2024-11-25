@@ -55,8 +55,6 @@ exports.createSekolah = [
 
       // Save school to the database
       Sekolah.create(sekolah, (err, data) => {
-        console.log(data);
-        console.log(err);
         if (err) {
           return res.status(500).send({
             message:
@@ -125,7 +123,6 @@ exports.updateSekolah = [
         type_payment,
         updated_at: new Date(),
       };
-      console.log(updateData);
 
       // Update the Sekolah document based on uid
       Sekolah.update(updateData, (err, data) => {
@@ -173,7 +170,6 @@ exports.delete = (req, res) => {
 
 exports.detailSekolah = (req, res, next) => {
   const uid = req.body.uid;
-  // console.log(req);
   Sekolah.detailSekolah(uid, (err, data) => {
     if (err)
       res.status(500).send({

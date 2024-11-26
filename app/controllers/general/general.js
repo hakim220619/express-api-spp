@@ -143,6 +143,19 @@ exports.getListBalanceByUserId = (req, res, next) => {
     else res.send(data);
   });
 };
+exports.getRiwayatToUpByUserId = (req, res, next) => {
+  const school_id = req.query.school_id;
+  const user_id = req.query.user_id;
+
+  General.getRiwayatToUpByUserId(school_id, user_id, (err, data) => {
+    if (err)
+      res.status(500).send({
+        message:
+          err.message || "Some error occurred while retrieving tutorials.",
+      });
+    else res.send(data);
+  });
+};
 exports.getYears = (req, res, next) => {
 
   General.getYears((err, data) => {
@@ -289,6 +302,26 @@ exports.cekTransaksiSuccesMidtransByUserIdFree = (req, res, next) => {
   }
 
   General.cekTransaksiSuccesMidtransByUserIdFree(userId, (err, data) => {
+    if (err) {
+      res.status(500).send({
+        message:
+          err.message || "Some error occurred while retrieving transactions.",
+      });
+    } else {
+      res.status(200).send(data);
+    }
+  });
+};
+exports.cekTransaksiSuccesMidtransByUserIdTopUp = (req, res, next) => {
+  const userId = req.query.user_id;
+
+  if (!userId) {
+    return res.status(400).send({
+      message: "User ID is required",
+    });
+  }
+
+  General.cekTransaksiSuccesMidtransByUserIdTopUp(userId, (err, data) => {
     if (err) {
       res.status(500).send({
         message:

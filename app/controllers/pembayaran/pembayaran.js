@@ -264,6 +264,45 @@ exports.createPaymentPendingFree = [
     }
   },
 ];
+exports.createTopUpPending = [
+  upload.none(),
+  async (req, res) => {
+    // Validate request
+    if (!req.body) {
+      return res.status(400).send({
+        message: "Content cannot be empty!",
+      });
+    }
+
+    const { dataUsers, order_id, redirect_url, price, description} = req.body;
+    
+
+    try {
+      // Create new admin object
+      const pembayaran = {
+        dataUsers: dataUsers,
+        order_id: order_id,
+        redirect_url: redirect_url,
+        price: price,
+        description: description,
+      };
+
+      // Save admin to the database
+      Pembayaran.createTopUpPending(pembayaran, (err, data) => {
+        if (err) {
+          return res.status(500).send({
+            message:
+              err.message || "Some error occurred while creating the Admin.",
+          });
+        } else {
+          res.send(data);
+        }
+      });
+    } catch (error) {
+      res.status(500).send({ message: "Error creating Admin" });
+    }
+  },
+];
 exports.createPaymentPendingByAdminFree = [
   upload.none(),
   async (req, res) => {

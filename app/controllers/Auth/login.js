@@ -5,6 +5,8 @@ const mysql = require("mysql2/promise");
 const { generateToken } = require("../../config/tokenHandler");
 const { insertMmLogs } = require("../../helpers/helper");
 require('dotenv').config();
+
+
 exports.login = async (req, res) => {
 
   const { DB_HOST, DB_NAME, DB_USER, DB_PASSWORD } = process.env;
@@ -137,7 +139,6 @@ exports.loginSiswaBaru = async (req, res) => {
 exports.checklogin = async (req, res) => {
   const AccessToken = req.headers["authorization"];
   Login.checklogin(AccessToken, (err, data) => {
-    console.log(err);
 
     if (err != 200)
       res.status(500).send({

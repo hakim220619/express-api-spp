@@ -154,6 +154,7 @@ module.exports = (app) => {
   router.post("/create-payment-pending-byAdmin", token.authenticateToken, Pembayaran.createPaymentPendingByAdmin);
   router.post("/create-payment-pending-byAdmin-free", token.authenticateToken, Pembayaran.createPaymentPendingByAdminFree);
   router.post("/create-payment-pending-Free", token.authenticateToken, Pembayaran.createPaymentPendingFree);
+  router.post("/create-topup-pending", token.authenticateToken, Pembayaran.createTopUpPending);
   //Sekolah
   router.get("/list-unit", token.authenticateToken, Unit.listUnit);
   router.post("/create-unit", token.authenticateToken, Unit.createUnit);
@@ -206,6 +207,7 @@ module.exports = (app) => {
   router.get("/cekTransaksiPaymentSiswaBaru", general.cekTransaksiPaymentSiswaBaru);
   router.get("/cekTransaksiSuccesMidtrans", general.cekTransaksiSuccesMidtrans);
   router.get("/cekTransaksiSuccesMidtransFree", general.cekTransaksiSuccesMidtransFree);
+  router.get("/cekTransaksiSuccesMidtransByUserIdTopUp", general.cekTransaksiSuccesMidtransByUserIdTopUp);
   router.get("/rolePermissions", general.rolePermissions);
   router.get("/getMenuActive", token.authenticateToken, general.getMenuActive);
   router.get("/getPdfByIdPaymentMonth", token.authenticateToken, general.getPdfByIdPaymentMonth);
@@ -213,6 +215,7 @@ module.exports = (app) => {
   router.get("/getUnits", general.getUnit);
   router.get("/getListPpdbActive", general.getListPpdbActive);
   router.get("/get-list-balance-by-userId",token.authenticateToken, general.getListBalanceByUserId);
+  router.get("/get-riwayat-topup-by-userId",token.authenticateToken, general.getRiwayatToUpByUserId);
   router.post("/forgot-password", general.forgetPassword);
   router.post("/reset-new-password", general.resetNewPassword);
   router.post("/new-password-all",  token.authenticateToken, general.newPasswordAll);

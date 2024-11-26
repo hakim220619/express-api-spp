@@ -1062,6 +1062,96 @@ Pembayaran.updateSiswaFree = (newPayment, result) => {
     }
   );
 };
+Pembayaran.createTopUpPending = (newPayment, result) => {
+  const {dataUsers, order_id, redirect_url, price, description} = newPayment
+  const inm = `TRX-${Date.now()}`;
+
+  db.query(
+    "INSERT INTO transactions (invoice_number, user_id, school_id, amount, transaction_type, status, order_id, redirect_url, description, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+    [
+      inm,
+      dataUsers.user_id, 
+      dataUsers.school_id, 
+      price,
+      'Topup',
+      'Verified',
+      order_id, // order_id
+      redirect_url, // redirect_url
+      description,
+      new Date(), // updated_at
+    ],
+    (err, res) => {
+      if (err) {
+        console.error("Error: ", err);
+        result(err, null); // Return error if there is one
+      } else {
+        console.log("Payment inserted successfully", {
+          id: res.insertId,
+          ...newPayment,
+        });
+        db.query(
+          `SELECT tm.*, a.urlWa, a.token_whatsapp, a.sender 
+           FROM template_message tm, aplikasi a 
+           WHERE tm.school_id=a.school_id 
+           AND tm.deskripsi = 'createTopUpPending'  
+           AND tm.school_id = '${dataUsers.school_id}'`,
+          async (err, queryRes) => {
+            if (err) {
+              console.error(
+                "Error fetching template and WhatsApp details: ",
+                err
+              );
+            } else {
+              // Ambil url, token dan informasi pengirim dari query result
+              const {
+                urlWa: url,
+                token_whatsapp: token,
+                sender,
+                message: template_message,
+              } = queryRes[0];
+
+              // Data yang ingin diganti dalam template_message
+              const replacements = {
+                nama_lengkap: dataUsers.full_name,
+                total_pembayaran: formatRupiah(
+                 price
+                ),
+                nama_sekolah: dataUsers.school_name,
+                url_pembayaran: redirect_url,
+              };
+
+              // Fungsi untuk menggantikan setiap placeholder di template
+              const formattedMessage = template_message.replace(
+                /\$\{(\w+)\}/g,
+                (_, key) => {
+                  return replacements[key] || "";
+                }
+              );
+
+              // Kirim pesan setelah semua pembayaran diperbarui
+              sendMessage(url, token, dataUsers.phone, formattedMessage);
+
+              const logData = {
+                school_id: dataUsers.school_id,
+                user_id: dataUsers.user_id,
+                activity: "SendMessage",
+                detail: formattedMessage,
+                action: "Insert",
+                status: true,
+              };
+              await insertMmLogs(logData);
+            }
+          }
+        );
+
+        result(null, {
+          message: "Payment inserted successfully",
+          id: res.insertId,
+        });
+      }
+    }
+  );
+};
 Pembayaran.updateSuccessFree = async (newPayment, result) => {
   const { dataPayment, order_id, redirect_url, total_amount } = newPayment;
   const uid = `${uuidv4()}-${Date.now()}`;

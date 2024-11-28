@@ -435,8 +435,6 @@ General.resetNewPassword = async (id, newPassword, result) => {
 
 General.newPasswordAll = async (id, newPassword, result) => {
   try {
-    console.log(id);
-
     // Asumsikan `id` adalah user ID yang unik, jadi pertama kita dapatkan `email` atau `phone` berdasarkan `id`.
     const getUserQuery = "SELECT * FROM users WHERE uid = ?";
     db.query(getUserQuery, id, (getUserErr, getUserRes) => {
@@ -492,6 +490,123 @@ General.newPasswordAll = async (id, newPassword, result) => {
     });
   }
 };
+
+General.cekPin = async (user_id, school_id, pin, result) => {
+  try {
+    // Query untuk mengambil PIN yang sudah di-hash dari database
+    const getUserQuery = "SELECT pin FROM users WHERE id = ? AND school_id = ?";
+    db.query(getUserQuery, [user_id, school_id], async (getUserErr, getUserRes) => {
+      if (getUserErr) {
+        console.log("Error: ", getUserErr);
+        return result({
+          error: true,
+          message: "An error occurred",
+          details: getUserErr,
+        });
+      }
+
+      // Jika user tidak ditemukan
+      if (getUserRes.length === 0) {
+        return result({ error: true, message: "User not found" });
+      }
+
+      // Ambil hash PIN dari database
+      const storedHashPin = getUserRes[0].pin;
+
+      // Verifikasi PIN yang dimasukkan dengan hash yang ada di database
+      bcrypt.compare(pin, storedHashPin, (compareErr, isMatch) => {
+        if (compareErr) {
+          console.log("Error comparing PIN: ", compareErr);
+          return result({
+            error: true,
+            message: "An error occurred while verifying the PIN",
+            details: compareErr,
+          });
+        }
+
+        if (!isMatch) {
+          return result({ error: true, message: "Incorrect PIN" });
+        }
+
+        // Jika PIN cocok, maka user berhasil diverifikasi
+        return result(null, { error: false, message: "PIN is correct" });
+      });
+    });
+  } catch (err) {
+    console.log("Unexpected error: ", err);
+    return result({
+      error: true,
+      message: "An unexpected error occurred",
+      details: err,
+    });
+  }
+};
+General.newPin = async (user_id, school_id, pin, result) => {
+  try {
+    // Query untuk mengecek apakah user sudah memiliki PIN yang terdaftar (NULL atau sudah ada)
+    const checkUserPinQuery = "SELECT pin FROM users WHERE id = ? AND school_id = ?";
+    db.query(checkUserPinQuery, [user_id, school_id], async (checkErr, checkRes) => {
+      if (checkErr) {
+        console.log("Error: ", checkErr);
+        return result({
+          error: true,
+          message: "An error occurred while checking PIN",
+          details: checkErr,
+        });
+      }
+
+      // Jika user tidak ditemukan
+      if (checkRes.length === 0) {
+        return result({ error: true, message: "User not found" });
+      }
+
+      // Cek apakah PIN saat ini adalah NULL
+      // const currentPin = checkRes[0].pin;
+      // if (currentPin !== null) {
+      //   return result({
+      //     error: true,
+      //     message: "PIN already set. Update not allowed",
+      //   });
+      // }
+
+      // Hash PIN baru yang dimasukkan
+      const hashedPin = await bcrypt.hash(pin, 10);
+
+      // Update PIN jika NULL
+      const updatePinQuery = "UPDATE users SET pin = ? WHERE id = ? AND school_id = ? AND pin IS NULL";
+      db.query(updatePinQuery, [hashedPin, user_id, school_id], (updateErr, updateRes) => {
+        if (updateErr) {
+          console.log("Error updating PIN: ", updateErr);
+          return result({
+            error: true,
+            message: "An error occurred while updating the PIN",
+            details: updateErr,
+          });
+        }
+
+        // Jika update berhasil
+       
+          return result(null,{
+            error: false,
+            message: "PIN successfully updated",
+          });
+       
+      });
+    });
+  } catch (err) {
+    console.log("Unexpected error: ", err);
+    return result({
+      error: true,
+      message: "An unexpected error occurred",
+      details: err,
+    });
+  }
+};
+
+
+
+
+
 General.sendMessages = async (message, phone, school_id) => {
   try {
     let failedMessages = [];
@@ -599,7 +714,7 @@ General.sendMessageBroadcast = async (
 
         if (queryRes && queryRes.length > 0) {
           // Ambil url, token, dan informasi pengirim dari query result
-          const { urlWa: url, token_whatsapp: token, sender } = queryRes[0];
+          const { urlWa: url, token_whatsapp: token, sender } = queryRes[0];                                                            
 
           // Mengirim pesan setelah semua data pembayaran diperbarui
           try {

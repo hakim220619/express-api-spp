@@ -966,6 +966,232 @@ Pembayaran.updatePaymentPendingByAdminFree = async (newPayment, result) => {
   }
 };
 
+Pembayaran.createPayWithBalance = async (newPayment, result) => {
+  const data = newPayment.dataPayment;
+  const uid = `${uuidv4()}-${Date.now()}`;
+  const { DB_HOST, DB_NAME, DB_USER, DB_PASSWORD } = process.env;
+
+  // Create MySQL connection pool
+  const pool = mysql.createPool({
+    host: DB_HOST, // Ganti dengan host Anda
+    user: DB_USER, // Ganti dengan username Anda
+    password: DB_PASSWORD, // Ganti dengan password Anda
+    database: DB_NAME, // Ganti dengan nama database Anda
+    waitForConnections: true,
+    connectionLimit: 10,
+    queueLimit: 0,
+  });
+
+  let connection;
+  try {
+    // Mendapatkan koneksi dari pool
+    connection = await pool.getConnection();
+    // Memulai transaksi
+    await connection.beginTransaction();
+
+    // Query untuk mengecek balance di tabel school berdasarkan school_id
+    const [schoolRes] = await connection.query(
+      "SELECT balance FROM school WHERE id = ?",
+      [data.school_id]
+    );
+
+    if (schoolRes.length === 0) {
+      throw new Error("School not found"); // Rollback jika school tidak ditemukan
+    }
+
+    const balance = schoolRes[0].balance;
+
+    // Pengecekan balance
+    if (balance <= 10000) {
+      throw new Error("Saldo tidak cukup"); // Jika balance kurang dari 10000
+    }
+    const [saldoUsers] = await connection.query(
+      "SELECT saldo FROM users WHERE id = ?",
+      [data.user_id]
+    );
+
+    if (saldoUsers.length === 0) {
+      throw new Error("Users not found"); // Rollback jika school tidak ditemukan
+    }
+
+    const getSaldo = saldoUsers[0].saldo;
+
+    // Pengecekan balance
+    if (getSaldo < newPayment.total_amount) {
+      throw new Error("Saldo Users tidak cukup"); // Jika balance kurang dari 10000
+    }
+
+    if (balance < data["affiliate"]) {
+      throw new Error("Insufficient balance"); // Jika balance tidak mencukupi
+    }
+
+    // Query untuk mengambil affiliate berdasarkan school_id
+    const [affiliateRes] = await connection.query(
+      "SELECT * FROM affiliate WHERE school_id = ?",
+      [data.school_id]
+    );
+
+    if (affiliateRes.length === 0) {
+      throw new Error("No affiliates found"); // Rollback jika tidak ada affiliate
+    }
+
+    // Update balance di tabel school
+    const newBalance = balance - data["affiliate"];
+    await connection.query("UPDATE school SET balance = ? WHERE id = ?", [
+      newBalance,
+      data.school_id,
+    ]);
+
+    // Insert ke tabel payment_transactions untuk setiap affiliate
+    const insertPromises = affiliateRes.map(async (affiliate) => {
+      const totalByAff = affiliate.debit + affiliate.amount;
+
+      // Update affiliate's debit
+      await connection.query("UPDATE affiliate SET debit = ? WHERE id = ?", [
+        totalByAff,
+        affiliate.id,
+      ]);
+
+      // Insert into payment_transactions
+      return connection.query(
+        "INSERT INTO payment_transactions (user_id, school_id, payment_id, amount, type, state, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)",
+        [
+          data.user_id, // user_id
+          data.school_id, // school_id
+          data.id, // payment_id
+          affiliate.amount, // amount dari affiliate
+          "BEBAS", // type
+          "IN", // state
+          new Date(), // created_at
+        ]
+      );
+    });
+    // Tunggu semua transaksi selesai
+    await Promise.all(insertPromises);
+
+    // Insert ke payment_detail
+    const [insertRes] = await connection.query(
+      "INSERT INTO payment_detail (metode_pembayaran, status, created_at, uid, user_id, payment_id, setting_payment_uid, type, amount ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+      [
+        "Manual", // metode_pembayaran
+        "Paid", // status
+        new Date(), // created_at
+        uid, // new field uid
+        data.user_id, // new field user_id
+        data.uid, // new field payment_id
+        data.setting_payment_uid, // new field setting_payment_uid
+        data.type, // new field type
+        newPayment.total_amount, // new field amount
+      ]
+    );
+    await connection.query(`
+      UPDATE users 
+      SET saldo = saldo - ? 
+      WHERE id = ?
+    `, [
+      newPayment.total_amount,  // The amount to subtract from the current saldo
+      data.user_id  // The ID of the user whose saldo you want to update
+    ]);
+    
+
+    const kasData = {
+      school_id: data.school_id,
+      user_id: data.user_id,
+      deskripsi: `Kas Masuk Berhasil oleh ID Users: ${data.user_id}, dengan id pembayaran: ${data.id}`,
+      type: "DEBIT",
+      amount: newPayment.total_amount,
+      flag: 0,
+      years: data.years,
+    };
+
+    await insertKas(kasData).then((response) => {
+      console.log(response);
+    });
+
+    // Log the transaction
+    const logData = {
+      school_id: data.school_id,
+      user_id: data.user_id,
+      activity: "createPayWithBalance",
+      detail: `Pembayaran berhasil oleh ID Users: ${data.user_id}, dengan id pembayaran: ${data.id}`,
+      action: "Update",
+      status: true,
+    };
+    await insertMmLogs(logData);
+    db.query(
+      `SELECT tm.*, a.urlWa, a.token_whatsapp, a.sender 
+       FROM template_message tm, aplikasi a 
+       WHERE tm.school_id=a.school_id 
+       AND tm.deskripsi = 'updatePaymentPendingByAdminFree'  
+       AND tm.school_id = '${data.school_id}'`,
+      async (err, queryRes) => {
+        if (err) {
+          console.error("Error fetching template and WhatsApp details: ", err);
+        } else {
+          // Ambil url, token dan informasi pengirim dari query result
+          const {
+            urlWa: url,
+            token_whatsapp: token,
+            sender,
+            message: template_message,
+          } = queryRes[0];
+
+          // Data yang ingin diganti dalam template_message
+          const replacements = {
+            nama_lengkap: data.full_name,
+            nama_pembayaran: data.sp_name,
+            tahun: data.years,
+            total_pembayaran: formatRupiah(
+              newPayment.total_amount + data.affiliate
+            ),
+            nama_sekolah: data.school_name,
+          };
+
+          // Fungsi untuk menggantikan setiap placeholder di template
+          const formattedMessage = template_message.replace(
+            /\$\{(\w+)\}/g,
+            (_, key) => {
+              return replacements[key] || "";
+            }
+          );
+
+          // Kirim pesan setelah semua pembayaran diperbarui
+          sendMessage(url, token, data.phone, formattedMessage);
+
+          const logData = {
+            school_id: data.school_id,
+            user_id: newPayment.admin_id,
+            activity: "SendMessage",
+            detail: formattedMessage,
+            action: "Insert",
+            status: true,
+          };
+          await insertMmLogs(logData);
+        }
+      }
+    );
+
+    // Commit transaksi jika semua query berhasil
+    await connection.commit();
+
+    console.log("Payment inserted successfully", {
+      id: insertRes.insertId,
+      ...newPayment,
+    });
+    result(null, {
+      message: "Payment inserted successfully",
+      id: insertRes.insertId,
+      total_affiliate: data["affiliate"], // Menyertakan total affiliate di hasil
+    });
+  } catch (error) {
+    console.error("Error during transaction: ", error);
+    if (connection) await connection.rollback(); // Rollback jika ada error
+    result({ message: error.message }, null); // Kembalikan pesan error
+  } finally {
+    if (connection) connection.release(); // Kembali ke pool koneksi
+  }
+};
+
 Pembayaran.updateSiswaFree = (newPayment, result) => {
   console.log(newPayment);
   
@@ -1152,6 +1378,8 @@ Pembayaran.createTopUpPending = (newPayment, result) => {
     }
   );
 };
+
+
 Pembayaran.updateSuccessFree = async (newPayment, result) => {
   const { dataPayment, order_id, redirect_url, total_amount } = newPayment;
   const uid = `${uuidv4()}-${Date.now()}`;

@@ -17,8 +17,6 @@ exports.listPembayaranPayByMonth = (req, res, next) => {
     user_id,
     id_payment,
     (err, data) => {
-      
-
       if (err)
         res.status(500).send({
           message: err.message || "Some error occurred while retrieving Data.",
@@ -39,8 +37,6 @@ exports.listPembayaranPayByFree = (req, res, next) => {
     id_payment,
     setting_payment_uid,
     (err, data) => {
-      
-
       if (err)
         res.status(500).send({
           message: err.message || "Some error occurred while retrieving Data.",
@@ -61,8 +57,6 @@ exports.listPembayaranPayByFreeDetail = (req, res, next) => {
     user_id,
     id_payment,
     (err, data) => {
-      
-
       if (err)
         res.status(500).send({
           message: err.message || "Some error occurred while retrieving Data.",
@@ -83,7 +77,8 @@ exports.createPaymentPending = [
       });
     }
 
-    const { dataUsers, dataPayment, order_id, redirect_url, total_amount } = req.body;
+    const { dataUsers, dataPayment, order_id, redirect_url, total_amount } =
+      req.body;
 
     try {
       // Create new admin object
@@ -122,7 +117,6 @@ exports.createPaymentPendingByAdmin = [
     }
 
     const { dataUsers, dataPayment, admin_id, total_affiliate } = req.body;
-    
 
     try {
       // Create new admin object
@@ -130,12 +124,11 @@ exports.createPaymentPendingByAdmin = [
         dataUsers: dataUsers,
         dataPayment: dataPayment,
         admin_id,
-        total_affiliate
+        total_affiliate,
       };
 
       // Save admin to the database
       Pembayaran.updatePaymentPendingByAdmin(pembayaran, (err, data) => {
-        
         if (err) {
           return res.status(500).send({
             message:
@@ -161,7 +154,6 @@ exports.createPaymentSuccess = [
     }
 
     const { dataUsers, dataPayment, order_id, redirect_url } = req.body;
-    
 
     try {
       // Create new admin object
@@ -188,6 +180,7 @@ exports.createPaymentSuccess = [
     }
   },
 ];
+
 exports.createPaymentSuccessFree = [
   upload.none(),
   async (req, res) => {
@@ -198,8 +191,7 @@ exports.createPaymentSuccessFree = [
       });
     }
 
-    const { dataPayment, order_id, redirect_url, total_amount} = req.body;
-    
+    const { dataPayment, order_id, redirect_url, total_amount } = req.body;
 
     try {
       // Create new admin object
@@ -226,6 +218,7 @@ exports.createPaymentSuccessFree = [
     }
   },
 ];
+
 exports.createPaymentPendingFree = [
   upload.none(),
   async (req, res) => {
@@ -236,8 +229,7 @@ exports.createPaymentPendingFree = [
       });
     }
 
-    const { dataPayment, order_id, redirect_url, total_amount} = req.body;
-    
+    const { dataPayment, order_id, redirect_url, total_amount } = req.body;
 
     try {
       // Create new admin object
@@ -274,8 +266,7 @@ exports.createTopUpPending = [
       });
     }
 
-    const { dataUsers, order_id, redirect_url, price, description} = req.body;
-    
+    const { dataUsers, order_id, redirect_url, price, description } = req.body;
 
     try {
       // Create new admin object
@@ -303,6 +294,7 @@ exports.createTopUpPending = [
     }
   },
 ];
+
 exports.createPaymentPendingByAdminFree = [
   upload.none(),
   async (req, res) => {
@@ -313,19 +305,56 @@ exports.createPaymentPendingByAdminFree = [
       });
     }
 
-    const { dataPayment, total_amount, admin_id, } = req.body;
-    
+    const { dataPayment, total_amount, admin_id } = req.body;
 
     try {
       // Create new admin object
       const pembayaran = {
         dataPayment: dataPayment,
         total_amount: total_amount,
-        admin_id
+        admin_id,
       };
 
       // Save admin to the database
       Pembayaran.updatePaymentPendingByAdminFree(pembayaran, (err, data) => {
+        if (err) {
+          return res.status(500).send({
+            message:
+              err.message || "Some error occurred while creating the Admin.",
+          });
+        } else {
+          res.send(data);
+        }
+      });
+    } catch (error) {
+      res.status(500).send({ message: "Error creating Admin" });
+    }
+  },
+];
+
+exports.createPayWithBalance = [
+  upload.none(),
+  async (req, res) => {
+    // Validate request
+    if (!req.body) {
+      return res.status(400).send({
+        message: "Content cannot be empty!",
+      });
+    }
+
+    const { dataUsers, dataPayment, total_amount } = req.body;
+
+    try {
+      // Create new admin object
+      const pembayaran = {
+        dataUsers,
+        dataPayment: dataPayment,
+        total_amount: total_amount,
+      };
+      console.log(pembayaran);
+
+      // Save admin to the database
+      Pembayaran.createPayWithBalance(pembayaran, (err, data) => {
         if (err) {
           return res.status(500).send({
             message:

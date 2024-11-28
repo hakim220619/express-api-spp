@@ -228,6 +228,33 @@ exports.newPasswordAll = (req, res, next) => {
   });
 };
 
+exports.cekPin = (req, res, next) => {
+  const user_id = req.body.user_id;
+  const school_id = req.body.school_id;
+  const pin = req.body.pin;
+  General.cekPin(user_id, school_id, pin, (err, data) => {
+    if (err)
+      res.status(500).send({
+        message:
+          err.message || "Some error occurred while retrieving tutorials.",
+      });
+    else res.send(data);
+  });
+};
+exports.newPin = (req, res, next) => {
+  const user_id = req.body.user_id;
+  const school_id = req.body.school_id;
+  const pin = req.body.pin;
+  General.newPin(user_id, school_id, pin, (err, data) => {
+    if (err)
+      res.status(500).send({
+        message:
+          err.message || "Some error occurred while retrieving tutorials.",
+      });
+    else res.send(data);
+  });
+};
+
 
 exports.sendMessages = (req, res) => {
   const { message, number, school_id } = req.body;

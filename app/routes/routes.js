@@ -155,6 +155,7 @@ module.exports = (app) => {
   router.post("/create-payment-pending-byAdmin-free", token.authenticateToken, Pembayaran.createPaymentPendingByAdminFree);
   router.post("/create-payment-pending-Free", token.authenticateToken, Pembayaran.createPaymentPendingFree);
   router.post("/create-topup-pending", token.authenticateToken, Pembayaran.createTopUpPending);
+  router.post("/create-pay-with-balance", token.authenticateToken, Pembayaran.createPayWithBalance);
   //Sekolah
   router.get("/list-unit", token.authenticateToken, Unit.listUnit);
   router.post("/create-unit", token.authenticateToken, Unit.createUnit);
@@ -220,6 +221,9 @@ module.exports = (app) => {
   router.post("/reset-new-password", general.resetNewPassword);
   router.post("/new-password-all",  token.authenticateToken, general.newPasswordAll);
   router.post("/send-message",  token.authenticateToken, general.sendMessages);
+  router.post("/cekPin", token.authenticateToken, general.cekPin);
+  router.post("/newPin", token.authenticateToken, general.newPin);
+
 
   router.get("/cekFunction", general.cekFunction);
   router.get("/faker/generate", general.generate);

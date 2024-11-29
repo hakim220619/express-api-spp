@@ -573,7 +573,7 @@ General.newPin = async (user_id, school_id, pin, result) => {
       const hashedPin = await bcrypt.hash(pin, 10);
 
       // Update PIN jika NULL
-      const updatePinQuery = "UPDATE users SET pin = ? WHERE id = ? AND school_id = ? AND pin IS NULL";
+      const updatePinQuery = "UPDATE users SET pin = ? WHERE id = ? AND school_id = ?";
       db.query(updatePinQuery, [hashedPin, user_id, school_id], (updateErr, updateRes) => {
         if (updateErr) {
           console.log("Error updating PIN: ", updateErr);

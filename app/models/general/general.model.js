@@ -525,7 +525,7 @@ General.cekPin = async (user_id, school_id, pin, result) => {
         }
 
         if (!isMatch) {
-          return result({ error: true, message: "Incorrect PIN" });
+          return result({ error: true, message: "Masukan PIN dengan benar!" });
         }
 
         // Jika PIN cocok, maka user berhasil diverifikasi

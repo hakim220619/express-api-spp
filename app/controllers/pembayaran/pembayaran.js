@@ -106,6 +106,7 @@ exports.createPaymentPending = [
     }
   },
 ];
+
 exports.createPaymentPendingByAdmin = [
   upload.none(),
   async (req, res) => {
@@ -143,6 +144,46 @@ exports.createPaymentPendingByAdmin = [
     }
   },
 ];
+
+exports.createPayWithBalanceMonth = [
+  upload.none(),
+  async (req, res) => {
+    // Validate request
+    if (!req.body) {
+      return res.status(400).send({
+        message: "Content cannot be empty!",
+      });
+    }
+
+    const { dataUsers, dataPayment,  total_affiliate, total_amount } = req.body;
+
+    try {
+      // Create new admin object
+      const pembayaran = {
+        dataUsers: dataUsers,
+        dataPayment: dataPayment,
+        total_affiliate,
+        total_amount
+      };
+      // console.log(pembayaran);
+
+      // Save admin to the database
+      Pembayaran.createPayWithBalanceMonth(pembayaran, (err, data) => {
+        if (err) {
+          return res.status(500).send({
+            message:
+              err.message || "Some error occurred while creating the Admin.",
+          });
+        } else {
+          res.send(data);
+        }
+      });
+    } catch (error) {
+      res.status(500).send({ message: "Error creating Admin" });
+    }
+  },
+];
+
 exports.createPaymentSuccess = [
   upload.none(),
   async (req, res) => {
@@ -332,7 +373,7 @@ exports.createPaymentPendingByAdminFree = [
   },
 ];
 
-exports.createPayWithBalance = [
+exports.createPayWithBalanceFree = [
   upload.none(),
   async (req, res) => {
     // Validate request
@@ -351,10 +392,9 @@ exports.createPayWithBalance = [
         dataPayment: dataPayment,
         total_amount: total_amount,
       };
-      console.log(pembayaran);
 
       // Save admin to the database
-      Pembayaran.createPayWithBalance(pembayaran, (err, data) => {
+      Pembayaran.createPayWithBalanceFree(pembayaran, (err, data) => {
         if (err) {
           return res.status(500).send({
             message:

@@ -245,7 +245,20 @@ exports.newPin = (req, res, next) => {
   const user_id = req.body.user_id;
   const school_id = req.body.school_id;
   const pin = req.body.pin;
-  General.newPin(user_id, school_id, pin, (err, data) => {
+  const current_pin = req.body.current_pin;
+  General.newPin(user_id, school_id, pin, current_pin, (err, data) => {
+    if (err)
+      res.status(500).send({
+        message:
+          err.message || "Some error occurred while retrieving tutorials.",
+      });
+    else res.send(data);
+  });
+};
+exports.resetPin = (req, res, next) => {
+  const user_id = req.body.user_id;
+  const school_id = req.body.school_id;
+  General.resetPin(user_id, school_id, (err, data) => {
     if (err)
       res.status(500).send({
         message:

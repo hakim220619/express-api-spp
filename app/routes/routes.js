@@ -63,6 +63,7 @@ module.exports = (app) => {
   router.post("/detailPpdbStudentExcel", token.authenticateToken, Ppdb.detailPpdbStudentExcel);
   router.post("/detailPpdbStudentDetail", token.authenticateToken, Ppdb.detailPpdbStudentDetail);
   router.post("/detailPpdbStudentDetailAdmin", token.authenticateToken, Ppdb.detailPpdbStudentDetailAdmin);
+  router.get("/PpdbStudentDetailAdminAll", token.authenticateToken, Ppdb.PpdbStudentDetailAdminAll);
   router.post("/detailSiswaBaru", Ppdb.detailSiswaBaru);
   router.post("/detailCalonSiswaBaru", Ppdb.detailCalonSiswaBaru);
   router.post("/verifikasi-siswa-baru", token.authenticateToken, Ppdb.verifikasiSiswaBaru);
@@ -143,6 +144,8 @@ module.exports = (app) => {
   router.get("/get-total-payment-this-month", token.authenticateToken, Dashboard.getTotalPaymentThisMonth);
   router.get("/get-total-payment-this-years", token.authenticateToken, Dashboard.getTotalPaymentThisYears);
   router.get("/get-total-login-mmLogs", token.authenticateToken, Dashboard.getTotalLoginMmLogs);
+  router.get("/get-total-pembayaran-online", token.authenticateToken, Dashboard.getTotalPembayaranOnline);
+  router.get("/get-total-pembayaran-manual", token.authenticateToken, Dashboard.getTotalPembayaranManual);
   router.get("/getCountMonthAndFree", token.authenticateToken, Dashboard.getCountMonthAndFree);
   //Pembayaran
   router.get("/list-payment-pay-byMonth", token.authenticateToken, Pembayaran.listPembayaranPayByMonth);
@@ -168,6 +171,7 @@ module.exports = (app) => {
   router.get("/list-report-free", token.authenticateToken, Report.listReportFree);
   router.get("/list-report-date", token.authenticateToken, Report.listReportDate);
   router.get("/list-report-class", token.authenticateToken, Report.listReportClass);
+  router.get("/list-report-paid-or-pending", token.authenticateToken, Report.listReportPaidorPending);
   //Tunggakan
   router.get("/list-tunggakan", token.authenticateToken, Tunggakan.listTunggakan);
   router.post("/sendTunggakanSiswa", token.authenticateToken, Tunggakan.sendTunggakanSiswa);
@@ -224,6 +228,7 @@ module.exports = (app) => {
   router.post("/send-message",  token.authenticateToken, general.sendMessages);
   router.post("/cekPin", token.authenticateToken, general.cekPin);
   router.post("/newPin", token.authenticateToken, general.newPin);
+  router.post("/resetPin", token.authenticateToken, general.resetPin);
 
 
   router.get("/cekFunction", general.cekFunction);

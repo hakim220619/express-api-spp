@@ -156,6 +156,34 @@ exports.getTotalPaymentThisYears = (req, res, next) => {
     }
   );
 };
+exports.getTotalPembayaranOnline = (req, res, next) => {
+  const school_id = req.query.school_id;
+
+  Dashboard.getTotalPembayaranOnline(
+    school_id,
+    (err, data) => {
+      if (err)
+        res.status(500).send({
+          message: err.message || "Some error occurred while retrieving Data.",
+        });
+      else res.send(data);
+    }
+  );
+};
+exports.getTotalPembayaranManual = (req, res, next) => {
+  const school_id = req.query.school_id;
+
+  Dashboard.getTotalPembayaranManual(
+    school_id,
+    (err, data) => {
+      if (err)
+        res.status(500).send({
+          message: err.message || "Some error occurred while retrieving Data.",
+        });
+      else res.send(data);
+    }
+  );
+};
 exports.getTotalLoginMmLogs = (req, res, next) => {
   const school_id = req.query.school_id;
 

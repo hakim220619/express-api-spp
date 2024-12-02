@@ -530,6 +530,20 @@ exports.detailPpdbStudentDetailAdmin = (req, res, next) => {
     else res.send(data);
   });
 };
+exports.PpdbStudentDetailAdminAll = (req, res, next) => {
+  const school_id = req.query.school_id;
+
+  Ppdb.PpdbStudentDetailAdminAll(school_id, (err, data) => {
+    if (err)
+      res.status(500).send({
+        message:
+          err.message || "Some error occurred while retrieving tutorials.",
+      });
+    else res.send(data);
+  });
+};
+
+
 exports.detailSiswaBaru = (req, res, next) => {
   const id = req.body.uid;
 

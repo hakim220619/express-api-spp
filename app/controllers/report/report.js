@@ -68,3 +68,19 @@ exports.listReportClass = (req, res, next) => {
     else res.send(data);
   });
 };
+exports.listReportPaidorPending = (req, res, next) => {
+  const dataAll = {
+    full_name: req.query.q,
+    school_id: req.query.school_id,
+    class_id: req.query.class_id,
+    status: req.query.status
+  };
+
+  Report.listReportPaidorPending(dataAll, (err, data) => {
+    if (err)
+      res.status(500).send({
+        message: err.message || "Some error occurred while retrieving Data.",
+      });
+    else res.send(data);
+  });
+};

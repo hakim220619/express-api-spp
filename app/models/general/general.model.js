@@ -541,9 +541,10 @@ General.cekPin = async (user_id, school_id, pin, result) => {
     });
   }
 };
-General.newPin = async (user_id, school_id, pin, result) => {
+
+General.newPin = async (user_id, school_id, pin, current_pin, result) => {
   try {
-    // Query untuk mengecek apakah user sudah memiliki PIN yang terdaftar (NULL atau sudah ada)
+    // Query untuk mengecek apakah user sudah memiliki PIN yang terdaftar
     const checkUserPinQuery = "SELECT pin FROM users WHERE id = ? AND school_id = ?";
     db.query(checkUserPinQuery, [user_id, school_id], async (checkErr, checkRes) => {
       if (checkErr) {
@@ -560,19 +561,22 @@ General.newPin = async (user_id, school_id, pin, result) => {
         return result({ error: true, message: "User not found" });
       }
 
-      // Cek apakah PIN saat ini adalah NULL
-      // const currentPin = checkRes[0].pin;
-      // if (currentPin !== null) {
-      //   return result({
-      //     error: true,
-      //     message: "PIN already set. Update not allowed",
-      //   });
-      // }
+      // Ambil PIN yang terdaftar di database
+      const storedPin = checkRes[0].pin;
+
+      // Cek apakah PIN saat ini sesuai dengan PIN yang terdaftar
+      const isCurrentPinCorrect = await bcrypt.compare(current_pin, storedPin);
+      if (!isCurrentPinCorrect) {
+        return result({
+          error: true,
+          message: "Current PIN is incorrect. Please enter the correct PIN.",
+        });
+      }
 
       // Hash PIN baru yang dimasukkan
       const hashedPin = await bcrypt.hash(pin, 10);
 
-      // Update PIN jika NULL
+      // Update PIN di database
       const updatePinQuery = "UPDATE users SET pin = ? WHERE id = ? AND school_id = ?";
       db.query(updatePinQuery, [hashedPin, user_id, school_id], (updateErr, updateRes) => {
         if (updateErr) {
@@ -585,12 +589,10 @@ General.newPin = async (user_id, school_id, pin, result) => {
         }
 
         // Jika update berhasil
-       
-          return result(null,{
-            error: false,
-            message: "PIN successfully updated",
-          });
-       
+        return result(null, {
+          error: false,
+          message: "PIN successfully updated",
+        });
       });
     });
   } catch (err) {
@@ -602,6 +604,61 @@ General.newPin = async (user_id, school_id, pin, result) => {
     });
   }
 };
+General.resetPin = async (user_id, school_id, result) => {
+  try {
+    // Query untuk mengecek apakah user sudah memiliki PIN yang terdaftar
+    const checkUserPinQuery = "SELECT pin FROM users WHERE id = ? AND school_id = ?";
+    db.query(checkUserPinQuery, [user_id, school_id], async (checkErr, checkRes) => {
+      if (checkErr) {
+        console.log("Error: ", checkErr);
+        return result({
+          error: true,
+          message: "An error occurred while checking PIN",
+          details: checkErr,
+        });
+      }
+
+      // Jika user tidak ditemukan
+      if (checkRes.length === 0) {
+        return result({ error: true, message: "User not found" });
+      }
+
+      // Menggunakan PIN default "123456"
+      const defaultPin = "123456";
+
+      // Hash PIN default "123456"
+      const hashedPin = await bcrypt.hash(defaultPin, 10);
+
+      // Update PIN di database
+      const updatePinQuery = "UPDATE users SET pin = ? WHERE id = ? AND school_id = ?";
+      db.query(updatePinQuery, [hashedPin, user_id, school_id], (updateErr, updateRes) => {
+        if (updateErr) {
+          console.log("Error updating PIN: ", updateErr);
+          return result({
+            error: true,
+            message: "An error occurred while updating the PIN",
+            details: updateErr,
+          });
+        }
+
+        // Jika update berhasil
+        return result(null, {
+          error: false,
+          message: "PIN successfully updated to default '123456'",
+        });
+      });
+    });
+  } catch (err) {
+    console.log("Unexpected error: ", err);
+    return result({
+      error: true,
+      message: "An unexpected error occurred",
+      details: err,
+    });
+  }
+};
+
+
 
 
 

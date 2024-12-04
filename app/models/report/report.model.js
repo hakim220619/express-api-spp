@@ -318,104 +318,117 @@ WHERE
     result(null, res);
   });
 };
-
 Report.listReportPaidorPending = (dataAll, result) => {
     
-  let query =
-    `select * from (
-    SELECT 
-    ROW_NUMBER() OVER () AS no, 
-    p.id, 
-    p.unit_id, 
-    p.user_id, 
-    p.school_id, 
-    p.setting_payment_uid, 
-    p.years, 
-    p.type, 
-    p.amount, 
-    p.status, 
-    u.unit_name, 
-    p.month_id, 
-    m.month, 
-    sp.sp_name, 
-    us.full_name, 
-    s.school_name, 
-    s.address AS school_address, 
-    c.class_name, 
-    mj.major_name, 
-    us.nisn, 
-    (SELECT SUM(af.amount) FROM affiliate af WHERE af.school_id = p.school_id) AS affiliate,
-    (p.amount + COALESCE((SELECT SUM(af.amount) FROM affiliate af WHERE af.school_id = p.school_id), 0)) AS total_payment,
-    p.updated_at as date
-FROM 
-    payment p
-JOIN 
-    school s ON p.school_id = s.id 
-JOIN 
-    unit u ON p.unit_id = u.id 
-JOIN 
-    months m ON p.month_id = m.id 
-JOIN 
-    setting_payment sp ON p.setting_payment_uid = sp.uid 
-JOIN 
-    users us ON p.user_id = us.id 
-LEFT JOIN 
-    affiliate a ON p.school_id = a.school_id 
-JOIN 
-    class c ON p.class_id = c.id
-JOIN 
-    major mj ON p.major_id = mj.id
-WHERE 
-    p.school_id = '${dataAll.school_id}'
-    AND p.class_id = '${dataAll.class_id}'
-UNION ALL
+  let query = `
+    SELECT * FROM (
+    SELECT
+      ROW_NUMBER() OVER () AS no,
+      p.id,
+      p.unit_id,
+      p.user_id,
+      p.school_id,
+      p.setting_payment_uid,
+      p.years,
+      p.type,
+      p.amount,
+      p.status,
+      u.unit_name,
+      p.month_id,
+      m.month,
+      sp.sp_name,
+      us.full_name,
+      s.school_name,
+      s.address AS school_address,
+      c.class_name,
+      mj.major_name,
+      us.nisn,
+      (SELECT SUM(af.amount) FROM affiliate af WHERE af.school_id = p.school_id) AS affiliate,
+      (p.amount + COALESCE((SELECT SUM(af.amount) FROM affiliate af WHERE af.school_id = p.school_id), 0)) AS total_payment,
+      p.updated_at as date,
+      p.metode_pembayaran
+    FROM
+      payment p
+    JOIN
+      school s ON p.school_id = s.id
+    JOIN
+      unit u ON p.unit_id = u.id
+    JOIN
+      months m ON p.month_id = m.id
+    JOIN
+      setting_payment sp ON p.setting_payment_uid = sp.uid
+    JOIN
+      users us ON p.user_id = us.id
+    LEFT JOIN
+      affiliate a ON p.school_id = a.school_id
+    JOIN
+      class c ON p.class_id = c.id
+    JOIN
+      major mj ON p.major_id = mj.id
+    WHERE
+      1=1`;
 
-SELECT 
-    ROW_NUMBER() OVER () AS no, 
-    pd.id, 
-    p.unit_id, 
-    p.user_id, 
-    p.school_id, 
-    pd.setting_payment_uid, 
-    p.years, 
-    pd.type, 
-    pd.amount, 
-    pd.status, 
-    ut.unit_name, 
-    p.month_id, 
-    NULL AS month, 
-    sp.sp_name, 
-    u.full_name, 
-    s.school_name, 
+  if (dataAll.school_id) query += ` AND p.school_id = '${dataAll.school_id}'`;
+  if (dataAll.class_id) query += ` AND p.class_id = '${dataAll.class_id}'`;
+  if (dataAll.years) query += ` AND p.years = '${dataAll.years}'`;
+  if (dataAll.month) query += ` AND p.month_id = '${dataAll.month}'`;
+  if (dataAll.status) query += ` AND p.status = '${dataAll.status}'`;
+
+  query += `
+  UNION ALL
+  SELECT
+    ROW_NUMBER() OVER () AS no,
+    pd.id,
+    p.unit_id,
+    p.user_id,
+    p.school_id,
+    pd.setting_payment_uid,
+    p.years,
+    pd.type,
+    pd.amount,
+    pd.status,
+    ut.unit_name,
+    NULL AS month_id,
+    NULL AS month,
+    sp.sp_name,
+    u.full_name,
+    s.school_name,
     s.address AS school_address,
-    c.class_name, 
-    m.major_name, 
-    u.nisn, 
-    NULL AS affiliate, 
+    c.class_name,
+    m.major_name,
+    u.nisn,
+    NULL AS affiliate,
     pd.amount AS total_payment,
-    p.created_at as date
-FROM 
+    p.created_at as date,
+    pd.metode_pembayaran
+  FROM
     payment_detail pd
-JOIN 
+  JOIN
     payment p ON pd.payment_id = p.uid
-JOIN 
-    users u ON pd.user_id = u.id 
-JOIN 
-    setting_payment sp ON pd.setting_payment_uid = sp.uid 
-JOIN 
+  JOIN
+    users u ON pd.user_id = u.id
+  JOIN
+    setting_payment sp ON pd.setting_payment_uid = sp.uid
+  JOIN
     unit ut ON p.unit_id = ut.id
-JOIN 
+  JOIN
     school s ON p.school_id = s.id
-JOIN 
+  JOIN
     class c ON p.class_id = c.id
-JOIN 
+  JOIN
     major m ON p.major_id = m.id
-WHERE 
-    p.school_id = '${dataAll.school_id}'
-    AND p.class_id = '${dataAll.class_id}'
-) d WHERE full_name like '%${dataAll.full_name}%'
-`;
-console.log(query);
+  WHERE
+    1=1`;
+
+  if (dataAll.school_id) query += ` AND p.school_id = '${dataAll.school_id}'`;
+  if (dataAll.class_id) query += ` AND p.class_id = '${dataAll.class_id}'`;
+  if (dataAll.years) query += ` AND p.years = '${dataAll.years}'`;
+  if (dataAll.status) query += ` AND pd.status = '${dataAll.status}'`;
+
+  query += `
+  ) d WHERE full_name LIKE '%${dataAll.full_name}%'`;
+
+  console.log(query);
 
   db.query(query, (err, res) => {
     if (err) {
@@ -423,9 +436,9 @@ console.log(query);
       result(null, err);
       return;
     }
-    // console.log("users: ", res);
     result(null, res);
   });
 };
+
 
 module.exports = Report;

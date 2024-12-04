@@ -164,6 +164,25 @@ General.getActivityBySchoolId = async (school_id, result) => {
     result(null, res);
   });
 };
+
+General.getTeacher = async (school_id, result) => {
+  let query = "SELECT * from users where 1=1 ";
+  if (school_id) {
+    query += ` AND school_id = '${school_id}'`;
+  }
+  query += `AND role = '230'`;
+  query += `order by created_at desc`;
+  db.query(query, (err, res) => {
+    if (err) {
+      console.log("error: ", err);
+      result(null, err);
+      return;
+    }
+
+    // console.log("role: ", res);
+    result(null, res);
+  });
+};
 General.getListPpdbActive = async (school_id, result) => {
   let query =
     "SELECT sp.*, s.school_name, u.unit_name from setting_ppdb sp, school s, unit u where sp.school_id=s.id AND sp.unit_id=u.id ";
@@ -3279,7 +3298,6 @@ General.rolePermissions = async (school_id, result) => {
       }
       rolePermissions[path].push(roleId); // Push roleId into the array
     });
-    console.log(JSON.stringify(rolePermissions));
 
     // Kembalikan hasil query dalam format JSON
     result(null, JSON.stringify(rolePermissions)); // Convert to JSON string

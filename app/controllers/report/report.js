@@ -68,13 +68,18 @@ exports.listReportClass = (req, res, next) => {
     else res.send(data);
   });
 };
+
+
 exports.listReportPaidorPending = (req, res, next) => {
   const dataAll = {
     full_name: req.query.q,
     school_id: req.query.school_id,
     class_id: req.query.class_id,
-    status: req.query.status
+    status: req.query.status,
+    years: req.query.years,
+    month: req.query.month
   };
+console.log(dataAll);
 
   Report.listReportPaidorPending(dataAll, (err, data) => {
     if (err)

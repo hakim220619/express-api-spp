@@ -20,6 +20,10 @@ module.exports = (app) => {
   const Permission = require("../controllers/permission/permission.js");
   const Tunggakan = require("../controllers/tunggakan/tunggakan.js"); 
   const Ppdb = require("../controllers/ppdb/ppdb.js"); 
+  const Absensi = require("../controllers/absensi/absensi.js"); 
+  const Cuti = require("../controllers/cuti/cuti.js"); 
+  const Holiday = require("../controllers/holiday/holiday.js"); 
+  const Subjects = require("../controllers/subject/subject.js"); 
   const TemplateMessage = require("../controllers/templateMessage/templateMessage.js");
   const token = require("../../app/config/tokenHandler.js");
   var router = require("express").Router();
@@ -78,7 +82,43 @@ module.exports = (app) => {
   router.post("/update-kelas", token.authenticateToken, Kelas.updateKelas);
   router.post("/delete-kelas", token.authenticateToken, Kelas.delete);
   router.post("/detailKelas", token.authenticateToken, Kelas.detailKelas);
-  //Kas
+  //absensi
+  // router.get("/list-activities", token.authenticateToken, Absensi.listActivities);
+  router.post("/create-absensi", token.authenticateToken, Absensi.createAbsensi);
+  // router.post("/update-activities", token.authenticateToken, Absensi.updateActivities);
+  // router.post("/delete-activities", token.authenticateToken, Absensi.deleteActivities);
+  // router.post("/detailActivities", token.authenticateToken, Absensi.detailActivities);
+  //activities
+  router.get("/list-activities", token.authenticateToken, Absensi.listActivities);
+  router.post("/create-activities", token.authenticateToken, Absensi.createActivities);
+  router.post("/update-activities", token.authenticateToken, Absensi.updateActivities);
+  router.post("/delete-activities", token.authenticateToken, Absensi.deleteActivities);
+  router.post("/detailActivities", token.authenticateToken, Absensi.detailActivities);
+  //Holiday
+  router.get("/list-holiday", token.authenticateToken, Holiday.listHoliday);
+  router.post("/create-holiday", token.authenticateToken, Holiday.createHoliday);
+  router.post("/update-holiday", token.authenticateToken, Holiday.updateHoliday);
+  router.post("/delete-holiday", token.authenticateToken, Holiday.deleteHoliday);
+  router.post("/detailHoliday", token.authenticateToken, Holiday.detailHoliday);
+  //Cuti
+  router.get("/list-Cuti", token.authenticateToken, Cuti.listCuti);
+  router.post("/create-cuti", token.authenticateToken, Cuti.createCuti);
+  router.post("/update-cuti", token.authenticateToken, Cuti.updateCuti);
+  router.post("/delete-Cuti", token.authenticateToken, Cuti.deleteCuti);
+  router.post("/detailCuti", token.authenticateToken, Cuti.detailCuti);
+  //Jenis Cuti
+  router.get("/list-jenisCuti", token.authenticateToken, Cuti.listjenisCuti);
+  router.post("/create-jenis-cuti", token.authenticateToken, Cuti.createJenisCuti);
+  router.post("/update-jenis-cuti", token.authenticateToken, Cuti.updateJenisCuti);
+  router.post("/delete-jenisCuti", token.authenticateToken, Cuti.deleteJenisCuti);
+  router.post("/detailJenisCuti", token.authenticateToken, Cuti.detailJenisCuti);
+  //Mata Pelajaran
+  router.get("/list-subjects", token.authenticateToken, Subjects.listSubjects);
+  router.post("/create-subjects", token.authenticateToken, Subjects.createSubjects);
+  router.post("/update-subjects", token.authenticateToken, Subjects.updateSubjects);
+  router.post("/delete-subjects", token.authenticateToken, Subjects.deleteSubjects);
+  router.post("/detailSubjects", token.authenticateToken, Subjects.detailSubjects);
+  // //Kas
   router.get("/list-kas", token.authenticateToken, Kas.listKas);
   router.post("/create-kas", token.authenticateToken, Kas.createKas);
   router.post("/update-kas", token.authenticateToken, Kas.updateKas);
@@ -204,6 +244,7 @@ module.exports = (app) => {
   router.get("/getTypePayment", token.authenticateToken, general.getTypePayment);
   router.get("/getUnit", token.authenticateToken, general.getUnit);
   router.get("/getYears", token.authenticateToken, general.getYears);
+  router.get("/getTeacher", token.authenticateToken, general.getTeacher);
   router.get("/getListPayment", token.authenticateToken, general.getListPayment);
   router.get("/getActivityBySchoolId", token.authenticateToken, general.getActivityBySchoolId);
   router.post("/sendMessageBroadcast", token.authenticateToken, general.sendMessageBroadcast);

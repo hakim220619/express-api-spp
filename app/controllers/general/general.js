@@ -178,6 +178,22 @@ exports.getListPayment = (req, res, next) => {
     else res.send(data);
   });
 };
+
+
+exports.getTeacher = (req, res, next) => {
+  const school_id = req.query.school_id;
+  General.getTeacher(school_id, (err, data) => {
+
+    if (err)
+      res.status(500).send({
+        message:
+          err.message || "Some error occurred while retrieving tutorials.",
+      });
+    else res.send(data);
+  });
+};
+
+
 exports.getActivityBySchoolId = (req, res, next) => {
   const school_id = req.query.school_id;
   General.getActivityBySchoolId(school_id, (err, data) => {
@@ -190,6 +206,8 @@ exports.getActivityBySchoolId = (req, res, next) => {
     else res.send(data);
   });
 };
+
+
 exports.forgetPassword = (req, res, next) => {
   const emailOrWhatsapp = req.body.emailOrWhatsapp;
   General.forgetPassword(emailOrWhatsapp, (err, data) => {

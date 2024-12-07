@@ -147,12 +147,34 @@ General.getListPayment = async (result) => {
     result(null, res);
   });
 };
+
+
 General.getActivityBySchoolId = async (school_id, result) => {
   let query = "SELECT * from mm_logs where 1=1";
   if (school_id) {
     query += ` AND school_id = '${school_id}'`;
   }
   query += `order by created_at desc`;
+  db.query(query, (err, res) => {
+    if (err) {
+      console.log("error: ", err);
+      result(null, err);
+      return;
+    }
+
+    // console.log("role: ", res);
+    result(null, res);
+  });
+};
+
+General.getStatus = async (school_id, jenis, result) => {
+  let query = "SELECT * from status where 1=1";
+  if (school_id) {
+    query += ` AND school_id = '${school_id}'`;
+  }
+  if (jenis) {
+    query += ` AND jenis = '${jenis}'`;
+  }
   db.query(query, (err, res) => {
     if (err) {
       console.log("error: ", err);
@@ -183,6 +205,41 @@ General.getTeacher = async (school_id, result) => {
     result(null, res);
   });
 };
+
+General.getActivities = async (school_id, result) => {
+  let query = "SELECT * from activities where 1=1 ";
+  if (school_id) {
+    query += ` AND school_id = '${school_id}'`;
+  }
+  db.query(query, (err, res) => {
+    if (err) {
+      console.log("error: ", err);
+      result(null, err);
+      return;
+    }
+    console.log(res);
+    
+    result(null, res);
+  });
+};
+General.getSubjects = async (school_id, result) => {
+  let query = "SELECT * from subjects where 1=1 ";
+  if (school_id) {
+    query += ` AND school_id = '${school_id}'`;
+  }
+  db.query(query, (err, res) => {
+    if (err) {
+      console.log("error: ", err);
+      result(null, err);
+      return;
+    }
+    console.log(res);
+    
+    result(null, res);
+  });
+};
+
+
 General.getListPpdbActive = async (school_id, result) => {
   let query =
     "SELECT sp.*, s.school_name, u.unit_name from setting_ppdb sp, school s, unit u where sp.school_id=s.id AND sp.unit_id=u.id ";

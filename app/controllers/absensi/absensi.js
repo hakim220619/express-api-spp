@@ -7,11 +7,11 @@ const upload = multer();
 
 // Retrieve all Admins from the database with conditions
 exports.listAbsensi = (req, res, next) => {
-  const class_name = req.query.q;
+  const full_name = req.query.q;
   const school_id = req.query.school_id;
   const status = req.query.status;
 
-  Absensi.listAbsensi(class_name, school_id, status, (err, data) => {
+  Absensi.listAbsensi(full_name, school_id, status, (err, data) => {
     if (err)
       res.status(500).send({
         message: err.message || "Some error occurred while retrieving Data.",
@@ -20,55 +20,98 @@ exports.listAbsensi = (req, res, next) => {
   });
 };
 
+
+exports.listAbsensiKegiatanByUserId = (req, res, next) => {
+  const school_id = req.query.school_id;
+  const unit_id = req.query.unit_id;
+  const class_id = req.query.class_id;
+  const activity_id = req.query.activity_id;
+  const type = 'MASUK';
+
+
+  Absensi.listAbsensiKegiatanByUserId(
+    school_id,
+    unit_id,
+    class_id,
+    activity_id,
+    type,
+    (err, data) => {
+      if (err)
+        res.status(500).send({
+          message: err.message || "Some error occurred while retrieving Data.",
+        });
+      else res.send(data);
+    }
+  );
+};
+
+exports.listAbsensiSubjectsByUserId = (req, res, next) => {
+  const school_id = req.query.school_id;
+  const unit_id = req.query.unit_id;
+  const class_id = req.query.class_id;
+  const subject_id = req.query.subject_id;
+  const type = 'MASUK';
+
+  Absensi.listAbsensiSubjectsByUserId(
+    school_id,
+    unit_id,
+    class_id,
+    subject_id,
+    type,
+    (err, data) => {
+      if (err)
+        res.status(500).send({
+          message: err.message || "Some error occurred while retrieving Data.",
+        });
+      else res.send(data);
+    }
+  );
+};
+
 // Create new Absensi (Attendance)
 exports.createAbsensi = [
-    upload.none(),
-    async (req, res) => {
-      // Validate request
-      if (!req.body) {
-        return res.status(400).send({
-          message: "Content cannot be empty!",
-        });
-      }
-  
-      const {
-        school_id,
-        unit_id,
-        user_id,
-        activity_id,
-        subject_id,
-        status,
-      } = req.body;
-  
-      try {
-        // Create new Absensi object
-        const attendance = {
-          school_id: school_id,
-          unit_id: unit_id,
-          user_id: user_id,
-          activity_id: activity_id,
-          subject_id: subject_id,
-          date: new Date(),
-          status: status,
-          created_at: new Date(),
-        };
-  
-        // Save attendance to the database
-        Absensi.createAbsensi(attendance, (err, data) => {
-          if (err) {
-            return res.status(500).send({
-              message:
-                err.message || "Some error occurred while creating the Absensi.",
-            });
-          } else {
-            res.send(data);
-          }
-        });
-      } catch (error) {
-        res.status(500).send({ message: "Error creating Absensi" });
-      }
-    },
-  ];
+  upload.none(),
+  async (req, res) => {
+    // Validate request
+    if (!req.body) {
+      return res.status(400).send({
+        message: "Content cannot be empty!",
+      });
+    }
+
+    const { school_id, unit_id, user_id, activity_id, subject_id, status, type } =
+      req.body;
+
+    try {
+      // Create new Absensi object
+      const attendance = {
+        school_id: school_id,
+        unit_id: unit_id,
+        user_id: user_id,
+        activity_id: activity_id,
+        subject_id: subject_id,
+        status: status,
+        type: type,
+        created_at: new Date(),
+      };
+      console.log(attendance);
+
+      // Save attendance to the database
+      Absensi.createAbsensi(attendance, (err, data) => {
+        if (err) {
+          return res.status(500).send({
+            message:
+              err.message || "Some error occurred while creating the Absensi.",
+          });
+        } else {
+          res.send(data);
+        }
+      });
+    } catch (error) {
+      res.status(500).send({ message: "Error creating Absensi" });
+    }
+  },
+];
 
 // Update existing Admin
 exports.updateAbsensi = [
@@ -133,25 +176,25 @@ exports.createActivities = [
     const {
       school_id,
       activity_name,
-      start_time,
-      end_time,
+      start_time_in,
+      end_time_in,
       description,
       status,
     } = req.body;
 
     try {
-      // Parse and format start_time and end_time to ISO format or a database-friendly format
-      const formattedStartTime = dayjs(start_time).format(
+      // Parse and format start_time_in and end_time_in to ISO format or a database-friendly format
+      const formattedStartTime = dayjs(start_time_in).format(
         "YYYY-MM-DD HH:mm:ss"
       ); // Use dayjs to format the time
-      const formattedEndTime = dayjs(end_time).format("YYYY-MM-DD HH:mm:ss");
+      const formattedEndTime = dayjs(end_time_in).format("YYYY-MM-DD HH:mm:ss");
 
       // Create the Activities object
       const Activities = {
         school_id: school_id,
         activity_name: activity_name,
-        start_time: formattedStartTime, // Set start time in a proper format
-        end_time: formattedEndTime, // Set end time in a proper format
+        start_time_in: formattedStartTime, // Set start time in a proper format
+        end_time_in: formattedEndTime, // Set end time in a proper format
         description: description,
         status: status,
         created_at: new Date(),
@@ -188,26 +231,26 @@ exports.updateActivities = [
       id,
       school_id,
       activity_name,
-      start_time,
-      end_time,
+      start_time_in,
+      end_time_in,
       description,
       status,
     } = req.body.data;
 
     try {
-      // Parse and format start_time and end_time to ISO format or a database-friendly format
-      const formattedStartTime = dayjs(start_time).format(
+      // Parse and format start_time_in and end_time_in to ISO format or a database-friendly format
+      const formattedStartTime = dayjs(start_time_in).format(
         "YYYY-MM-DD HH:mm:ss"
       ); // Use dayjs to format the time
-      const formattedEndTime = dayjs(end_time).format("YYYY-MM-DD HH:mm:ss");
+      const formattedEndTime = dayjs(end_time_in).format("YYYY-MM-DD HH:mm:ss");
 
       // Create the Activities object
       const Activities = {
         id,
         school_id: school_id,
         activity_name: activity_name,
-        start_time: formattedStartTime, // Set start time in a proper format
-        end_time: formattedEndTime, // Set end time in a proper format
+        start_time_in: formattedStartTime, // Set start time in a proper format
+        end_time_in: formattedEndTime, // Set end time in a proper format
         description: description,
         status: status,
         updated_at: new Date(),

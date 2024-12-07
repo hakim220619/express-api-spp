@@ -83,7 +83,9 @@ module.exports = (app) => {
   router.post("/delete-kelas", token.authenticateToken, Kelas.delete);
   router.post("/detailKelas", token.authenticateToken, Kelas.detailKelas);
   //absensi
-  // router.get("/list-activities", token.authenticateToken, Absensi.listActivities);
+  router.get("/list-absensi", token.authenticateToken, Absensi.listAbsensi);
+  router.get("/list-absensi-kegiatan-by-userId", token.authenticateToken, Absensi.listAbsensiKegiatanByUserId);
+  router.get("/list-absensi-subjects-by-userId", token.authenticateToken, Absensi.listAbsensiSubjectsByUserId);
   router.post("/create-absensi", token.authenticateToken, Absensi.createAbsensi);
   // router.post("/update-activities", token.authenticateToken, Absensi.updateActivities);
   // router.post("/delete-activities", token.authenticateToken, Absensi.deleteActivities);
@@ -245,8 +247,11 @@ module.exports = (app) => {
   router.get("/getUnit", token.authenticateToken, general.getUnit);
   router.get("/getYears", token.authenticateToken, general.getYears);
   router.get("/getTeacher", token.authenticateToken, general.getTeacher);
+  router.get("/getActivities", token.authenticateToken, general.getActivities);
+  router.get("/getSubjects", token.authenticateToken, general.getSubjects);
   router.get("/getListPayment", token.authenticateToken, general.getListPayment);
   router.get("/getActivityBySchoolId", token.authenticateToken, general.getActivityBySchoolId);
+  router.get("/getStatus", token.authenticateToken, general.getStatus);
   router.post("/sendMessageBroadcast", token.authenticateToken, general.sendMessageBroadcast);
   router.get("/getDetailClassMajorUsers", token.authenticateToken, general.getDetailClassMajorUsers);
   router.get("/cekTransaksiSuccesMidtransByUserIdFree", general.cekTransaksiSuccesMidtransByUserIdFree);

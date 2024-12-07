@@ -192,11 +192,49 @@ exports.getTeacher = (req, res, next) => {
     else res.send(data);
   });
 };
+exports.getActivities = (req, res, next) => {
+  const school_id = req.query.school_id;
+  General.getActivities(school_id, (err, data) => {
+
+    if (err)
+      res.status(500).send({
+        message:
+          err.message || "Some error occurred while retrieving tutorials.",
+      });
+    else res.send(data);
+  });
+};
+exports.getSubjects = (req, res, next) => {
+  const school_id = req.query.school_id;
+  General.getSubjects(school_id, (err, data) => {
+
+    if (err)
+      res.status(500).send({
+        message:
+          err.message || "Some error occurred while retrieving tutorials.",
+      });
+    else res.send(data);
+  });
+};
 
 
 exports.getActivityBySchoolId = (req, res, next) => {
   const school_id = req.query.school_id;
   General.getActivityBySchoolId(school_id, (err, data) => {
+
+    if (err)
+      res.status(500).send({
+        message:
+          err.message || "Some error occurred while retrieving tutorials.",
+      });
+    else res.send(data);
+  });
+};
+
+exports.getStatus = (req, res, next) => {
+  const school_id = req.query.school_id;
+  const jenis = req.query.jenis;
+  General.getStatus(school_id, jenis, (err, data) => {
 
     if (err)
       res.status(500).send({

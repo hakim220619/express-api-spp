@@ -525,7 +525,7 @@ exports.getClass = (req, res, next) => {
     res.status(200).send(data);
   });
 };
-exports.getMonths = (req, res, next) => {
+exports. getMonths = (req, res, next) => {
   const schoolId = req.query.schoolId;
 
   // Validasi jika schoolId tidak ada di query

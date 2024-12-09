@@ -86,6 +86,8 @@ module.exports = (app) => {
   router.get("/list-absensi", token.authenticateToken, Absensi.listAbsensi);
   router.get("/list-absensi-kegiatan-by-userId", token.authenticateToken, Absensi.listAbsensiKegiatanByUserId);
   router.get("/list-absensi-subjects-by-userId", token.authenticateToken, Absensi.listAbsensiSubjectsByUserId);
+  router.get("/laporan-absensi-kegiatan-by-userId", token.authenticateToken, Absensi.laporanAbsensiActivityByUserId);
+  router.get("/laporan-absensi-mataPelajaran-by-userId", token.authenticateToken, Absensi.laporanAbsensiSubjectByUserId);
   router.post("/create-absensi", token.authenticateToken, Absensi.createAbsensi);
   // router.post("/update-activities", token.authenticateToken, Absensi.updateActivities);
   // router.post("/delete-activities", token.authenticateToken, Absensi.deleteActivities);

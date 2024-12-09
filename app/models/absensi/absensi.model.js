@@ -1,11 +1,10 @@
 const db = require("../../config/db.config");
 const bcrypt = require("bcrypt");
-const { format } = require('date-fns');
+const { format } = require("date-fns");
 // constructor
 const Absensi = function (data) {
   this.id = data.uid;
 };
-
 
 Absensi.createAbsensi = (newUsers, result) => {
   console.log("New Users Data:", newUsers);
@@ -21,13 +20,13 @@ Absensi.createAbsensi = (newUsers, result) => {
   }
 
   // Get the current date in 'YYYY-MM-DD' format
-  const currentDate = format(new Date(), 'yyyy-MM-dd');
+  const currentDate = format(new Date(), "yyyy-MM-dd");
   // console.log("Current Date:", currentDate);
 
   // Loop through the userIds array and process attendance for each user
   userIds.forEach((userId) => {
     // Fetch user-specific status based on userId (assuming userId.status exists in user data)
-    
+
     // Query to check if attendance already exists for the user on the current date
     const checkQuery = `
       SELECT * FROM attendance
@@ -37,43 +36,52 @@ Absensi.createAbsensi = (newUsers, result) => {
         AND DATE(created_at) = ?
     `;
 
-    db.query(checkQuery, [userId.userId, newUsers.activity_id, newUsers.type, currentDate], (err, res) => {
-      if (err) {
-        console.error("Error checking attendance:", err);
-        result(err, null);
-        return;
-      }
-
-      // If attendance already exists, log and skip this user
-      if (res.length > 0) {
-        console.log(`Attendance already exists for user ${userId} on ${currentDate}. Skipping.`);
-        return;
-      }
-
-      // Prepare the attendance data for insertion, use the dynamic userStatus
-      const attendanceData = {
-        school_id: newUsers.school_id,
-        unit_id: newUsers.unit_id,
-        user_id: userId.userId,
-        activity_id: newUsers.activity_id,
-        subject_id: newUsers.subject_id,
-        type: newUsers.type,
-        status: userId.status, // Use the user-specific status
-        created_at: new Date(),
-      };
-
-      // Insert the new attendance record
-      db.query("INSERT INTO attendance SET ?", attendanceData, (err, res) => {
+    db.query(
+      checkQuery,
+      [userId.userId, newUsers.activity_id, newUsers.type, currentDate],
+      (err, res) => {
         if (err) {
-          console.error("Error inserting attendance:", err);
+          console.error("Error checking attendance:", err);
           result(err, null);
           return;
         }
 
-        // Log successful insertion
-        console.log("Created Absensi:", { id: res.insertId, ...attendanceData });
-      });
-    });
+        // If attendance already exists, log and skip this user
+        if (res.length > 0) {
+          console.log(
+            `Attendance already exists for user ${userId} on ${currentDate}. Skipping.`
+          );
+          return;
+        }
+
+        // Prepare the attendance data for insertion, use the dynamic userStatus
+        const attendanceData = {
+          school_id: newUsers.school_id,
+          unit_id: newUsers.unit_id,
+          user_id: userId.userId,
+          activity_id: newUsers.activity_id,
+          subject_id: newUsers.subject_id,
+          type: newUsers.type,
+          status: userId.status, // Use the user-specific status
+          created_at: new Date(),
+        };
+
+        // Insert the new attendance record
+        db.query("INSERT INTO attendance SET ?", attendanceData, (err, res) => {
+          if (err) {
+            console.error("Error inserting attendance:", err);
+            result(err, null);
+            return;
+          }
+
+          // Log successful insertion
+          console.log("Created Absensi:", {
+            id: res.insertId,
+            ...attendanceData,
+          });
+        });
+      }
+    );
   });
 
   // Once all operations are complete, provide a success response
@@ -82,9 +90,6 @@ Absensi.createAbsensi = (newUsers, result) => {
 };
 
 module.exports = Absensi;
-
-
-
 
 Absensi.update = (newUsers, result) => {
   db.query(
@@ -150,7 +155,6 @@ LEFT JOIN
     result(null, res);
   });
 };
-
 
 Absensi.listAbsensiKegiatanByUserId = (
   school_id,
@@ -251,7 +255,7 @@ Absensi.listAbsensiSubjectsByUserId = (
   if (class_id) {
     query += ` AND u.class_id = '${class_id}'`;
   }
-console.log(query);
+  console.log(query);
 
   db.query(query, (err, res) => {
     if (err) {
@@ -262,6 +266,355 @@ console.log(query);
     result(null, res);
   });
 };
+
+
+Absensi.laporanAbsensiActivityByUserId = (
+  full_name,
+  school_id,
+  unit_id,
+  class_id,
+  activity_id,
+  selectedMonth,
+  year,
+  type,
+  result
+) => {
+  // Mapping month names to their numeric equivalents
+  const monthMapping = {
+    'JANUARI': '01',
+    'FEBRUARI': '02',
+    'MARET': '03',
+    'APRIL': '04',
+    'MEI': '05',
+    'JUNI': '06',
+    'JULI': '07',
+    'AGUSTUS': '08',
+    'SEPTEMBER': '09',
+    'OKTOBER': '10',
+    'NOVEMBER': '11',
+    'DESEMBER': '12'
+  };
+
+  // Convert selectedMonth from name to number
+  const numericMonth = monthMapping[selectedMonth.toUpperCase()];
+
+  let query = `
+    SELECT
+      ROW_NUMBER() OVER () AS no,
+      u.id,
+      u.full_name,
+      un.unit_name,
+      c.class_name,
+      -- Dynamically adding columns for each day of the current month (1 to 31)
+      MAX(CASE WHEN DAY(dt.date_column) = 1 THEN a.status ELSE NULL END) AS day_1,
+      MAX(CASE WHEN DAY(dt.date_column) = 2 THEN a.status ELSE NULL END) AS day_2,
+      MAX(CASE WHEN DAY(dt.date_column) = 3 THEN a.status ELSE NULL END) AS day_3,
+      MAX(CASE WHEN DAY(dt.date_column) = 4 THEN a.status ELSE NULL END) AS day_4,
+      MAX(CASE WHEN DAY(dt.date_column) = 5 THEN a.status ELSE NULL END) AS day_5,
+      MAX(CASE WHEN DAY(dt.date_column) = 6 THEN a.status ELSE NULL END) AS day_6,
+      MAX(CASE WHEN DAY(dt.date_column) = 7 THEN a.status ELSE NULL END) AS day_7,
+      MAX(CASE WHEN DAY(dt.date_column) = 8 THEN a.status ELSE NULL END) AS day_8,
+      MAX(CASE WHEN DAY(dt.date_column) = 9 THEN a.status ELSE NULL END) AS day_9,
+      MAX(CASE WHEN DAY(dt.date_column) = 10 THEN a.status ELSE NULL END) AS day_10,
+      MAX(CASE WHEN DAY(dt.date_column) = 11 THEN a.status ELSE NULL END) AS day_11,
+      MAX(CASE WHEN DAY(dt.date_column) = 12 THEN a.status ELSE NULL END) AS day_12,
+      MAX(CASE WHEN DAY(dt.date_column) = 13 THEN a.status ELSE NULL END) AS day_13,
+      MAX(CASE WHEN DAY(dt.date_column) = 14 THEN a.status ELSE NULL END) AS day_14,
+      MAX(CASE WHEN DAY(dt.date_column) = 15 THEN a.status ELSE NULL END) AS day_15,
+      MAX(CASE WHEN DAY(dt.date_column) = 16 THEN a.status ELSE NULL END) AS day_16,
+      MAX(CASE WHEN DAY(dt.date_column) = 17 THEN a.status ELSE NULL END) AS day_17,
+      MAX(CASE WHEN DAY(dt.date_column) = 18 THEN a.status ELSE NULL END) AS day_18,
+      MAX(CASE WHEN DAY(dt.date_column) = 19 THEN a.status ELSE NULL END) AS day_19,
+      MAX(CASE WHEN DAY(dt.date_column) = 20 THEN a.status ELSE NULL END) AS day_20,
+      MAX(CASE WHEN DAY(dt.date_column) = 21 THEN a.status ELSE NULL END) AS day_21,
+      MAX(CASE WHEN DAY(dt.date_column) = 22 THEN a.status ELSE NULL END) AS day_22,
+      MAX(CASE WHEN DAY(dt.date_column) = 23 THEN a.status ELSE NULL END) AS day_23,
+      MAX(CASE WHEN DAY(dt.date_column) = 24 THEN a.status ELSE NULL END) AS day_24,
+      MAX(CASE WHEN DAY(dt.date_column) = 25 THEN a.status ELSE NULL END) AS day_25,
+      MAX(CASE WHEN DAY(dt.date_column) = 26 THEN a.status ELSE NULL END) AS day_26,
+      MAX(CASE WHEN DAY(dt.date_column) = 27 THEN a.status ELSE NULL END) AS day_27,
+      MAX(CASE WHEN DAY(dt.date_column) = 28 THEN a.status ELSE NULL END) AS day_28,
+      MAX(CASE WHEN DAY(dt.date_column) = 29 THEN a.status ELSE NULL END) AS day_29,
+      MAX(CASE WHEN DAY(dt.date_column) = 30 THEN a.status ELSE NULL END) AS day_30,
+      MAX(CASE WHEN DAY(dt.date_column) = 31 THEN a.status ELSE NULL END) AS day_31
+    FROM
+      users u
+    JOIN
+      unit un ON u.unit_id = un.id
+    JOIN
+      class c ON u.class_id = c.id
+    LEFT JOIN (
+      SELECT 
+        DATE_ADD(LAST_DAY(STR_TO_DATE(CONCAT('01-', '${numericMonth}-${year}'), '%d-%m-%Y')), INTERVAL -31 DAY) AS date_column
+      UNION ALL
+      SELECT DATE_ADD(LAST_DAY(STR_TO_DATE(CONCAT('01-', '${numericMonth}-${year}'), '%d-%m-%Y')), INTERVAL -30 DAY)
+      UNION ALL
+      SELECT DATE_ADD(LAST_DAY(STR_TO_DATE(CONCAT('01-', '${numericMonth}-${year}'), '%d-%m-%Y')), INTERVAL -29 DAY)
+      UNION ALL
+      SELECT DATE_ADD(LAST_DAY(STR_TO_DATE(CONCAT('01-', '${numericMonth}-${year}'), '%d-%m-%Y')), INTERVAL -28 DAY)
+      UNION ALL
+      SELECT DATE_ADD(LAST_DAY(STR_TO_DATE(CONCAT('01-', '${numericMonth}-${year}'), '%d-%m-%Y')), INTERVAL -27 DAY)
+      UNION ALL
+      SELECT DATE_ADD(LAST_DAY(STR_TO_DATE(CONCAT('01-', '${numericMonth}-${year}'), '%d-%m-%Y')), INTERVAL -26 DAY)
+      UNION ALL
+      SELECT DATE_ADD(LAST_DAY(STR_TO_DATE(CONCAT('01-', '${numericMonth}-${year}'), '%d-%m-%Y')), INTERVAL -25 DAY)
+      UNION ALL
+      SELECT DATE_ADD(LAST_DAY(STR_TO_DATE(CONCAT('01-', '${numericMonth}-${year}'), '%d-%m-%Y')), INTERVAL -24 DAY)
+      UNION ALL
+      SELECT DATE_ADD(LAST_DAY(STR_TO_DATE(CONCAT('01-', '${numericMonth}-${year}'), '%d-%m-%Y')), INTERVAL -23 DAY)
+      UNION ALL
+      SELECT DATE_ADD(LAST_DAY(STR_TO_DATE(CONCAT('01-', '${numericMonth}-${year}'), '%d-%m-%Y')), INTERVAL -22 DAY)
+      UNION ALL
+      SELECT DATE_ADD(LAST_DAY(STR_TO_DATE(CONCAT('01-', '${numericMonth}-${year}'), '%d-%m-%Y')), INTERVAL -21 DAY)
+      UNION ALL
+      SELECT DATE_ADD(LAST_DAY(STR_TO_DATE(CONCAT('01-', '${numericMonth}-${year}'), '%d-%m-%Y')), INTERVAL -20 DAY)
+      UNION ALL
+      SELECT DATE_ADD(LAST_DAY(STR_TO_DATE(CONCAT('01-', '${numericMonth}-${year}'), '%d-%m-%Y')), INTERVAL -19 DAY)
+      UNION ALL
+      SELECT DATE_ADD(LAST_DAY(STR_TO_DATE(CONCAT('01-', '${numericMonth}-${year}'), '%d-%m-%Y')), INTERVAL -18 DAY)
+      UNION ALL
+      SELECT DATE_ADD(LAST_DAY(STR_TO_DATE(CONCAT('01-', '${numericMonth}-${year}'), '%d-%m-%Y')), INTERVAL -17 DAY)
+      UNION ALL
+      SELECT DATE_ADD(LAST_DAY(STR_TO_DATE(CONCAT('01-', '${numericMonth}-${year}'), '%d-%m-%Y')), INTERVAL -16 DAY)
+      UNION ALL
+      SELECT DATE_ADD(LAST_DAY(STR_TO_DATE(CONCAT('01-', '${numericMonth}-${year}'), '%d-%m-%Y')), INTERVAL -15 DAY)
+      UNION ALL
+      SELECT DATE_ADD(LAST_DAY(STR_TO_DATE(CONCAT('01-', '${numericMonth}-${year}'), '%d-%m-%Y')), INTERVAL -14 DAY)
+      UNION ALL
+      SELECT DATE_ADD(LAST_DAY(STR_TO_DATE(CONCAT('01-', '${numericMonth}-${year}'), '%d-%m-%Y')), INTERVAL -13 DAY)
+      UNION ALL
+      SELECT DATE_ADD(LAST_DAY(STR_TO_DATE(CONCAT('01-', '${numericMonth}-${year}'), '%d-%m-%Y')), INTERVAL -12 DAY)
+      UNION ALL
+      SELECT DATE_ADD(LAST_DAY(STR_TO_DATE(CONCAT('01-', '${numericMonth}-${year}'), '%d-%m-%Y')), INTERVAL -11 DAY)
+      UNION ALL
+      SELECT DATE_ADD(LAST_DAY(STR_TO_DATE(CONCAT('01-', '${numericMonth}-${year}'), '%d-%m-%Y')), INTERVAL -10 DAY)
+      UNION ALL
+      SELECT DATE_ADD(LAST_DAY(STR_TO_DATE(CONCAT('01-', '${numericMonth}-${year}'), '%d-%m-%Y')), INTERVAL -9 DAY)
+      UNION ALL
+      SELECT DATE_ADD(LAST_DAY(STR_TO_DATE(CONCAT('01-', '${numericMonth}-${year}'), '%d-%m-%Y')), INTERVAL -8 DAY)
+      UNION ALL
+      SELECT DATE_ADD(LAST_DAY(STR_TO_DATE(CONCAT('01-', '${numericMonth}-${year}'), '%d-%m-%Y')), INTERVAL -7 DAY)
+      UNION ALL
+      SELECT DATE_ADD(LAST_DAY(STR_TO_DATE(CONCAT('01-', '${numericMonth}-${year}'), '%d-%m-%Y')), INTERVAL -6 DAY)
+      UNION ALL
+      SELECT DATE_ADD(LAST_DAY(STR_TO_DATE(CONCAT('01-', '${numericMonth}-${year}'), '%d-%m-%Y')), INTERVAL -5 DAY)
+      UNION ALL
+      SELECT DATE_ADD(LAST_DAY(STR_TO_DATE(CONCAT('01-', '${numericMonth}-${year}'), '%d-%m-%Y')), INTERVAL -4 DAY)
+      UNION ALL
+      SELECT DATE_ADD(LAST_DAY(STR_TO_DATE(CONCAT('01-', '${numericMonth}-${year}'), '%d-%m-%Y')), INTERVAL -3 DAY)
+      UNION ALL
+      SELECT DATE_ADD(LAST_DAY(STR_TO_DATE(CONCAT('01-', '${numericMonth}-${year}'), '%d-%m-%Y')), INTERVAL -2 DAY)
+      UNION ALL
+      SELECT LAST_DAY(STR_TO_DATE(CONCAT('01-', '${numericMonth}-${year}'), '%d-%m-%Y')) AS date_column
+    ) AS dt ON DAY(dt.date_column) BETWEEN 1 AND 31
+    LEFT JOIN
+      attendance a ON a.user_id = u.id 
+      AND DATE(a.created_at) = DATE(dt.date_column)
+      AND a.activity_id = '${activity_id}'  -- Filter by activity_id
+    WHERE
+      u.role = '160'
+  `;
+
+  if (school_id) {
+    query += ` AND u.school_id = '${school_id}'`;
+  }
+  if (unit_id) {
+    query += ` AND u.unit_id = '${unit_id}'`;
+  }
+  if (class_id) {
+    query += ` AND u.class_id = '${class_id}'`;
+  }
+  if (full_name) {
+    query += ` AND u.full_name like '%${full_name}%'`;
+  }
+  query += ` GROUP BY
+    u.id, u.full_name, un.unit_name, c.class_name`;
+
+  // console.log(full_name);
+
+  db.query(query, (err, res) => {
+    if (err) {
+      console.log("error: ", err);
+      result(null, err);
+      return;
+    }
+    result(null, res);
+  });
+};
+
+Absensi.laporanAbsensiSubjectByUserId = (
+  full_name,
+  school_id,
+  unit_id,
+  class_id,
+  subject_id,
+  selectedMonth,
+  year,
+  type,
+  result
+) => {
+  // Mapping month names to their numeric equivalents
+  const monthMapping = {
+    'JANUARI': '01',
+    'FEBRUARI': '02',
+    'MARET': '03',
+    'APRIL': '04',
+    'MEI': '05',
+    'JUNI': '06',
+    'JULI': '07',
+    'AGUSTUS': '08',
+    'SEPTEMBER': '09',
+    'OKTOBER': '10',
+    'NOVEMBER': '11',
+    'DESEMBER': '12'
+  };
+
+  // Convert selectedMonth from name to number
+  const numericMonth = monthMapping[selectedMonth.toUpperCase()];
+
+  let query = `
+    SELECT
+      ROW_NUMBER() OVER () AS no,
+      u.id,
+      u.full_name,
+      un.unit_name,
+      c.class_name,
+      -- Dynamically adding columns for each day of the current month (1 to 31)
+      MAX(CASE WHEN DAY(dt.date_column) = 1 THEN a.status ELSE NULL END) AS day_1,
+      MAX(CASE WHEN DAY(dt.date_column) = 2 THEN a.status ELSE NULL END) AS day_2,
+      MAX(CASE WHEN DAY(dt.date_column) = 3 THEN a.status ELSE NULL END) AS day_3,
+      MAX(CASE WHEN DAY(dt.date_column) = 4 THEN a.status ELSE NULL END) AS day_4,
+      MAX(CASE WHEN DAY(dt.date_column) = 5 THEN a.status ELSE NULL END) AS day_5,
+      MAX(CASE WHEN DAY(dt.date_column) = 6 THEN a.status ELSE NULL END) AS day_6,
+      MAX(CASE WHEN DAY(dt.date_column) = 7 THEN a.status ELSE NULL END) AS day_7,
+      MAX(CASE WHEN DAY(dt.date_column) = 8 THEN a.status ELSE NULL END) AS day_8,
+      MAX(CASE WHEN DAY(dt.date_column) = 9 THEN a.status ELSE NULL END) AS day_9,
+      MAX(CASE WHEN DAY(dt.date_column) = 10 THEN a.status ELSE NULL END) AS day_10,
+      MAX(CASE WHEN DAY(dt.date_column) = 11 THEN a.status ELSE NULL END) AS day_11,
+      MAX(CASE WHEN DAY(dt.date_column) = 12 THEN a.status ELSE NULL END) AS day_12,
+      MAX(CASE WHEN DAY(dt.date_column) = 13 THEN a.status ELSE NULL END) AS day_13,
+      MAX(CASE WHEN DAY(dt.date_column) = 14 THEN a.status ELSE NULL END) AS day_14,
+      MAX(CASE WHEN DAY(dt.date_column) = 15 THEN a.status ELSE NULL END) AS day_15,
+      MAX(CASE WHEN DAY(dt.date_column) = 16 THEN a.status ELSE NULL END) AS day_16,
+      MAX(CASE WHEN DAY(dt.date_column) = 17 THEN a.status ELSE NULL END) AS day_17,
+      MAX(CASE WHEN DAY(dt.date_column) = 18 THEN a.status ELSE NULL END) AS day_18,
+      MAX(CASE WHEN DAY(dt.date_column) = 19 THEN a.status ELSE NULL END) AS day_19,
+      MAX(CASE WHEN DAY(dt.date_column) = 20 THEN a.status ELSE NULL END) AS day_20,
+      MAX(CASE WHEN DAY(dt.date_column) = 21 THEN a.status ELSE NULL END) AS day_21,
+      MAX(CASE WHEN DAY(dt.date_column) = 22 THEN a.status ELSE NULL END) AS day_22,
+      MAX(CASE WHEN DAY(dt.date_column) = 23 THEN a.status ELSE NULL END) AS day_23,
+      MAX(CASE WHEN DAY(dt.date_column) = 24 THEN a.status ELSE NULL END) AS day_24,
+      MAX(CASE WHEN DAY(dt.date_column) = 25 THEN a.status ELSE NULL END) AS day_25,
+      MAX(CASE WHEN DAY(dt.date_column) = 26 THEN a.status ELSE NULL END) AS day_26,
+      MAX(CASE WHEN DAY(dt.date_column) = 27 THEN a.status ELSE NULL END) AS day_27,
+      MAX(CASE WHEN DAY(dt.date_column) = 28 THEN a.status ELSE NULL END) AS day_28,
+      MAX(CASE WHEN DAY(dt.date_column) = 29 THEN a.status ELSE NULL END) AS day_29,
+      MAX(CASE WHEN DAY(dt.date_column) = 30 THEN a.status ELSE NULL END) AS day_30,
+      MAX(CASE WHEN DAY(dt.date_column) = 31 THEN a.status ELSE NULL END) AS day_31
+    FROM
+      users u
+    JOIN
+      unit un ON u.unit_id = un.id
+    JOIN
+      class c ON u.class_id = c.id
+    LEFT JOIN (
+      SELECT 
+        DATE_ADD(LAST_DAY(STR_TO_DATE(CONCAT('01-', '${numericMonth}-${year}'), '%d-%m-%Y')), INTERVAL -31 DAY) AS date_column
+      UNION ALL
+      SELECT DATE_ADD(LAST_DAY(STR_TO_DATE(CONCAT('01-', '${numericMonth}-${year}'), '%d-%m-%Y')), INTERVAL -30 DAY)
+      UNION ALL
+      SELECT DATE_ADD(LAST_DAY(STR_TO_DATE(CONCAT('01-', '${numericMonth}-${year}'), '%d-%m-%Y')), INTERVAL -29 DAY)
+      UNION ALL
+      SELECT DATE_ADD(LAST_DAY(STR_TO_DATE(CONCAT('01-', '${numericMonth}-${year}'), '%d-%m-%Y')), INTERVAL -28 DAY)
+      UNION ALL
+      SELECT DATE_ADD(LAST_DAY(STR_TO_DATE(CONCAT('01-', '${numericMonth}-${year}'), '%d-%m-%Y')), INTERVAL -27 DAY)
+      UNION ALL
+      SELECT DATE_ADD(LAST_DAY(STR_TO_DATE(CONCAT('01-', '${numericMonth}-${year}'), '%d-%m-%Y')), INTERVAL -26 DAY)
+      UNION ALL
+      SELECT DATE_ADD(LAST_DAY(STR_TO_DATE(CONCAT('01-', '${numericMonth}-${year}'), '%d-%m-%Y')), INTERVAL -25 DAY)
+      UNION ALL
+      SELECT DATE_ADD(LAST_DAY(STR_TO_DATE(CONCAT('01-', '${numericMonth}-${year}'), '%d-%m-%Y')), INTERVAL -24 DAY)
+      UNION ALL
+      SELECT DATE_ADD(LAST_DAY(STR_TO_DATE(CONCAT('01-', '${numericMonth}-${year}'), '%d-%m-%Y')), INTERVAL -23 DAY)
+      UNION ALL
+      SELECT DATE_ADD(LAST_DAY(STR_TO_DATE(CONCAT('01-', '${numericMonth}-${year}'), '%d-%m-%Y')), INTERVAL -22 DAY)
+      UNION ALL
+      SELECT DATE_ADD(LAST_DAY(STR_TO_DATE(CONCAT('01-', '${numericMonth}-${year}'), '%d-%m-%Y')), INTERVAL -21 DAY)
+      UNION ALL
+      SELECT DATE_ADD(LAST_DAY(STR_TO_DATE(CONCAT('01-', '${numericMonth}-${year}'), '%d-%m-%Y')), INTERVAL -20 DAY)
+      UNION ALL
+      SELECT DATE_ADD(LAST_DAY(STR_TO_DATE(CONCAT('01-', '${numericMonth}-${year}'), '%d-%m-%Y')), INTERVAL -19 DAY)
+      UNION ALL
+      SELECT DATE_ADD(LAST_DAY(STR_TO_DATE(CONCAT('01-', '${numericMonth}-${year}'), '%d-%m-%Y')), INTERVAL -18 DAY)
+      UNION ALL
+      SELECT DATE_ADD(LAST_DAY(STR_TO_DATE(CONCAT('01-', '${numericMonth}-${year}'), '%d-%m-%Y')), INTERVAL -17 DAY)
+      UNION ALL
+      SELECT DATE_ADD(LAST_DAY(STR_TO_DATE(CONCAT('01-', '${numericMonth}-${year}'), '%d-%m-%Y')), INTERVAL -16 DAY)
+      UNION ALL
+      SELECT DATE_ADD(LAST_DAY(STR_TO_DATE(CONCAT('01-', '${numericMonth}-${year}'), '%d-%m-%Y')), INTERVAL -15 DAY)
+      UNION ALL
+      SELECT DATE_ADD(LAST_DAY(STR_TO_DATE(CONCAT('01-', '${numericMonth}-${year}'), '%d-%m-%Y')), INTERVAL -14 DAY)
+      UNION ALL
+      SELECT DATE_ADD(LAST_DAY(STR_TO_DATE(CONCAT('01-', '${numericMonth}-${year}'), '%d-%m-%Y')), INTERVAL -13 DAY)
+      UNION ALL
+      SELECT DATE_ADD(LAST_DAY(STR_TO_DATE(CONCAT('01-', '${numericMonth}-${year}'), '%d-%m-%Y')), INTERVAL -12 DAY)
+      UNION ALL
+      SELECT DATE_ADD(LAST_DAY(STR_TO_DATE(CONCAT('01-', '${numericMonth}-${year}'), '%d-%m-%Y')), INTERVAL -11 DAY)
+      UNION ALL
+      SELECT DATE_ADD(LAST_DAY(STR_TO_DATE(CONCAT('01-', '${numericMonth}-${year}'), '%d-%m-%Y')), INTERVAL -10 DAY)
+      UNION ALL
+      SELECT DATE_ADD(LAST_DAY(STR_TO_DATE(CONCAT('01-', '${numericMonth}-${year}'), '%d-%m-%Y')), INTERVAL -9 DAY)
+      UNION ALL
+      SELECT DATE_ADD(LAST_DAY(STR_TO_DATE(CONCAT('01-', '${numericMonth}-${year}'), '%d-%m-%Y')), INTERVAL -8 DAY)
+      UNION ALL
+      SELECT DATE_ADD(LAST_DAY(STR_TO_DATE(CONCAT('01-', '${numericMonth}-${year}'), '%d-%m-%Y')), INTERVAL -7 DAY)
+      UNION ALL
+      SELECT DATE_ADD(LAST_DAY(STR_TO_DATE(CONCAT('01-', '${numericMonth}-${year}'), '%d-%m-%Y')), INTERVAL -6 DAY)
+      UNION ALL
+      SELECT DATE_ADD(LAST_DAY(STR_TO_DATE(CONCAT('01-', '${numericMonth}-${year}'), '%d-%m-%Y')), INTERVAL -5 DAY)
+      UNION ALL
+      SELECT DATE_ADD(LAST_DAY(STR_TO_DATE(CONCAT('01-', '${numericMonth}-${year}'), '%d-%m-%Y')), INTERVAL -4 DAY)
+      UNION ALL
+      SELECT DATE_ADD(LAST_DAY(STR_TO_DATE(CONCAT('01-', '${numericMonth}-${year}'), '%d-%m-%Y')), INTERVAL -3 DAY)
+      UNION ALL
+      SELECT DATE_ADD(LAST_DAY(STR_TO_DATE(CONCAT('01-', '${numericMonth}-${year}'), '%d-%m-%Y')), INTERVAL -2 DAY)
+      UNION ALL
+      SELECT LAST_DAY(STR_TO_DATE(CONCAT('01-', '${numericMonth}-${year}'), '%d-%m-%Y')) AS date_column
+    ) AS dt ON DAY(dt.date_column) BETWEEN 1 AND 31
+    LEFT JOIN
+      attendance a ON a.user_id = u.id 
+      AND DATE(a.created_at) = DATE(dt.date_column)
+      AND a.subject_id = '${subject_id}'  -- Filter by activity_id
+    WHERE
+      u.role = '160'
+  `;
+
+  if (school_id) {
+    query += ` AND u.school_id = '${school_id}'`;
+  }
+  if (unit_id) {
+    query += ` AND u.unit_id = '${unit_id}'`;
+  }
+  if (class_id) {
+    query += ` AND u.class_id = '${class_id}'`;
+  }
+  if (full_name) {
+    query += ` AND u.full_name like '%${full_name}%'`;
+  }
+  query += ` GROUP BY
+    u.id, u.full_name, un.unit_name, c.class_name`;
+
+
+  db.query(query, (err, res) => {
+    if (err) {
+      console.log("error: ", err);
+      result(null, err);
+      return;
+    }
+    result(null, res);
+  });
+};
+
 
 
 Absensi.listActivities = (activity_name, school_id, status, result) => {

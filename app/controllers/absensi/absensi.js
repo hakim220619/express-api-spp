@@ -68,6 +68,66 @@ exports.listAbsensiSubjectsByUserId = (req, res, next) => {
   );
 };
 
+exports.laporanAbsensiActivityByUserId = (req, res, next) => {
+
+  const full_name = req.query.q;
+  const school_id = req.query.school_id;
+  const unit_id = req.query.unit_id;
+  const class_id = req.query.class_id;
+  const activity_id = req.query.activity_id;
+  const selectedMonth = req.query.selectedMonth;
+  const year = req.query.year;
+  const type = 'MASUK';
+
+  Absensi.laporanAbsensiActivityByUserId(
+    full_name,
+    school_id,
+    unit_id,
+    class_id,
+    activity_id,
+    selectedMonth,
+    year,
+    type,
+    (err, data) => {
+      if (err)
+        res.status(500).send({
+          message: err.message || "Some error occurred while retrieving Data.",
+        });
+      else res.send(data);
+    }
+  );
+};
+
+exports.laporanAbsensiSubjectByUserId = (req, res, next) => {
+
+  const full_name = req.query.q;
+  const school_id = req.query.school_id;
+  const unit_id = req.query.unit_id;
+  const class_id = req.query.class_id;
+  const subject_id = req.query.subject_id;
+  const selectedMonth = req.query.selectedMonth;
+  const year = req.query.year;
+  const type = 'MASUK';
+
+  Absensi.laporanAbsensiSubjectByUserId(
+    full_name,
+    school_id,
+    unit_id,
+    class_id,
+    subject_id,
+    selectedMonth,
+    year,
+    type,
+    (err, data) => {
+      if (err)
+        res.status(500).send({
+          message: err.message || "Some error occurred while retrieving Data.",
+        });
+      else res.send(data);
+    }
+  );
+};
+
 // Create new Absensi (Attendance)
 exports.createAbsensi = [
   upload.none(),

@@ -40,6 +40,8 @@ exports.createSubjects = [
       code,
       start_time_in,
       end_time_in,
+      start_time_out,
+      end_time_out,
       status,
       description,
     } = req.body;
@@ -47,11 +49,15 @@ exports.createSubjects = [
 
     try {
 
-        // Parse and format start_time_in and end_time_in to ISO format or a database-friendly format
-        const formattedStartTime = dayjs(start_time_in).format(
+       
+        const formattedStartTimeIn = dayjs(start_time_in).format(
           "YYYY-MM-DD HH:mm:ss"
-        ); // Use dayjs to format the time
-        const formattedEndTime = dayjs(end_time_in).format("YYYY-MM-DD HH:mm:ss");
+        ); 
+        const formattedEndTimeIn = dayjs(end_time_in).format("YYYY-MM-DD HH:mm:ss");
+        const formattedStartTimeOut = dayjs(start_time_out).format(
+          "YYYY-MM-DD HH:mm:ss"
+        ); 
+        const formattedEndTimeOut = dayjs(end_time_out).format("YYYY-MM-DD HH:mm:ss");
       // Create new admin object
       const Subjects = {
         school_id: school_id,
@@ -60,8 +66,10 @@ exports.createSubjects = [
         user_id: user_id,
         subject_name: subject_name,
         code: code,
-        start_time_in: formattedStartTime,
-        end_time_in: formattedEndTime,
+        start_time_in: formattedStartTimeIn,
+        end_time_in: formattedEndTimeIn,
+        start_time_out: formattedStartTimeOut,
+        end_time_out: formattedEndTimeOut,
         description: description,
         status: status || "ON",
         created_at: new Date(),
@@ -105,14 +113,20 @@ exports.updateSubjects = [
         code,
         start_time_in,
         end_time_in,
+        start_time_out,
+        end_time_out,
         status,
         description,
       } = req.body.data;
-  // Parse and format start_time_in and end_time_in to ISO format or a database-friendly format
-  const formattedStartTime = dayjs(start_time_in).format(
+  
+  const formattedStartTimeIn = dayjs(start_time_in).format(
     "YYYY-MM-DD HH:mm:ss"
-  ); // Use dayjs to format the time
-  const formattedEndTime = dayjs(end_time_in).format("YYYY-MM-DD HH:mm:ss");
+  ); 
+  const formattedEndTimeIn = dayjs(end_time_in).format("YYYY-MM-DD HH:mm:ss");
+  const formattedStartTimeOut = dayjs(start_time_out).format(
+    "YYYY-MM-DD HH:mm:ss"
+  ); 
+  const formattedEndTimeOut = dayjs(end_time_out).format("YYYY-MM-DD HH:mm:ss");
       // Create new admin object
       const Subjects = {
         id,
@@ -122,8 +136,10 @@ exports.updateSubjects = [
         user_id: user_id,
         subject_name: subject_name,
         code: code,
-        start_time_in: formattedStartTime,
-        end_time_in: formattedEndTime,
+        start_time_in: formattedStartTimeIn,
+        end_time_in: formattedEndTimeIn,
+        start_time_out: formattedStartTimeOut,
+        end_time_out: formattedEndTimeOut,
         description: description,
         status: status,
         updated_at: new Date(),

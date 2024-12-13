@@ -130,6 +130,19 @@ exports.getListPpdbActive = (req, res, next) => {
     else res.send(data);
   });
 };
+exports.getDataAbsensiFromToken = (req, res, next) => {
+  const token = req.query.token;
+console.log(req.query);
+
+  General.getDataAbsensiFromToken(token, (err, data) => {
+    if (err)
+      res.status(500).send({
+        message:
+          err.message || "Some error occurred while retrieving tutorials.",
+      });
+    else res.send(data);
+  });
+};
 exports.getListBalanceByUserId = (req, res, next) => {
   const school_id = req.query.school_id;
   const user_id = req.query.user_id;

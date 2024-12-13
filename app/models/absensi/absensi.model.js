@@ -6,6 +6,19 @@ const Absensi = function (data) {
   this.id = data.uid;
 };
 
+Absensi.createAbsensiAktif = (newUsers, result) => {
+  db.query("INSERT INTO setting_absensi SET ?", newUsers, (err, res) => {
+    if (err) {
+      console.log("error: ", err);
+      result(err, null);
+      return;
+    }
+
+    console.log("created: ", { id: res.insertId, ...newUsers });
+    result(null, { id: res.insertId, ...newUsers });
+  });
+};
+
 Absensi.createAbsensi = (newUsers, result) => {
   console.log("New Users Data:", newUsers);
 
@@ -89,11 +102,13 @@ Absensi.createAbsensi = (newUsers, result) => {
   result(null, { message: "Attendance creation process started." });
 };
 
-module.exports = Absensi;
 
-Absensi.update = (newUsers, result) => {
+
+Absensi.updateAbsensi = (newUsers, result) => {
+  console.log(newUsers);
+  
   db.query(
-    "UPDATE class SET ? WHERE id = ?",
+    "UPDATE attendance SET ? WHERE id = ?",
     [newUsers, newUsers.id],
     (err, res) => {
       if (err) {
@@ -144,6 +159,48 @@ LEFT JOIN
   if (status) {
     query += ` AND a.status = '${status}'`;
   }
+query += ' ORDER BY a.created_at desc'
+  db.query(query, (err, res) => {
+    if (err) {
+      console.log("error: ", err);
+      result(null, err);
+      return;
+    }
+    // console.log("users: ", res);
+    result(null, res);
+  });
+};
+
+Absensi.listAbsensiAktif = (deskripsi, school_id, status, result) => {
+  let query = `SELECT 
+    ROW_NUMBER() OVER () AS no, 
+    a.*, 
+    s.school_name, 
+    u.unit_name, 
+    ac.activity_name, 
+    ss.subject_name
+FROM 
+    setting_absensi a
+JOIN 
+    school s ON a.school_id = s.id
+JOIN 
+    unit u ON a.unit_id = u.id
+LEFT JOIN 
+    activities ac ON a.activity_id = ac.id
+LEFT JOIN 
+    subjects ss ON a.subject_id = ss.id
+`;
+
+  if (deskripsi) {
+    query += ` AND a.deskripsi like '%${deskripsi}%'`;
+  }
+  if (school_id) {
+    query += ` AND a.school_id = '${school_id}'`;
+  }
+  if (status) {
+    query += ` AND a.status = '${status}'`;
+  }
+// console.log(query);
 
   db.query(query, (err, res) => {
     if (err) {
@@ -305,38 +362,70 @@ Absensi.laporanAbsensiActivityByUserId = (
       u.full_name,
       un.unit_name,
       c.class_name,
+      
       -- Dynamically adding columns for each day of the current month (1 to 31)
-      MAX(CASE WHEN DAY(dt.date_column) = 1 THEN a.status ELSE NULL END) AS day_1,
-      MAX(CASE WHEN DAY(dt.date_column) = 2 THEN a.status ELSE NULL END) AS day_2,
-      MAX(CASE WHEN DAY(dt.date_column) = 3 THEN a.status ELSE NULL END) AS day_3,
-      MAX(CASE WHEN DAY(dt.date_column) = 4 THEN a.status ELSE NULL END) AS day_4,
-      MAX(CASE WHEN DAY(dt.date_column) = 5 THEN a.status ELSE NULL END) AS day_5,
-      MAX(CASE WHEN DAY(dt.date_column) = 6 THEN a.status ELSE NULL END) AS day_6,
-      MAX(CASE WHEN DAY(dt.date_column) = 7 THEN a.status ELSE NULL END) AS day_7,
-      MAX(CASE WHEN DAY(dt.date_column) = 8 THEN a.status ELSE NULL END) AS day_8,
-      MAX(CASE WHEN DAY(dt.date_column) = 9 THEN a.status ELSE NULL END) AS day_9,
-      MAX(CASE WHEN DAY(dt.date_column) = 10 THEN a.status ELSE NULL END) AS day_10,
-      MAX(CASE WHEN DAY(dt.date_column) = 11 THEN a.status ELSE NULL END) AS day_11,
-      MAX(CASE WHEN DAY(dt.date_column) = 12 THEN a.status ELSE NULL END) AS day_12,
-      MAX(CASE WHEN DAY(dt.date_column) = 13 THEN a.status ELSE NULL END) AS day_13,
-      MAX(CASE WHEN DAY(dt.date_column) = 14 THEN a.status ELSE NULL END) AS day_14,
-      MAX(CASE WHEN DAY(dt.date_column) = 15 THEN a.status ELSE NULL END) AS day_15,
-      MAX(CASE WHEN DAY(dt.date_column) = 16 THEN a.status ELSE NULL END) AS day_16,
-      MAX(CASE WHEN DAY(dt.date_column) = 17 THEN a.status ELSE NULL END) AS day_17,
-      MAX(CASE WHEN DAY(dt.date_column) = 18 THEN a.status ELSE NULL END) AS day_18,
-      MAX(CASE WHEN DAY(dt.date_column) = 19 THEN a.status ELSE NULL END) AS day_19,
-      MAX(CASE WHEN DAY(dt.date_column) = 20 THEN a.status ELSE NULL END) AS day_20,
-      MAX(CASE WHEN DAY(dt.date_column) = 21 THEN a.status ELSE NULL END) AS day_21,
-      MAX(CASE WHEN DAY(dt.date_column) = 22 THEN a.status ELSE NULL END) AS day_22,
-      MAX(CASE WHEN DAY(dt.date_column) = 23 THEN a.status ELSE NULL END) AS day_23,
-      MAX(CASE WHEN DAY(dt.date_column) = 24 THEN a.status ELSE NULL END) AS day_24,
-      MAX(CASE WHEN DAY(dt.date_column) = 25 THEN a.status ELSE NULL END) AS day_25,
-      MAX(CASE WHEN DAY(dt.date_column) = 26 THEN a.status ELSE NULL END) AS day_26,
-      MAX(CASE WHEN DAY(dt.date_column) = 27 THEN a.status ELSE NULL END) AS day_27,
-      MAX(CASE WHEN DAY(dt.date_column) = 28 THEN a.status ELSE NULL END) AS day_28,
-      MAX(CASE WHEN DAY(dt.date_column) = 29 THEN a.status ELSE NULL END) AS day_29,
-      MAX(CASE WHEN DAY(dt.date_column) = 30 THEN a.status ELSE NULL END) AS day_30,
-      MAX(CASE WHEN DAY(dt.date_column) = 31 THEN a.status ELSE NULL END) AS day_31
+      MAX(CASE WHEN DAY(dt.date_column) = 1 AND a.type = 'MASUK' THEN a.status ELSE NULL END) AS day_1_M,
+    MAX(CASE WHEN DAY(dt.date_column) = 1 AND a.type = 'KELUAR' THEN a.status ELSE NULL END) AS day_1_K,
+    MAX(CASE WHEN DAY(dt.date_column) = 2 AND a.type = 'MASUK' THEN a.status ELSE NULL END) AS day_2_M,
+    MAX(CASE WHEN DAY(dt.date_column) = 2 AND a.type = 'KELUAR' THEN a.status ELSE NULL END) AS day_2_K,
+    MAX(CASE WHEN DAY(dt.date_column) = 3 AND a.type = 'MASUK' THEN a.status ELSE NULL END) AS day_3_M,
+    MAX(CASE WHEN DAY(dt.date_column) = 3 AND a.type = 'KELUAR' THEN a.status ELSE NULL END) AS day_3_K,
+    MAX(CASE WHEN DAY(dt.date_column) = 4 AND a.type = 'MASUK' THEN a.status ELSE NULL END) AS day_4_M,
+    MAX(CASE WHEN DAY(dt.date_column) = 4 AND a.type = 'KELUAR' THEN a.status ELSE NULL END) AS day_4_K,
+    MAX(CASE WHEN DAY(dt.date_column) = 5 AND a.type = 'MASUK' THEN a.status ELSE NULL END) AS day_5_M,
+    MAX(CASE WHEN DAY(dt.date_column) = 5 AND a.type = 'KELUAR' THEN a.status ELSE NULL END) AS day_5_K,
+    MAX(CASE WHEN DAY(dt.date_column) = 6 AND a.type = 'MASUK' THEN a.status ELSE NULL END) AS day_6_M,
+    MAX(CASE WHEN DAY(dt.date_column) = 6 AND a.type = 'KELUAR' THEN a.status ELSE NULL END) AS day_6_K,
+    MAX(CASE WHEN DAY(dt.date_column) = 7 AND a.type = 'MASUK' THEN a.status ELSE NULL END) AS day_7_M,
+    MAX(CASE WHEN DAY(dt.date_column) = 7 AND a.type = 'KELUAR' THEN a.status ELSE NULL END) AS day_7_K,
+    MAX(CASE WHEN DAY(dt.date_column) = 8 AND a.type = 'MASUK' THEN a.status ELSE NULL END) AS day_8_M,
+    MAX(CASE WHEN DAY(dt.date_column) = 8 AND a.type = 'KELUAR' THEN a.status ELSE NULL END) AS day_8_K,
+    MAX(CASE WHEN DAY(dt.date_column) = 9 AND a.type = 'MASUK' THEN a.status ELSE NULL END) AS day_9_M,
+    MAX(CASE WHEN DAY(dt.date_column) = 9 AND a.type = 'KELUAR' THEN a.status ELSE NULL END) AS day_9_K,
+    MAX(CASE WHEN DAY(dt.date_column) = 10 AND a.type = 'MASUK' THEN a.status ELSE NULL END) AS day_10_M,
+    MAX(CASE WHEN DAY(dt.date_column) = 10 AND a.type = 'KELUAR' THEN a.status ELSE NULL END) AS day_10_K,
+    MAX(CASE WHEN DAY(dt.date_column) = 11 AND a.type = 'MASUK' THEN a.status ELSE NULL END) AS day_11_M,
+    MAX(CASE WHEN DAY(dt.date_column) = 11 AND a.type = 'KELUAR' THEN a.status ELSE NULL END) AS day_11_K,
+    MAX(CASE WHEN DAY(dt.date_column) = 12 AND a.type = 'MASUK' THEN a.status ELSE NULL END) AS day_12_M,
+    MAX(CASE WHEN DAY(dt.date_column) = 12 AND a.type = 'KELUAR' THEN a.status ELSE NULL END) AS day_12_K,
+    MAX(CASE WHEN DAY(dt.date_column) = 13 AND a.type = 'MASUK' THEN a.status ELSE NULL END) AS day_13_M,
+    MAX(CASE WHEN DAY(dt.date_column) = 13 AND a.type = 'KELUAR' THEN a.status ELSE NULL END) AS day_13_K,
+    MAX(CASE WHEN DAY(dt.date_column) = 14 AND a.type = 'MASUK' THEN a.status ELSE NULL END) AS day_14_M,
+    MAX(CASE WHEN DAY(dt.date_column) = 14 AND a.type = 'KELUAR' THEN a.status ELSE NULL END) AS day_14_K,
+    MAX(CASE WHEN DAY(dt.date_column) = 15 AND a.type = 'MASUK' THEN a.status ELSE NULL END) AS day_15_M,
+    MAX(CASE WHEN DAY(dt.date_column) = 15 AND a.type = 'KELUAR' THEN a.status ELSE NULL END) AS day_15_K,
+    MAX(CASE WHEN DAY(dt.date_column) = 16 AND a.type = 'MASUK' THEN a.status ELSE NULL END) AS day_16_M,
+    MAX(CASE WHEN DAY(dt.date_column) = 16 AND a.type = 'KELUAR' THEN a.status ELSE NULL END) AS day_16_K,
+    MAX(CASE WHEN DAY(dt.date_column) = 17 AND a.type = 'MASUK' THEN a.status ELSE NULL END) AS day_17_M,
+    MAX(CASE WHEN DAY(dt.date_column) = 17 AND a.type = 'KELUAR' THEN a.status ELSE NULL END) AS day_17_K,
+    MAX(CASE WHEN DAY(dt.date_column) = 18 AND a.type = 'MASUK' THEN a.status ELSE NULL END) AS day_18_M,
+    MAX(CASE WHEN DAY(dt.date_column) = 18 AND a.type = 'KELUAR' THEN a.status ELSE NULL END) AS day_18_K,
+    MAX(CASE WHEN DAY(dt.date_column) = 19 AND a.type = 'MASUK' THEN a.status ELSE NULL END) AS day_19_M,
+    MAX(CASE WHEN DAY(dt.date_column) = 19 AND a.type = 'KELUAR' THEN a.status ELSE NULL END) AS day_19_K,
+    MAX(CASE WHEN DAY(dt.date_column) = 20 AND a.type = 'MASUK' THEN a.status ELSE NULL END) AS day_20_M,
+    MAX(CASE WHEN DAY(dt.date_column) = 20 AND a.type = 'KELUAR' THEN a.status ELSE NULL END) AS day_20_K,
+    MAX(CASE WHEN DAY(dt.date_column) = 21 AND a.type = 'MASUK' THEN a.status ELSE NULL END) AS day_21_M,
+    MAX(CASE WHEN DAY(dt.date_column) = 21 AND a.type = 'KELUAR' THEN a.status ELSE NULL END) AS day_21_K,
+    MAX(CASE WHEN DAY(dt.date_column) = 22 AND a.type = 'MASUK' THEN a.status ELSE NULL END) AS day_22_M,
+    MAX(CASE WHEN DAY(dt.date_column) = 22 AND a.type = 'KELUAR' THEN a.status ELSE NULL END) AS day_22_K,
+    MAX(CASE WHEN DAY(dt.date_column) = 23 AND a.type = 'MASUK' THEN a.status ELSE NULL END) AS day_23_M,
+    MAX(CASE WHEN DAY(dt.date_column) = 23 AND a.type = 'KELUAR' THEN a.status ELSE NULL END) AS day_23_K,
+    MAX(CASE WHEN DAY(dt.date_column) = 24 AND a.type = 'MASUK' THEN a.status ELSE NULL END) AS day_24_M,
+    MAX(CASE WHEN DAY(dt.date_column) = 24 AND a.type = 'KELUAR' THEN a.status ELSE NULL END) AS day_24_K,
+    MAX(CASE WHEN DAY(dt.date_column) = 25 AND a.type = 'MASUK' THEN a.status ELSE NULL END) AS day_25_M,
+    MAX(CASE WHEN DAY(dt.date_column) = 25 AND a.type = 'KELUAR' THEN a.status ELSE NULL END) AS day_25_K,
+    MAX(CASE WHEN DAY(dt.date_column) = 26 AND a.type = 'MASUK' THEN a.status ELSE NULL END) AS day_26_M,
+    MAX(CASE WHEN DAY(dt.date_column) = 26 AND a.type = 'KELUAR' THEN a.status ELSE NULL END) AS day_26_K,
+    MAX(CASE WHEN DAY(dt.date_column) = 27 AND a.type = 'MASUK' THEN a.status ELSE NULL END) AS day_27_M,
+    MAX(CASE WHEN DAY(dt.date_column) = 27 AND a.type = 'KELUAR' THEN a.status ELSE NULL END) AS day_27_K,
+    MAX(CASE WHEN DAY(dt.date_column) = 28 AND a.type = 'MASUK' THEN a.status ELSE NULL END) AS day_28_M,
+    MAX(CASE WHEN DAY(dt.date_column) = 28 AND a.type = 'KELUAR' THEN a.status ELSE NULL END) AS day_28_K,
+    MAX(CASE WHEN DAY(dt.date_column) = 29 AND a.type = 'MASUK' THEN a.status ELSE NULL END) AS day_29_M,
+    MAX(CASE WHEN DAY(dt.date_column) = 29 AND a.type = 'KELUAR' THEN a.status ELSE NULL END) AS day_29_K,
+    MAX(CASE WHEN DAY(dt.date_column) = 30 AND a.type = 'MASUK' THEN a.status ELSE NULL END) AS day_30_M,
+    MAX(CASE WHEN DAY(dt.date_column) = 30 AND a.type = 'KELUAR' THEN a.status ELSE NULL END) AS day_30_K,
+    MAX(CASE WHEN DAY(dt.date_column) = 31 AND a.type = 'MASUK' THEN a.status ELSE NULL END) AS day_31_M,
+    MAX(CASE WHEN DAY(dt.date_column) = 31 AND a.type = 'KELUAR' THEN a.status ELSE NULL END) AS day_31_K
     FROM
       users u
     JOIN
@@ -430,7 +519,7 @@ Absensi.laporanAbsensiActivityByUserId = (
   query += ` GROUP BY
     u.id, u.full_name, un.unit_name, c.class_name`;
 
-  // console.log(full_name);
+  console.log(query);
 
   db.query(query, (err, res) => {
     if (err) {
@@ -480,37 +569,68 @@ Absensi.laporanAbsensiSubjectByUserId = (
       un.unit_name,
       c.class_name,
       -- Dynamically adding columns for each day of the current month (1 to 31)
-      MAX(CASE WHEN DAY(dt.date_column) = 1 THEN a.status ELSE NULL END) AS day_1,
-      MAX(CASE WHEN DAY(dt.date_column) = 2 THEN a.status ELSE NULL END) AS day_2,
-      MAX(CASE WHEN DAY(dt.date_column) = 3 THEN a.status ELSE NULL END) AS day_3,
-      MAX(CASE WHEN DAY(dt.date_column) = 4 THEN a.status ELSE NULL END) AS day_4,
-      MAX(CASE WHEN DAY(dt.date_column) = 5 THEN a.status ELSE NULL END) AS day_5,
-      MAX(CASE WHEN DAY(dt.date_column) = 6 THEN a.status ELSE NULL END) AS day_6,
-      MAX(CASE WHEN DAY(dt.date_column) = 7 THEN a.status ELSE NULL END) AS day_7,
-      MAX(CASE WHEN DAY(dt.date_column) = 8 THEN a.status ELSE NULL END) AS day_8,
-      MAX(CASE WHEN DAY(dt.date_column) = 9 THEN a.status ELSE NULL END) AS day_9,
-      MAX(CASE WHEN DAY(dt.date_column) = 10 THEN a.status ELSE NULL END) AS day_10,
-      MAX(CASE WHEN DAY(dt.date_column) = 11 THEN a.status ELSE NULL END) AS day_11,
-      MAX(CASE WHEN DAY(dt.date_column) = 12 THEN a.status ELSE NULL END) AS day_12,
-      MAX(CASE WHEN DAY(dt.date_column) = 13 THEN a.status ELSE NULL END) AS day_13,
-      MAX(CASE WHEN DAY(dt.date_column) = 14 THEN a.status ELSE NULL END) AS day_14,
-      MAX(CASE WHEN DAY(dt.date_column) = 15 THEN a.status ELSE NULL END) AS day_15,
-      MAX(CASE WHEN DAY(dt.date_column) = 16 THEN a.status ELSE NULL END) AS day_16,
-      MAX(CASE WHEN DAY(dt.date_column) = 17 THEN a.status ELSE NULL END) AS day_17,
-      MAX(CASE WHEN DAY(dt.date_column) = 18 THEN a.status ELSE NULL END) AS day_18,
-      MAX(CASE WHEN DAY(dt.date_column) = 19 THEN a.status ELSE NULL END) AS day_19,
-      MAX(CASE WHEN DAY(dt.date_column) = 20 THEN a.status ELSE NULL END) AS day_20,
-      MAX(CASE WHEN DAY(dt.date_column) = 21 THEN a.status ELSE NULL END) AS day_21,
-      MAX(CASE WHEN DAY(dt.date_column) = 22 THEN a.status ELSE NULL END) AS day_22,
-      MAX(CASE WHEN DAY(dt.date_column) = 23 THEN a.status ELSE NULL END) AS day_23,
-      MAX(CASE WHEN DAY(dt.date_column) = 24 THEN a.status ELSE NULL END) AS day_24,
-      MAX(CASE WHEN DAY(dt.date_column) = 25 THEN a.status ELSE NULL END) AS day_25,
-      MAX(CASE WHEN DAY(dt.date_column) = 26 THEN a.status ELSE NULL END) AS day_26,
-      MAX(CASE WHEN DAY(dt.date_column) = 27 THEN a.status ELSE NULL END) AS day_27,
-      MAX(CASE WHEN DAY(dt.date_column) = 28 THEN a.status ELSE NULL END) AS day_28,
-      MAX(CASE WHEN DAY(dt.date_column) = 29 THEN a.status ELSE NULL END) AS day_29,
-      MAX(CASE WHEN DAY(dt.date_column) = 30 THEN a.status ELSE NULL END) AS day_30,
-      MAX(CASE WHEN DAY(dt.date_column) = 31 THEN a.status ELSE NULL END) AS day_31
+      MAX(CASE WHEN DAY(dt.date_column) = 1 AND a.type = 'MASUK' THEN a.status ELSE NULL END) AS day_1_M,
+    MAX(CASE WHEN DAY(dt.date_column) = 1 AND a.type = 'KELUAR' THEN a.status ELSE NULL END) AS day_1_K,
+    MAX(CASE WHEN DAY(dt.date_column) = 2 AND a.type = 'MASUK' THEN a.status ELSE NULL END) AS day_2_M,
+    MAX(CASE WHEN DAY(dt.date_column) = 2 AND a.type = 'KELUAR' THEN a.status ELSE NULL END) AS day_2_K,
+    MAX(CASE WHEN DAY(dt.date_column) = 3 AND a.type = 'MASUK' THEN a.status ELSE NULL END) AS day_3_M,
+    MAX(CASE WHEN DAY(dt.date_column) = 3 AND a.type = 'KELUAR' THEN a.status ELSE NULL END) AS day_3_K,
+    MAX(CASE WHEN DAY(dt.date_column) = 4 AND a.type = 'MASUK' THEN a.status ELSE NULL END) AS day_4_M,
+    MAX(CASE WHEN DAY(dt.date_column) = 4 AND a.type = 'KELUAR' THEN a.status ELSE NULL END) AS day_4_K,
+    MAX(CASE WHEN DAY(dt.date_column) = 5 AND a.type = 'MASUK' THEN a.status ELSE NULL END) AS day_5_M,
+    MAX(CASE WHEN DAY(dt.date_column) = 5 AND a.type = 'KELUAR' THEN a.status ELSE NULL END) AS day_5_K,
+    MAX(CASE WHEN DAY(dt.date_column) = 6 AND a.type = 'MASUK' THEN a.status ELSE NULL END) AS day_6_M,
+    MAX(CASE WHEN DAY(dt.date_column) = 6 AND a.type = 'KELUAR' THEN a.status ELSE NULL END) AS day_6_K,
+    MAX(CASE WHEN DAY(dt.date_column) = 7 AND a.type = 'MASUK' THEN a.status ELSE NULL END) AS day_7_M,
+    MAX(CASE WHEN DAY(dt.date_column) = 7 AND a.type = 'KELUAR' THEN a.status ELSE NULL END) AS day_7_K,
+    MAX(CASE WHEN DAY(dt.date_column) = 8 AND a.type = 'MASUK' THEN a.status ELSE NULL END) AS day_8_M,
+    MAX(CASE WHEN DAY(dt.date_column) = 8 AND a.type = 'KELUAR' THEN a.status ELSE NULL END) AS day_8_K,
+    MAX(CASE WHEN DAY(dt.date_column) = 9 AND a.type = 'MASUK' THEN a.status ELSE NULL END) AS day_9_M,
+    MAX(CASE WHEN DAY(dt.date_column) = 9 AND a.type = 'KELUAR' THEN a.status ELSE NULL END) AS day_9_K,
+    MAX(CASE WHEN DAY(dt.date_column) = 10 AND a.type = 'MASUK' THEN a.status ELSE NULL END) AS day_10_M,
+    MAX(CASE WHEN DAY(dt.date_column) = 10 AND a.type = 'KELUAR' THEN a.status ELSE NULL END) AS day_10_K,
+    MAX(CASE WHEN DAY(dt.date_column) = 11 AND a.type = 'MASUK' THEN a.status ELSE NULL END) AS day_11_M,
+    MAX(CASE WHEN DAY(dt.date_column) = 11 AND a.type = 'KELUAR' THEN a.status ELSE NULL END) AS day_11_K,
+    MAX(CASE WHEN DAY(dt.date_column) = 12 AND a.type = 'MASUK' THEN a.status ELSE NULL END) AS day_12_M,
+    MAX(CASE WHEN DAY(dt.date_column) = 12 AND a.type = 'KELUAR' THEN a.status ELSE NULL END) AS day_12_K,
+    MAX(CASE WHEN DAY(dt.date_column) = 13 AND a.type = 'MASUK' THEN a.status ELSE NULL END) AS day_13_M,
+    MAX(CASE WHEN DAY(dt.date_column) = 13 AND a.type = 'KELUAR' THEN a.status ELSE NULL END) AS day_13_K,
+    MAX(CASE WHEN DAY(dt.date_column) = 14 AND a.type = 'MASUK' THEN a.status ELSE NULL END) AS day_14_M,
+    MAX(CASE WHEN DAY(dt.date_column) = 14 AND a.type = 'KELUAR' THEN a.status ELSE NULL END) AS day_14_K,
+    MAX(CASE WHEN DAY(dt.date_column) = 15 AND a.type = 'MASUK' THEN a.status ELSE NULL END) AS day_15_M,
+    MAX(CASE WHEN DAY(dt.date_column) = 15 AND a.type = 'KELUAR' THEN a.status ELSE NULL END) AS day_15_K,
+    MAX(CASE WHEN DAY(dt.date_column) = 16 AND a.type = 'MASUK' THEN a.status ELSE NULL END) AS day_16_M,
+    MAX(CASE WHEN DAY(dt.date_column) = 16 AND a.type = 'KELUAR' THEN a.status ELSE NULL END) AS day_16_K,
+    MAX(CASE WHEN DAY(dt.date_column) = 17 AND a.type = 'MASUK' THEN a.status ELSE NULL END) AS day_17_M,
+    MAX(CASE WHEN DAY(dt.date_column) = 17 AND a.type = 'KELUAR' THEN a.status ELSE NULL END) AS day_17_K,
+    MAX(CASE WHEN DAY(dt.date_column) = 18 AND a.type = 'MASUK' THEN a.status ELSE NULL END) AS day_18_M,
+    MAX(CASE WHEN DAY(dt.date_column) = 18 AND a.type = 'KELUAR' THEN a.status ELSE NULL END) AS day_18_K,
+    MAX(CASE WHEN DAY(dt.date_column) = 19 AND a.type = 'MASUK' THEN a.status ELSE NULL END) AS day_19_M,
+    MAX(CASE WHEN DAY(dt.date_column) = 19 AND a.type = 'KELUAR' THEN a.status ELSE NULL END) AS day_19_K,
+    MAX(CASE WHEN DAY(dt.date_column) = 20 AND a.type = 'MASUK' THEN a.status ELSE NULL END) AS day_20_M,
+    MAX(CASE WHEN DAY(dt.date_column) = 20 AND a.type = 'KELUAR' THEN a.status ELSE NULL END) AS day_20_K,
+    MAX(CASE WHEN DAY(dt.date_column) = 21 AND a.type = 'MASUK' THEN a.status ELSE NULL END) AS day_21_M,
+    MAX(CASE WHEN DAY(dt.date_column) = 21 AND a.type = 'KELUAR' THEN a.status ELSE NULL END) AS day_21_K,
+    MAX(CASE WHEN DAY(dt.date_column) = 22 AND a.type = 'MASUK' THEN a.status ELSE NULL END) AS day_22_M,
+    MAX(CASE WHEN DAY(dt.date_column) = 22 AND a.type = 'KELUAR' THEN a.status ELSE NULL END) AS day_22_K,
+    MAX(CASE WHEN DAY(dt.date_column) = 23 AND a.type = 'MASUK' THEN a.status ELSE NULL END) AS day_23_M,
+    MAX(CASE WHEN DAY(dt.date_column) = 23 AND a.type = 'KELUAR' THEN a.status ELSE NULL END) AS day_23_K,
+    MAX(CASE WHEN DAY(dt.date_column) = 24 AND a.type = 'MASUK' THEN a.status ELSE NULL END) AS day_24_M,
+    MAX(CASE WHEN DAY(dt.date_column) = 24 AND a.type = 'KELUAR' THEN a.status ELSE NULL END) AS day_24_K,
+    MAX(CASE WHEN DAY(dt.date_column) = 25 AND a.type = 'MASUK' THEN a.status ELSE NULL END) AS day_25_M,
+    MAX(CASE WHEN DAY(dt.date_column) = 25 AND a.type = 'KELUAR' THEN a.status ELSE NULL END) AS day_25_K,
+    MAX(CASE WHEN DAY(dt.date_column) = 26 AND a.type = 'MASUK' THEN a.status ELSE NULL END) AS day_26_M,
+    MAX(CASE WHEN DAY(dt.date_column) = 26 AND a.type = 'KELUAR' THEN a.status ELSE NULL END) AS day_26_K,
+    MAX(CASE WHEN DAY(dt.date_column) = 27 AND a.type = 'MASUK' THEN a.status ELSE NULL END) AS day_27_M,
+    MAX(CASE WHEN DAY(dt.date_column) = 27 AND a.type = 'KELUAR' THEN a.status ELSE NULL END) AS day_27_K,
+    MAX(CASE WHEN DAY(dt.date_column) = 28 AND a.type = 'MASUK' THEN a.status ELSE NULL END) AS day_28_M,
+    MAX(CASE WHEN DAY(dt.date_column) = 28 AND a.type = 'KELUAR' THEN a.status ELSE NULL END) AS day_28_K,
+    MAX(CASE WHEN DAY(dt.date_column) = 29 AND a.type = 'MASUK' THEN a.status ELSE NULL END) AS day_29_M,
+    MAX(CASE WHEN DAY(dt.date_column) = 29 AND a.type = 'KELUAR' THEN a.status ELSE NULL END) AS day_29_K,
+    MAX(CASE WHEN DAY(dt.date_column) = 30 AND a.type = 'MASUK' THEN a.status ELSE NULL END) AS day_30_M,
+    MAX(CASE WHEN DAY(dt.date_column) = 30 AND a.type = 'KELUAR' THEN a.status ELSE NULL END) AS day_30_K,
+    MAX(CASE WHEN DAY(dt.date_column) = 31 AND a.type = 'MASUK' THEN a.status ELSE NULL END) AS day_31_M,
+    MAX(CASE WHEN DAY(dt.date_column) = 31 AND a.type = 'KELUAR' THEN a.status ELSE NULL END) AS day_31_K
     FROM
       users u
     JOIN
@@ -650,7 +770,7 @@ Absensi.createActivities = (newData, result) => {
       return;
     }
 
-    console.log("created Absensi: ", { id: res.insertId, ...newData });
+    // console.log("created Absensi: ", { id: res.insertId, ...newData });
     result(null, { id: res.insertId, ...newData });
   });
 };
@@ -670,12 +790,24 @@ Absensi.updateActivities = (newUsers, result) => {
         result({ kind: "not_found" }, null);
         return;
       }
-      console.log("Updated User: ", { id: newUsers.id, ...newUsers });
+      // console.log("Updated User: ", { id: newUsers.id, ...newUsers });
       result(null, { id: newUsers.uid, ...newUsers });
     }
   );
 };
 
+Absensi.deleteAbsensi = (uid, result) => {
+  let query = `DELETE FROM attendance WHERE id = '${uid}'`;
+  db.query(query, (err, res) => {
+    if (err) {
+      console.log("error: ", err);
+      result(err, null);
+      return;
+    }
+    // console.log(`Deleted activities with ID ${uid}`);
+    result(null, res);
+  });
+};
 Absensi.deleteActivities = (uid, result) => {
   let query = `DELETE FROM activities WHERE id = '${uid}'`;
   db.query(query, (err, res) => {
@@ -684,8 +816,22 @@ Absensi.deleteActivities = (uid, result) => {
       result(err, null);
       return;
     }
-    console.log(`Deleted activities with ID ${uid}`);
+    // console.log(`Deleted activities with ID ${uid}`);
     result(null, res);
+  });
+};
+
+Absensi.detailAbsensi = async (id, result) => {
+  let query = "SELECT * from attendance where id = '" + id + "'";
+  db.query(query, (err, res) => {
+    if (err) {
+      console.log("error: ", err);
+      result(null, err);
+      return;
+    }
+
+    // console.log("Activities: ", res);
+    result(null, res[0]);
   });
 };
 
@@ -698,7 +844,7 @@ Absensi.detailActivities = async (id, result) => {
       return;
     }
 
-    console.log("Activities: ", res);
+    // console.log("Activities: ", res);
     result(null, res[0]);
   });
 };

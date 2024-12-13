@@ -88,10 +88,14 @@ module.exports = (app) => {
   router.get("/list-absensi-subjects-by-userId", token.authenticateToken, Absensi.listAbsensiSubjectsByUserId);
   router.get("/laporan-absensi-kegiatan-by-userId", token.authenticateToken, Absensi.laporanAbsensiActivityByUserId);
   router.get("/laporan-absensi-mataPelajaran-by-userId", token.authenticateToken, Absensi.laporanAbsensiSubjectByUserId);
+
   router.post("/create-absensi", token.authenticateToken, Absensi.createAbsensi);
-  // router.post("/update-activities", token.authenticateToken, Absensi.updateActivities);
-  // router.post("/delete-activities", token.authenticateToken, Absensi.deleteActivities);
-  // router.post("/detailActivities", token.authenticateToken, Absensi.detailActivities);
+  router.post("/update-absensi", token.authenticateToken, Absensi.updateAbsensi);
+  router.post("/delete-absensi", token.authenticateToken, Absensi.deleteAbsensi);
+  router.post("/detailAbsensi", token.authenticateToken, Absensi.detailAbsensi);
+
+  router.get("/list-absensi-aktif", token.authenticateToken, Absensi.listAbsensiAktif);
+  router.post("/create-absensi-aktif", token.authenticateToken, Absensi.createAbsensiAktif);
   //activities
   router.get("/list-activities", token.authenticateToken, Absensi.listActivities);
   router.post("/create-activities", token.authenticateToken, Absensi.createActivities);
@@ -268,6 +272,7 @@ module.exports = (app) => {
   router.get("/getDataMaster", token.authenticateToken, general.getDataMaster);
   router.get("/getUnits", general.getUnit);
   router.get("/getListPpdbActive", general.getListPpdbActive);
+  router.get("/getDataAbsensiFromToken", general.getDataAbsensiFromToken);
   router.get("/get-list-balance-by-userId",token.authenticateToken, general.getListBalanceByUserId);
   router.get("/get-riwayat-topup-by-userId",token.authenticateToken, general.getRiwayatToUpByUserId);
   router.post("/forgot-password", general.forgetPassword);

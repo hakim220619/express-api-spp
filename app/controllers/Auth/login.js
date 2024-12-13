@@ -33,7 +33,7 @@ exports.login = async (req, res) => {
     const isEmail = emailOrnisn.includes("@");
 
     if (isEmail) {
-      query = `SELECT u.id, u.saldo, u.phone, u.full_name, u.password, u.image, u.role, u.school_id, r.role_name, a.owner, a.title, a.aplikasi_name, a.logo, a.copy_right, s.school_name 
+      query = `SELECT u.id, u.saldo, u.phone, u.full_name, u.password, u.image, u.role, u.school_id, r.role_name, a.owner, a.title, a.aplikasi_name, a.versi, a.logo, a.copy_right, s.school_name 
                FROM users u
                JOIN role r ON u.role = r.id
                JOIN aplikasi a ON u.school_id = a.school_id
@@ -41,7 +41,7 @@ exports.login = async (req, res) => {
                WHERE u.email = ?`;
       queryValue = emailOrnisn;
     } else {
-      query = `SELECT u.id, u.saldo, u.phone, u.full_name, u.password, u.image, u.role, u.school_id, r.role_name, a.owner, a.title, a.aplikasi_name, a.logo, a.copy_right, s.school_name 
+      query = `SELECT u.id, u.saldo, u.phone, u.full_name, u.password, u.image, u.role, u.school_id, r.role_name, a.owner, a.title, a.aplikasi_name, a.versi, a.logo, a.copy_right, s.school_name 
                FROM users u
                JOIN role r ON u.role = r.id
                JOIN aplikasi a ON u.school_id = a.school_id

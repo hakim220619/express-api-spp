@@ -19,15 +19,26 @@ exports.listAbsensi = (req, res, next) => {
     else res.send(data);
   });
 };
+exports.listAbsensiAktif = (req, res, next) => {
+  const deskripsi = req.query.q;
+  const school_id = req.query.school_id;
+  const status = req.query.status;
 
+  Absensi.listAbsensiAktif(deskripsi, school_id, status, (err, data) => {
+    if (err)
+      res.status(500).send({
+        message: err.message || "Some error occurred while retrieving Data.",
+      });
+    else res.send(data);
+  });
+};
 
 exports.listAbsensiKegiatanByUserId = (req, res, next) => {
   const school_id = req.query.school_id;
   const unit_id = req.query.unit_id;
   const class_id = req.query.class_id;
   const activity_id = req.query.activity_id;
-  const type = 'MASUK';
-
+  const type = req.query.type;
 
   Absensi.listAbsensiKegiatanByUserId(
     school_id,
@@ -50,7 +61,8 @@ exports.listAbsensiSubjectsByUserId = (req, res, next) => {
   const unit_id = req.query.unit_id;
   const class_id = req.query.class_id;
   const subject_id = req.query.subject_id;
-  const type = 'MASUK';
+  const type = req.query.type;
+
 
   Absensi.listAbsensiSubjectsByUserId(
     school_id,
@@ -69,7 +81,6 @@ exports.listAbsensiSubjectsByUserId = (req, res, next) => {
 };
 
 exports.laporanAbsensiActivityByUserId = (req, res, next) => {
-
   const full_name = req.query.q;
   const school_id = req.query.school_id;
   const unit_id = req.query.unit_id;
@@ -77,7 +88,7 @@ exports.laporanAbsensiActivityByUserId = (req, res, next) => {
   const activity_id = req.query.activity_id;
   const selectedMonth = req.query.selectedMonth;
   const year = req.query.year;
-  const type = 'MASUK';
+  const type = "MASUK";
 
   Absensi.laporanAbsensiActivityByUserId(
     full_name,
@@ -99,7 +110,6 @@ exports.laporanAbsensiActivityByUserId = (req, res, next) => {
 };
 
 exports.laporanAbsensiSubjectByUserId = (req, res, next) => {
-
   const full_name = req.query.q;
   const school_id = req.query.school_id;
   const unit_id = req.query.unit_id;
@@ -107,7 +117,7 @@ exports.laporanAbsensiSubjectByUserId = (req, res, next) => {
   const subject_id = req.query.subject_id;
   const selectedMonth = req.query.selectedMonth;
   const year = req.query.year;
-  const type = 'MASUK';
+  const type = "MASUK";
 
   Absensi.laporanAbsensiSubjectByUserId(
     full_name,
@@ -139,8 +149,15 @@ exports.createAbsensi = [
       });
     }
 
-    const { school_id, unit_id, user_id, activity_id, subject_id, status, type } =
-      req.body;
+    const {
+      school_id,
+      unit_id,
+      user_id,
+      activity_id,
+      subject_id,
+      status,
+      type,
+    } = req.body;
 
     try {
       // Create new Absensi object
@@ -154,10 +171,58 @@ exports.createAbsensi = [
         type: type,
         created_at: new Date(),
       };
-      console.log(attendance);
 
       // Save attendance to the database
       Absensi.createAbsensi(attendance, (err, data) => {
+        if (err) {
+          return res.status(500).send({
+            message:
+              err.message || "Some error occurred while creating the Absensi.",
+          });
+        } else {
+          res.send(data);
+        }
+      });
+    } catch (error) {
+      res.status(500).send({ message: "Error creating Absensi" });
+    }
+  },
+];
+exports.createAbsensiAktif = [
+  upload.none(),
+  async (req, res) => {
+    // Validate request
+    if (!req.body) {
+      return res.status(400).send({
+        message: "Content cannot be empty!",
+      });
+    }
+
+    const {
+      school_id,
+      unit_id,
+      activity_id,
+      subject_id,
+      status,
+      deskripsi,
+    } = req.body;
+
+    try {
+      // Create new Absensi object
+      const attendance = {
+        school_id: school_id,
+        unit_id: unit_id,
+        activity_id: activity_id,
+        subject_id: subject_id,
+        status: status,
+        deskripsi: deskripsi,
+        token: uuidv4(),
+        created_at: new Date(),
+      };
+      console.log(attendance);
+
+      // Save attendance to the database
+      Absensi.createAbsensiAktif(attendance, (err, data) => {
         if (err) {
           return res.status(500).send({
             message:
@@ -184,16 +249,18 @@ exports.updateAbsensi = [
     }
 
     try {
-      const kelas = new Absensi({
-        uid: req.body.data.uid,
-        unit_id: req.body.data.unit_id,
-        school_id: req.body.data.school_id,
-        class_name: req.body.data.class_name,
-        class_desc: req.body.data.class_desc,
-        class_status: req.body.data.class_status,
+      const formattedStartTime = dayjs(req.body.data.created_at).format(
+        "YYYY-MM-DD HH:mm:ss"
+      ); // Use dayjs to format the time
+      const Absen = {
+        id: req.body.data.id,
+        created_at: formattedStartTime,
+        status: req.body.data.status,
         updated_at: new Date(),
-      });
-      Absensi.update(kelas, (err, data) => {
+      };
+      // console.log(Absensi);
+
+      Absensi.updateAbsensi(Absen, (err, data) => {
         if (err) {
           return res.status(500).send({
             message:
@@ -238,23 +305,31 @@ exports.createActivities = [
       activity_name,
       start_time_in,
       end_time_in,
+      start_time_out,
+      end_time_out,
       description,
       status,
     } = req.body;
 
     try {
-      // Parse and format start_time_in and end_time_in to ISO format or a database-friendly format
-      const formattedStartTime = dayjs(start_time_in).format(
+    
+      const formattedStartTimeIn = dayjs(start_time_in).format(
         "YYYY-MM-DD HH:mm:ss"
-      ); // Use dayjs to format the time
-      const formattedEndTime = dayjs(end_time_in).format("YYYY-MM-DD HH:mm:ss");
+      );
+      const formattedEndTimeIn = dayjs(end_time_in).format("YYYY-MM-DD HH:mm:ss");
+      const formattedStartTimeOut = dayjs(start_time_in).format(
+        "YYYY-MM-DD HH:mm:ss"
+      );
+      const formattedEndTimeOut = dayjs(end_time_in).format("YYYY-MM-DD HH:mm:ss");
 
       // Create the Activities object
       const Activities = {
         school_id: school_id,
         activity_name: activity_name,
-        start_time_in: formattedStartTime, // Set start time in a proper format
-        end_time_in: formattedEndTime, // Set end time in a proper format
+        start_time_in: formattedStartTimeIn, 
+        end_time_in: formattedEndTimeIn,
+        start_time_out: formattedStartTimeOut, 
+        end_time_out: formattedEndTimeOut,
         description: description,
         status: status,
         created_at: new Date(),
@@ -293,24 +368,32 @@ exports.updateActivities = [
       activity_name,
       start_time_in,
       end_time_in,
+      start_time_out,
+      end_time_out,
       description,
       status,
     } = req.body.data;
 
     try {
-      // Parse and format start_time_in and end_time_in to ISO format or a database-friendly format
-      const formattedStartTime = dayjs(start_time_in).format(
+      
+      const formattedStartTimeIn = dayjs(start_time_in).format(
         "YYYY-MM-DD HH:mm:ss"
-      ); // Use dayjs to format the time
-      const formattedEndTime = dayjs(end_time_in).format("YYYY-MM-DD HH:mm:ss");
+      ); 
+      const formattedEndTimeIn = dayjs(end_time_in).format("YYYY-MM-DD HH:mm:ss");
+      const formattedStartTimeOut = dayjs(start_time_out).format(
+        "YYYY-MM-DD HH:mm:ss"
+      ); 
+      const formattedEndTimeOut = dayjs(end_time_out).format("YYYY-MM-DD HH:mm:ss");
 
-      // Create the Activities object
+    
       const Activities = {
         id,
         school_id: school_id,
         activity_name: activity_name,
-        start_time_in: formattedStartTime, // Set start time in a proper format
-        end_time_in: formattedEndTime, // Set end time in a proper format
+        start_time_in: formattedStartTimeIn,
+        end_time_in: formattedEndTimeIn,
+        start_time_out: formattedStartTimeOut,
+        end_time_out: formattedEndTimeOut,
         description: description,
         status: status,
         updated_at: new Date(),
@@ -336,6 +419,20 @@ exports.updateActivities = [
 ];
 
 // Delete an Admin
+exports.deleteAbsensi = (req, res) => {
+  const uid = req.body.data;
+
+  Absensi.deleteAbsensi(uid, (err, data) => {
+    if (err) {
+      return res.status(500).send({
+        message: err.message || "Some error occurred while deleting the Admin.",
+      });
+    } else {
+      res.send(data);
+    }
+  });
+};
+// Delete an Admin
 exports.deleteActivities = (req, res) => {
   const uid = req.body.data;
 
@@ -354,6 +451,18 @@ exports.detailActivities = (req, res, next) => {
   const id = req.body.id;
 
   Absensi.detailActivities(id, (err, data) => {
+    if (err)
+      res.status(500).send({
+        message:
+          err.message || "Some error occurred while retrieving tutorials.",
+      });
+    else res.send(data);
+  });
+};
+exports.detailAbsensi = (req, res, next) => {
+  const id = req.body.id;
+
+  Absensi.detailAbsensi(id, (err, data) => {
     if (err)
       res.status(500).send({
         message:

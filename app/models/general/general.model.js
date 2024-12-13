@@ -223,9 +223,9 @@ General.getActivities = async (school_id, result) => {
   });
 };
 General.getSubjects = async (school_id, result) => {
-  let query = "SELECT * from subjects where 1=1 ";
+  let query = "SELECT s.*, c.class_name from subjects s, class c where s.class_id=c.id ";
   if (school_id) {
-    query += ` AND school_id = '${school_id}'`;
+    query += ` AND s.school_id = '${school_id}'`;
   }
   db.query(query, (err, res) => {
     if (err) {
@@ -260,6 +260,70 @@ General.getListPpdbActive = async (school_id, result) => {
     result(null, res);
   });
 };
+General.getDataAbsensiFromToken = async (token, result) => {
+  let query = `
+    SELECT sa.*, a.logo, s.address, a.owner, u.unit_name, ac.activity_name, 
+           ac.start_time_in, ac.end_time_in, ac.start_time_out, ac.end_time_out
+    FROM setting_absensi sa
+    INNER JOIN aplikasi a ON sa.school_id = a.school_id
+    INNER JOIN school s ON sa.school_id = s.id
+    INNER JOIN unit u ON sa.unit_id = u.id
+    INNER JOIN activities ac ON sa.activity_id = ac.id
+  `;
+  
+  if (token) {
+    query += ` WHERE sa.token = '${token}'`;
+  }
+
+  console.log('Executing query:', query);
+
+  db.query(query, (err, res) => {
+    if (err) {
+      console.log("Error: ", err);
+      result(null, err);
+      return;
+    }
+
+    // Check if the result is empty
+    if (res.length === 0) {
+      console.log("No data found, checking alternate query...");
+      
+      // Try the alternate query with subjects
+      let fallbackQuery = `
+        SELECT sa.*, a.logo, s.address, a.owner, u.unit_name, sb.subject_name, 
+               sb.start_time_in, sb.end_time_in, sb.start_time_out, sb.end_time_out
+        FROM setting_absensi sa
+        INNER JOIN aplikasi a ON sa.school_id = a.school_id
+        INNER JOIN school s ON sa.school_id = s.id
+        INNER JOIN unit u ON sa.unit_id = u.id
+        INNER JOIN subjects sb ON sa.subject_id = sb.id
+        WHERE sa.token = '${token}'
+      `;
+      
+      console.log('Executing fallback query:', fallbackQuery);
+
+      db.query(fallbackQuery, (err, res) => {
+        if (err) {
+          console.log("Error in fallback query: ", err);
+          result(null, err);
+          return;
+        }
+        
+        // Return the result of the fallback query
+        if (res.length === 0) {
+          console.log("No data found in fallback query.");
+        }
+        result(null, res[0] );
+      });
+    } else {
+      // If data found, return the result
+      result(null, res[0]);
+    }
+  });
+};
+
+
+
 General.getListBalanceByUserId = async (school_id, user_id, result) => {
   let query =
     "select saldo from users where 1=1 ";

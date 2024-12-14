@@ -33,6 +33,19 @@ exports.listAbsensiAktif = (req, res, next) => {
   });
 };
 
+
+exports.listAbsensiByUserId = (req, res, next) => {
+  const user_id = req.query.user_id;
+
+  Absensi.listAbsensiByUserId(user_id, (err, data) => {
+    if (err)
+      res.status(500).send({
+        message: err.message || "Some error occurred while retrieving Data.",
+      });
+    else res.send(data);
+  });
+};
+
 exports.listAbsensiKegiatanByUserId = (req, res, next) => {
   const school_id = req.query.school_id;
   const unit_id = req.query.unit_id;

@@ -213,6 +213,54 @@ LEFT JOIN
   });
 };
 
+Absensi.listAbsensiByUserId = (user_id, result) => {
+  let query = `SELECT ac.activity_name, a.school_id, a.unit_id, a.user_id, a.activity_id, a.subject_id,  (a.created_at) as masuk,
+       (SELECT ad.created_at 
+        FROM attendance ad 
+        WHERE ad.type = 'KELUAR' 
+          AND ad.user_id = '${user_id}' 
+          AND ad.activity_id = a.activity_id ) AS keluar 
+FROM attendance a, activities ac
+WHERE a.activity_id=ac.id
+AND a.user_id = '${user_id}' 
+  AND a.type = 'MASUK' 
+  AND a.activity_id is NOT NULL
+GROUP BY a.activity_id
+
+UNION ALL
+
+SELECT s.subject_name, a.school_id, a.unit_id, a.user_id, a.activity_id, a.subject_id, (a.created_at) as masuk,
+       (SELECT ad.created_at 
+        FROM attendance ad 
+        WHERE ad.type = 'KELUAR' 
+          AND ad.user_id = '${user_id}' 
+          AND ad.subject_id = a.subject_id ) AS KELUAR 
+FROM attendance a, subjects s
+WHERE a.subject_id=s.id 
+  AND	a.user_id = '${user_id}' 
+  AND a.type = 'MASUK' 
+  AND a.subject_id is NOT NULL
+GROUP BY a.subject_id;
+
+
+`;
+
+  // if (deskripsi) {
+  //   query += ` AND a.deskripsi like '%${deskripsi}%'`;
+  // }
+// console.log(query);
+
+  db.query(query, (err, res) => {
+    if (err) {
+      console.log("error: ", err);
+      result(null, err);
+      return;
+    }
+    // console.log("users: ", res);
+    result(null, res);
+  });
+};
+
 Absensi.listAbsensiKegiatanByUserId = (
   school_id,
   unit_id,

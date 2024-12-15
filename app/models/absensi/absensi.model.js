@@ -127,7 +127,7 @@ Absensi.updateAbsensi = (newUsers, result) => {
   );
 };
 
-Absensi.listAbsensi = (unit_name, school_id, status, result) => {
+Absensi.listAbsensi = (full_name, school_id, status, result) => {
   let query = `SELECT 
     ROW_NUMBER() OVER () AS no, 
     a.*, 
@@ -147,11 +147,11 @@ JOIN
 LEFT JOIN 
     activities ac ON a.activity_id = ac.id
 LEFT JOIN 
-    subjects ss ON a.subject_id = ss.id
+    subjects ss ON a.subject_id = ss.id where 1=1 
 `;
 
-  if (unit_name) {
-    query += ` AND us.full_name like '%${unit_name}%'`;
+  if (full_name) {
+    query += ` AND us.full_name like '%${full_name}%'`;
   }
   if (school_id) {
     query += ` AND a.school_id = '${school_id}'`;
@@ -160,6 +160,7 @@ LEFT JOIN
     query += ` AND a.status = '${status}'`;
   }
 query += ' ORDER BY a.created_at desc'
+
   db.query(query, (err, res) => {
     if (err) {
       console.log("error: ", err);
@@ -188,7 +189,7 @@ JOIN
 LEFT JOIN 
     activities ac ON a.activity_id = ac.id
 LEFT JOIN 
-    subjects ss ON a.subject_id = ss.id
+    subjects ss ON a.subject_id = ss.id where 1=1
 `;
 
   if (deskripsi) {

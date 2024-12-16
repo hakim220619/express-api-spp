@@ -96,6 +96,7 @@ module.exports = (app) => {
 
   router.get("/list-absensi-by-userId", token.authenticateToken, Absensi.listAbsensiByUserId);
   router.get("/list-absensi-aktif", token.authenticateToken, Absensi.listAbsensiAktif);
+  router.post("/absensi-with-token", Absensi.createAbsensiWithToken);
   router.post("/create-absensi-aktif", token.authenticateToken, Absensi.createAbsensiAktif);
   //activities
   router.get("/list-activities", token.authenticateToken, Absensi.listActivities);

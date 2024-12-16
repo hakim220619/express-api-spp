@@ -132,7 +132,6 @@ exports.getListPpdbActive = (req, res, next) => {
 };
 exports.getDataAbsensiFromToken = (req, res, next) => {
   const token = req.query.token;
-console.log(req.query);
 
   General.getDataAbsensiFromToken(token, (err, data) => {
     if (err)

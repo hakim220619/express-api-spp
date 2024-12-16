@@ -18,6 +18,121 @@ Absensi.createAbsensiAktif = (newUsers, result) => {
     result(null, { id: res.insertId, ...newUsers });
   });
 };
+Absensi.createAbsensiWithToken = (newUsers, result) => {
+  const { token, nisn, activity_id, subject_id, type, status, school_id } =
+    newUsers;
+
+  // Step 1: Check if a record with the provided token exists in setting_absensi
+  db.query(
+    "SELECT * FROM setting_absensi WHERE token = ?",
+    [token],
+    (err, res) => {
+      if (err) {
+        console.log("Error checking setting_absensi:", err);
+        result(err, null);
+        return;
+      }
+
+      if (res.length > 0) {
+        // Token exists in setting_absensi, now check if the user exists in the users table
+        db.query(
+          `SELECT u.*, c.class_name, m.major_name, ut.unit_name FROM users u, class c, major m, unit ut 
+WHERE u.class_id=c.id 
+AND u.major_id=m.id 
+AND u.unit_id=ut.id
+AND u.nisn = ?`,
+          [nisn],
+          (err, userRes) => {
+            if (err) {
+              console.log("Error checking users table:", err);
+              result(err, null);
+              return;
+            }
+
+            if (userRes.length > 0) {
+              // User exists, now check if attendance has been recorded for this user
+
+              const userId = userRes[0].id;
+              const unit_id = userRes[0].unit_id;
+
+              // Step 2: Dynamically build the query based on whether activity_id is provided or not
+              let query;
+
+              if (activity_id != 0) {
+                // If activity_id is provided, check based on activity_id
+                console.log("asd");
+                query = `SELECT * FROM attendance WHERE school_id = '${school_id}' AND user_id = '${userId}' AND unit_id = '${unit_id}' AND activity_id = '${activity_id}' AND type = '${type}' AND DATE(created_at) = CURDATE()`;
+              } else {
+                // If activity_id is not provided, check based on subject_id
+                console.log("123");
+                query = `SELECT * FROM attendance WHERE school_id = '${school_id}' AND user_id = '${userId}' AND unit_id = '${unit_id}' AND subject_id = '${subject_id}' AND type = '${type}' AND DATE(created_at) = CURDATE()`;
+              }
+
+              // Execute the dynamic query
+              db.query(query, (err, attendanceRes) => {
+                if (err) {
+                  console.log("Error checking attendance table:", err);
+                  result(err, null);
+                  return;
+                }
+
+                if (attendanceRes.length > 0) {
+                  // Attendance for today already recorded for the same activity/subject and type
+                  result(
+                    {
+                      message:
+                        "Attendance already recorded for this activity and subject today.",
+                    },
+                    null
+                  );
+                  return;
+                }
+
+                // Step 3: If no attendance recorded, proceed to insert the new entry into attendance
+                const attendanceData = {
+                  school_id: school_id, // School ID
+                  unit_id: unit_id, // Unit ID
+                  user_id: userId, // User ID (from users table)
+                  activity_id: activity_id || null, // Either activity_id or subject_id will be used
+                  subject_id: subject_id || null, // Either subject_id or activity_id will be used
+                  status: status, // Status (absen, hadir, etc.)
+                  type: type, // Type (e.g., 'absensi', 'kehadiran')
+                  created_at: new Date(), // Current date and time
+                };
+                console.log(attendanceData);
+
+                // Insert the attendance data into the attendance table
+                db.query(
+                  "INSERT INTO attendance SET ?",
+                  attendanceData,
+                  (err, insertRes) => {
+                    if (err) {
+                      console.log("Error inserting into attendance:", err);
+                      result(err, null);
+                      return;
+                    }
+
+                    console.log("Created attendance record: ", {
+                      id: insertRes.insertId,
+                      ...attendanceData,
+                    });
+                    result(null, { id: insertRes.insertId, ...attendanceData, dataUsers: userRes[0] });
+                  }
+                );
+              });
+            } else {
+              // User not found in the users table
+              result({ message: "User not found for the given nisn." }, null);
+            }
+          }
+        );
+      } else {
+        // Token does not exist in setting_absensi
+        result({ message: "Invalid token or token not found." }, null);
+      }
+    }
+  );
+};
 
 Absensi.createAbsensi = (newUsers, result) => {
   console.log("New Users Data:", newUsers);
@@ -102,11 +217,9 @@ Absensi.createAbsensi = (newUsers, result) => {
   result(null, { message: "Attendance creation process started." });
 };
 
-
-
 Absensi.updateAbsensi = (newUsers, result) => {
   console.log(newUsers);
-  
+
   db.query(
     "UPDATE attendance SET ? WHERE id = ?",
     [newUsers, newUsers.id],
@@ -159,7 +272,7 @@ LEFT JOIN
   if (status) {
     query += ` AND a.status = '${status}'`;
   }
-query += ' ORDER BY a.created_at desc'
+  query += " ORDER BY a.created_at desc";
 
   db.query(query, (err, res) => {
     if (err) {
@@ -201,7 +314,7 @@ LEFT JOIN
   if (status) {
     query += ` AND a.status = '${status}'`;
   }
-// console.log(query);
+  // console.log(query);
 
   db.query(query, (err, res) => {
     if (err) {
@@ -249,7 +362,7 @@ GROUP BY a.subject_id;
   // if (deskripsi) {
   //   query += ` AND a.deskripsi like '%${deskripsi}%'`;
   // }
-// console.log(query);
+  // console.log(query);
 
   db.query(query, (err, res) => {
     if (err) {
@@ -373,7 +486,6 @@ Absensi.listAbsensiSubjectsByUserId = (
   });
 };
 
-
 Absensi.laporanAbsensiActivityByUserId = (
   full_name,
   school_id,
@@ -387,18 +499,18 @@ Absensi.laporanAbsensiActivityByUserId = (
 ) => {
   // Mapping month names to their numeric equivalents
   const monthMapping = {
-    'JANUARI': '01',
-    'FEBRUARI': '02',
-    'MARET': '03',
-    'APRIL': '04',
-    'MEI': '05',
-    'JUNI': '06',
-    'JULI': '07',
-    'AGUSTUS': '08',
-    'SEPTEMBER': '09',
-    'OKTOBER': '10',
-    'NOVEMBER': '11',
-    'DESEMBER': '12'
+    JANUARI: "01",
+    FEBRUARI: "02",
+    MARET: "03",
+    APRIL: "04",
+    MEI: "05",
+    JUNI: "06",
+    JULI: "07",
+    AGUSTUS: "08",
+    SEPTEMBER: "09",
+    OKTOBER: "10",
+    NOVEMBER: "11",
+    DESEMBER: "12",
   };
 
   // Convert selectedMonth from name to number
@@ -593,18 +705,18 @@ Absensi.laporanAbsensiSubjectByUserId = (
 ) => {
   // Mapping month names to their numeric equivalents
   const monthMapping = {
-    'JANUARI': '01',
-    'FEBRUARI': '02',
-    'MARET': '03',
-    'APRIL': '04',
-    'MEI': '05',
-    'JUNI': '06',
-    'JULI': '07',
-    'AGUSTUS': '08',
-    'SEPTEMBER': '09',
-    'OKTOBER': '10',
-    'NOVEMBER': '11',
-    'DESEMBER': '12'
+    JANUARI: "01",
+    FEBRUARI: "02",
+    MARET: "03",
+    APRIL: "04",
+    MEI: "05",
+    JUNI: "06",
+    JULI: "07",
+    AGUSTUS: "08",
+    SEPTEMBER: "09",
+    OKTOBER: "10",
+    NOVEMBER: "11",
+    DESEMBER: "12",
   };
 
   // Convert selectedMonth from name to number
@@ -773,7 +885,6 @@ Absensi.laporanAbsensiSubjectByUserId = (
   query += ` GROUP BY
     u.id, u.full_name, un.unit_name, c.class_name`;
 
-
   db.query(query, (err, res) => {
     if (err) {
       console.log("error: ", err);
@@ -783,8 +894,6 @@ Absensi.laporanAbsensiSubjectByUserId = (
     result(null, res);
   });
 };
-
-
 
 Absensi.listActivities = (activity_name, school_id, status, result) => {
   let query =

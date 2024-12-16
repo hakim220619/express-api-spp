@@ -33,7 +33,6 @@ exports.listAbsensiAktif = (req, res, next) => {
   });
 };
 
-
 exports.listAbsensiByUserId = (req, res, next) => {
   const user_id = req.query.user_id;
 
@@ -75,7 +74,6 @@ exports.listAbsensiSubjectsByUserId = (req, res, next) => {
   const class_id = req.query.class_id;
   const subject_id = req.query.subject_id;
   const type = req.query.type;
-
 
   Absensi.listAbsensiSubjectsByUserId(
     school_id,
@@ -201,6 +199,7 @@ exports.createAbsensi = [
     }
   },
 ];
+
 exports.createAbsensiAktif = [
   upload.none(),
   async (req, res) => {
@@ -211,14 +210,8 @@ exports.createAbsensiAktif = [
       });
     }
 
-    const {
-      school_id,
-      unit_id,
-      activity_id,
-      subject_id,
-      status,
-      deskripsi,
-    } = req.body;
+    const { school_id, unit_id, activity_id, subject_id, status, deskripsi } =
+      req.body;
 
     try {
       // Create new Absensi object
@@ -232,10 +225,50 @@ exports.createAbsensiAktif = [
         token: uuidv4(),
         created_at: new Date(),
       };
-      console.log(attendance);
 
       // Save attendance to the database
       Absensi.createAbsensiAktif(attendance, (err, data) => {
+        if (err) {
+          return res.status(500).send({
+            message:
+              err.message || "Some error occurred while creating the Absensi.",
+          });
+        } else {
+          res.send(data);
+        }
+      });
+    } catch (error) {
+      res.status(500).send({ message: "Error creating Absensi" });
+    }
+  },
+];
+
+exports.createAbsensiWithToken = [
+  upload.none(),
+  async (req, res) => {
+    // Validate request
+    if (!req.body) {
+      return res.status(400).send({
+        message: "Content cannot be empty!",
+      });
+    }
+
+    const { school_id, nisn, token,activity_id, subject_id, type, status } = req.body;
+
+    try {
+      // Create new Absensi object
+      const attendance = {
+        school_id: school_id,
+        nisn: nisn,
+        token: token,
+        activity_id: activity_id,
+        subject_id: subject_id,
+        type: type,
+        status: status,
+      };
+console.log(attendance);
+
+      Absensi.createAbsensiWithToken(attendance, (err, data) => {
         if (err) {
           return res.status(500).send({
             message:
@@ -325,23 +358,26 @@ exports.createActivities = [
     } = req.body;
 
     try {
-    
       const formattedStartTimeIn = dayjs(start_time_in).format(
         "YYYY-MM-DD HH:mm:ss"
       );
-      const formattedEndTimeIn = dayjs(end_time_in).format("YYYY-MM-DD HH:mm:ss");
+      const formattedEndTimeIn = dayjs(end_time_in).format(
+        "YYYY-MM-DD HH:mm:ss"
+      );
       const formattedStartTimeOut = dayjs(start_time_in).format(
         "YYYY-MM-DD HH:mm:ss"
       );
-      const formattedEndTimeOut = dayjs(end_time_in).format("YYYY-MM-DD HH:mm:ss");
+      const formattedEndTimeOut = dayjs(end_time_in).format(
+        "YYYY-MM-DD HH:mm:ss"
+      );
 
       // Create the Activities object
       const Activities = {
         school_id: school_id,
         activity_name: activity_name,
-        start_time_in: formattedStartTimeIn, 
+        start_time_in: formattedStartTimeIn,
         end_time_in: formattedEndTimeIn,
-        start_time_out: formattedStartTimeOut, 
+        start_time_out: formattedStartTimeOut,
         end_time_out: formattedEndTimeOut,
         description: description,
         status: status,
@@ -388,17 +424,19 @@ exports.updateActivities = [
     } = req.body.data;
 
     try {
-      
       const formattedStartTimeIn = dayjs(start_time_in).format(
         "YYYY-MM-DD HH:mm:ss"
-      ); 
-      const formattedEndTimeIn = dayjs(end_time_in).format("YYYY-MM-DD HH:mm:ss");
+      );
+      const formattedEndTimeIn = dayjs(end_time_in).format(
+        "YYYY-MM-DD HH:mm:ss"
+      );
       const formattedStartTimeOut = dayjs(start_time_out).format(
         "YYYY-MM-DD HH:mm:ss"
-      ); 
-      const formattedEndTimeOut = dayjs(end_time_out).format("YYYY-MM-DD HH:mm:ss");
+      );
+      const formattedEndTimeOut = dayjs(end_time_out).format(
+        "YYYY-MM-DD HH:mm:ss"
+      );
 
-    
       const Activities = {
         id,
         school_id: school_id,

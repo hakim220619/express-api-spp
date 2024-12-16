@@ -510,7 +510,7 @@ Pembayaran.updatePaymentPendingByAdmin = async (newPayment, result) => {
       );
 
       // Kirim pesan setelah semua pembayaran diperbarui
-      await sendMessage(url, token, dataUsers.phone, formattedMessage);
+       sendMessage(url, token, dataUsers.phone, formattedMessage);
 
       const logData = {
         school_id: dataUsers.school_id,

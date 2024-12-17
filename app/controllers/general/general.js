@@ -205,7 +205,7 @@ exports.getTeacher = (req, res, next) => {
   });
 };
 exports.getActivities = (req, res, next) => {
-  const school_id = req.query.school_id;
+  const school_id = req.query.schoolId;
   General.getActivities(school_id, (err, data) => {
 
     if (err)

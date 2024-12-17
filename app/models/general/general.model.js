@@ -192,7 +192,7 @@ General.getTeacher = async (school_id, result) => {
   if (school_id) {
     query += ` AND school_id = '${school_id}'`;
   }
-  query += `AND role = '230'`;
+  query += `AND role = '240'`;
   query += `order by created_at desc`;
   db.query(query, (err, res) => {
     if (err) {
@@ -207,6 +207,8 @@ General.getTeacher = async (school_id, result) => {
 };
 
 General.getActivities = async (school_id, result) => {
+  console.log(school_id);
+  
   let query = "SELECT * from activities where 1=1 ";
   if (school_id) {
     query += ` AND school_id = '${school_id}'`;

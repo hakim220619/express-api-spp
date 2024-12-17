@@ -35,8 +35,12 @@ exports.listAbsensiAktif = (req, res, next) => {
 
 exports.listAbsensiByUserId = (req, res, next) => {
   const user_id = req.query.user_id;
+  const years = req.query.years;
+  const month = req.query.month;
+  console.log(req.query);
+  
 
-  Absensi.listAbsensiByUserId(user_id, (err, data) => {
+  Absensi.listAbsensiByUserId(user_id, years, month, (err, data) => {
     if (err)
       res.status(500).send({
         message: err.message || "Some error occurred while retrieving Data.",
@@ -253,7 +257,8 @@ exports.createAbsensiWithToken = [
       });
     }
 
-    const { school_id, nisn, token,activity_id, subject_id, type, status } = req.body;
+    const { school_id, nisn, token, activity_id, subject_id, type, status } =
+      req.body;
 
     try {
       // Create new Absensi object
@@ -266,7 +271,7 @@ exports.createAbsensiWithToken = [
         type: type,
         status: status,
       };
-console.log(attendance);
+      console.log(attendance);
 
       Absensi.createAbsensiWithToken(attendance, (err, data) => {
         if (err) {

@@ -116,7 +116,11 @@ AND u.nisn = ?`,
                       id: insertRes.insertId,
                       ...attendanceData,
                     });
-                    result(null, { id: insertRes.insertId, ...attendanceData, dataUsers: userRes[0] });
+                    result(null, {
+                      id: insertRes.insertId,
+                      ...attendanceData,
+                      dataUsers: userRes[0],
+                    });
                   }
                 );
               });
@@ -326,20 +330,34 @@ LEFT JOIN
     result(null, res);
   });
 };
-
-Absensi.listAbsensiByUserId = (user_id, result) => {
-  let query = `SELECT ac.activity_name, a.school_id, a.unit_id, a.user_id, a.activity_id, a.subject_id,  (a.created_at) as masuk,
+Absensi.listAbsensiByUserId = (user_id, years, month, result) => {
+  console.log(years);
+  var mn = parseInt(month) + 1;
+  let query = `SELECT ac.activity_name, a.school_id, a.unit_id, a.user_id, a.activity_id, a.subject_id, (a.created_at) as masuk,
        (SELECT ad.created_at 
         FROM attendance ad 
         WHERE ad.type = 'KELUAR' 
-          AND ad.user_id = '${user_id}' 
-          AND ad.activity_id = a.activity_id ) AS keluar 
+           AND ad.user_id = a.user_id
+             AND ad.activity_id = a.activity_id
+             AND DATE(ad.created_at) = DATE(a.created_at)
+           LIMIT 1 ) AS keluar 
 FROM attendance a, activities ac
 WHERE a.activity_id=ac.id
 AND a.user_id = '${user_id}' 
   AND a.type = 'MASUK' 
-  AND a.activity_id is NOT NULL
-GROUP BY a.activity_id
+  AND a.activity_id is NOT NULL`;
+
+  // Filter berdasarkan tahun dan bulan jika ada
+  if (years) {
+    // Pisahkan tahun dan ambil tahun pertama (misalnya: 2024 dari 2024/2025)
+    let yearStart = years.split("/")[0];
+    query += ` AND YEAR(a.created_at) = '${yearStart}'`;
+  }
+  if (month) {
+    query += ` AND MONTH(a.created_at) = '${mn}'`;
+  }
+  query += `
+GROUP BY a.activity_id, a.created_at
 
 UNION ALL
 
@@ -347,22 +365,33 @@ SELECT s.subject_name, a.school_id, a.unit_id, a.user_id, a.activity_id, a.subje
        (SELECT ad.created_at 
         FROM attendance ad 
         WHERE ad.type = 'KELUAR' 
-          AND ad.user_id = '${user_id}' 
-          AND ad.subject_id = a.subject_id ) AS KELUAR 
+          AND ad.user_id = a.user_id
+             AND ad.subject_id = a.subject_id
+             AND DATE(ad.created_at) = DATE(a.created_at)
+           LIMIT 1 ) AS KELUAR 
 FROM attendance a, subjects s
 WHERE a.subject_id=s.id 
-  AND	a.user_id = '${user_id}' 
+  AND a.user_id = '${user_id}' 
   AND a.type = 'MASUK' 
-  AND a.subject_id is NOT NULL
-GROUP BY a.subject_id;
+  AND a.subject_id is NOT NULL`;
 
+  // Filter berdasarkan tahun dan bulan jika ada
+  if (years) {
+    // Pisahkan tahun dan ambil tahun pertama (misalnya: 2024 dari 2024/2025)
+    let yearStart = years.split("/")[0];
+    query += ` AND YEAR(a.created_at) = '${yearStart}'`;
+  }
+  if (month) {
+    query += ` AND MONTH(a.created_at) = '${mn}'`;
+  }
 
+  query += `
+GROUP BY a.subject_id, a.created_at
+
+ORDER BY 
+    masuk DESC;
 `;
-
-  // if (deskripsi) {
-  //   query += ` AND a.deskripsi like '%${deskripsi}%'`;
-  // }
-  // console.log(query);
+  console.log(query);
 
   db.query(query, (err, res) => {
     if (err) {
@@ -370,7 +399,6 @@ GROUP BY a.subject_id;
       result(null, err);
       return;
     }
-    // console.log("users: ", res);
     result(null, res);
   });
 };

@@ -32,16 +32,20 @@ exports.createHoliday = [
       });
     }
 
-    const { school_id , holiday_name, holiday_date, status, description } = req.body;
-    const formattedholiday_date = dayjs(holiday_date).format(
+    const { school_id , holiday_name, holiday_date_start, holiday_date_end, status, description } = req.body;
+    const formattedholiday_date_start = dayjs(holiday_date_start).format(
         "YYYY-MM-DD"
-      ); // Use dayjs to format the time
+      );
+    const formattedholiday_date_end = dayjs(holiday_date_end).format(
+        "YYYY-MM-DD"
+      );
     try {
       // Create new admin object
       const holidays = {
         school_id: school_id,
         holiday_name: holiday_name,
-        holiday_date: formattedholiday_date,
+        holiday_date_start: formattedholiday_date_start,
+        holiday_date_end: formattedholiday_date_end,
         description: description,
         status: status || "ON",
         created_at: new Date(),
@@ -79,7 +83,8 @@ exports.updateHoliday = [
         id: req.body.data.id,
         school_id: req.body.data.school_id,
         holiday_name: req.body.data.holiday_name,
-        holiday_date: req.body.data.holiday_date,
+        holiday_date_start: req.body.data.holiday_date_start,
+        holiday_date_end: req.body.data.holiday_date_end,
         description: req.body.data.description,
         status: req.body.data.status,
         updated_at: new Date(),

@@ -207,7 +207,6 @@ General.getTeacher = async (school_id, result) => {
 };
 
 General.getActivities = async (school_id, result) => {
-  console.log(school_id);
   
   let query = "SELECT * from activities where 1=1 ";
   if (school_id) {
@@ -219,7 +218,6 @@ General.getActivities = async (school_id, result) => {
       result(null, err);
       return;
     }
-    console.log(res);
     
     result(null, res);
   });
@@ -235,7 +233,6 @@ General.getSubjects = async (school_id, result) => {
       result(null, err);
       return;
     }
-    console.log(res);
     
     result(null, res);
   });
@@ -277,8 +274,6 @@ General.getDataAbsensiFromToken = async (token, result) => {
     query += ` WHERE sa.token = '${token}'`;
   }
 
-  console.log('Executing query:', query);
-
   db.query(query, (err, res) => {
     if (err) {
       console.log("Error: ", err);
@@ -302,7 +297,6 @@ General.getDataAbsensiFromToken = async (token, result) => {
         WHERE sa.token = '${token}'
       `;
       
-      console.log('Executing fallback query:', fallbackQuery);
 
       db.query(fallbackQuery, (err, res) => {
         if (err) {

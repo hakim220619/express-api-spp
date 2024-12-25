@@ -458,6 +458,7 @@ exports.delete = (req, res) => {
 };
 exports.deleteSettingPpdb = (req, res) => {
   const uid = req.body.data;
+console.log(uid);
 
   Ppdb.deleteSettingPpdb(uid, (err, data) => {
     if (err) {

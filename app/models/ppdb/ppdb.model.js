@@ -222,10 +222,10 @@ Ppdb.delete = (uid, result) => {
 };
 const fs = require("fs");
 const path = require("path");
-
 Ppdb.deleteSettingPpdb = (uid, result) => {
   // Query untuk mengambil data berdasarkan ID
   let selectQuery = `SELECT school_id, image FROM setting_ppdb WHERE id = '${uid}'`;
+  console.log(selectQuery);
 
   // Jalankan query SELECT
   db.query(selectQuery, (err, selectRes) => {
@@ -241,27 +241,32 @@ Ppdb.deleteSettingPpdb = (uid, result) => {
       return;
     }
 
-    // Dapatkan school_id dan filename dari hasil SELECT
+    // Dapatkan school_id dan image dari hasil SELECT
     const { school_id, image } = selectRes[0];
 
-    // Tentukan path file yang akan dihapus
-    const filePath = path.resolve(
-      "uploads",
-      "school",
-      "siswa_baru",
-      school_id.toString(),
-      image
-    );
+    // Jika image tidak null, hapus file gambar
+    if (image) {
+      // Tentukan path file yang akan dihapus
+      const filePath = path.resolve(
+        "uploads",
+        "school",
+        "siswa_baru",
+        school_id.toString(),
+        image
+      );
 
-    // Hapus file gambar
-    fs.unlink(filePath, (err) => {
-      if (err) {
-        console.log("File deletion error: ", err);
-        // Tidak menghentikan proses meskipun ada kesalahan dalam penghapusan file
-      } else {
-        console.log(`Deleted file: ${filePath}`);
-      }
-    });
+      // Hapus file gambar
+      fs.unlink(filePath, (err) => {
+        if (err) {
+          console.log("File deletion error: ", err);
+          // Tidak menghentikan proses meskipun ada kesalahan dalam penghapusan file
+        } else {
+          console.log(`Deleted file: ${filePath}`);
+        }
+      });
+    } else {
+      console.log(`No image found for ID ${uid}, skipping file deletion.`);
+    }
 
     // Query untuk menghapus data dari database
     let deleteQuery = `DELETE FROM setting_ppdb WHERE id = '${uid}'`;
@@ -279,6 +284,7 @@ Ppdb.deleteSettingPpdb = (uid, result) => {
     });
   });
 };
+
 
 Ppdb.detailPpdb = async (id, result) => {
   let query = "SELECT * from calon_siswa where id = '" + id + "'";

@@ -60,11 +60,9 @@ AND u.nisn = ?`,
 
               if (activity_id != 0) {
                 // If activity_id is provided, check based on activity_id
-                console.log("asd");
                 query = `SELECT * FROM attendance WHERE school_id = '${school_id}' AND user_id = '${userId}' AND unit_id = '${unit_id}' AND activity_id = '${activity_id}' AND type = '${type}' AND DATE(created_at) = CURDATE()`;
               } else {
                 // If activity_id is not provided, check based on subject_id
-                console.log("123");
                 query = `SELECT * FROM attendance WHERE school_id = '${school_id}' AND user_id = '${userId}' AND unit_id = '${unit_id}' AND subject_id = '${subject_id}' AND type = '${type}' AND DATE(created_at) = CURDATE()`;
               }
 
@@ -99,7 +97,6 @@ AND u.nisn = ?`,
                   type: type, // Type (e.g., 'absensi', 'kehadiran')
                   created_at: new Date(), // Current date and time
                 };
-                console.log(attendanceData);
 
                 // Insert the attendance data into the attendance table
                 db.query(
@@ -139,7 +136,6 @@ AND u.nisn = ?`,
 };
 
 Absensi.createAbsensi = (newUsers, result) => {
-  console.log("New Users Data:", newUsers);
 
   // Parse the user_id string into an actual array
   let userIds;
@@ -221,8 +217,8 @@ Absensi.createAbsensi = (newUsers, result) => {
   result(null, { message: "Attendance creation process started." });
 };
 
+
 Absensi.updateAbsensi = (newUsers, result) => {
-  console.log(newUsers);
 
   db.query(
     "UPDATE attendance SET ? WHERE id = ?",
@@ -239,6 +235,28 @@ Absensi.updateAbsensi = (newUsers, result) => {
         return;
       }
       console.log("Updated User: ", { id: newUsers.id, ...newUsers });
+      result(null, { id: newUsers.uid, ...newUsers });
+    }
+  );
+};
+
+Absensi.updateAbsensiAktif = (newUsers, result) => {
+
+  db.query(
+    "UPDATE setting_absensi SET ? WHERE id = ?",
+    [newUsers, newUsers.id],
+    (err, res) => {
+      if (err) {
+        console.error("Error: ", err);
+        result(err, null);
+        return;
+      }
+      if (res.affectedRows == 0) {
+        // Not found User with the id
+        result({ kind: "not_found" }, null);
+        return;
+      }
+      console.log("Updated Absensi: ", { id: newUsers.id, ...newUsers });
       result(null, { id: newUsers.uid, ...newUsers });
     }
   );
@@ -331,7 +349,6 @@ LEFT JOIN
   });
 };
 Absensi.listAbsensiByUserId = (user_id, years, month, result) => {
-  console.log(years);
   var mn = parseInt(month) + 1;
   let query = `SELECT ac.activity_name, a.school_id, a.unit_id, a.user_id, a.activity_id, a.subject_id, (a.created_at) as masuk,
        (SELECT ad.created_at 
@@ -391,7 +408,6 @@ GROUP BY a.subject_id, a.created_at
 ORDER BY 
     masuk DESC;
 `;
-  console.log(query);
 
   db.query(query, (err, res) => {
     if (err) {
@@ -502,7 +518,6 @@ Absensi.listAbsensiSubjectsByUserId = (
   if (class_id) {
     query += ` AND u.class_id = '${class_id}'`;
   }
-  console.log(query);
 
   db.query(query, (err, res) => {
     if (err) {
@@ -553,68 +568,316 @@ Absensi.laporanAbsensiActivityByUserId = (
       c.class_name,
       
       -- Dynamically adding columns for each day of the current month (1 to 31)
-      MAX(CASE WHEN DAY(dt.date_column) = 1 AND a.type = 'MASUK' THEN a.status ELSE NULL END) AS day_1_M,
-    MAX(CASE WHEN DAY(dt.date_column) = 1 AND a.type = 'KELUAR' THEN a.status ELSE NULL END) AS day_1_K,
-    MAX(CASE WHEN DAY(dt.date_column) = 2 AND a.type = 'MASUK' THEN a.status ELSE NULL END) AS day_2_M,
-    MAX(CASE WHEN DAY(dt.date_column) = 2 AND a.type = 'KELUAR' THEN a.status ELSE NULL END) AS day_2_K,
-    MAX(CASE WHEN DAY(dt.date_column) = 3 AND a.type = 'MASUK' THEN a.status ELSE NULL END) AS day_3_M,
-    MAX(CASE WHEN DAY(dt.date_column) = 3 AND a.type = 'KELUAR' THEN a.status ELSE NULL END) AS day_3_K,
-    MAX(CASE WHEN DAY(dt.date_column) = 4 AND a.type = 'MASUK' THEN a.status ELSE NULL END) AS day_4_M,
-    MAX(CASE WHEN DAY(dt.date_column) = 4 AND a.type = 'KELUAR' THEN a.status ELSE NULL END) AS day_4_K,
-    MAX(CASE WHEN DAY(dt.date_column) = 5 AND a.type = 'MASUK' THEN a.status ELSE NULL END) AS day_5_M,
-    MAX(CASE WHEN DAY(dt.date_column) = 5 AND a.type = 'KELUAR' THEN a.status ELSE NULL END) AS day_5_K,
-    MAX(CASE WHEN DAY(dt.date_column) = 6 AND a.type = 'MASUK' THEN a.status ELSE NULL END) AS day_6_M,
-    MAX(CASE WHEN DAY(dt.date_column) = 6 AND a.type = 'KELUAR' THEN a.status ELSE NULL END) AS day_6_K,
-    MAX(CASE WHEN DAY(dt.date_column) = 7 AND a.type = 'MASUK' THEN a.status ELSE NULL END) AS day_7_M,
-    MAX(CASE WHEN DAY(dt.date_column) = 7 AND a.type = 'KELUAR' THEN a.status ELSE NULL END) AS day_7_K,
-    MAX(CASE WHEN DAY(dt.date_column) = 8 AND a.type = 'MASUK' THEN a.status ELSE NULL END) AS day_8_M,
-    MAX(CASE WHEN DAY(dt.date_column) = 8 AND a.type = 'KELUAR' THEN a.status ELSE NULL END) AS day_8_K,
-    MAX(CASE WHEN DAY(dt.date_column) = 9 AND a.type = 'MASUK' THEN a.status ELSE NULL END) AS day_9_M,
-    MAX(CASE WHEN DAY(dt.date_column) = 9 AND a.type = 'KELUAR' THEN a.status ELSE NULL END) AS day_9_K,
-    MAX(CASE WHEN DAY(dt.date_column) = 10 AND a.type = 'MASUK' THEN a.status ELSE NULL END) AS day_10_M,
-    MAX(CASE WHEN DAY(dt.date_column) = 10 AND a.type = 'KELUAR' THEN a.status ELSE NULL END) AS day_10_K,
-    MAX(CASE WHEN DAY(dt.date_column) = 11 AND a.type = 'MASUK' THEN a.status ELSE NULL END) AS day_11_M,
-    MAX(CASE WHEN DAY(dt.date_column) = 11 AND a.type = 'KELUAR' THEN a.status ELSE NULL END) AS day_11_K,
-    MAX(CASE WHEN DAY(dt.date_column) = 12 AND a.type = 'MASUK' THEN a.status ELSE NULL END) AS day_12_M,
-    MAX(CASE WHEN DAY(dt.date_column) = 12 AND a.type = 'KELUAR' THEN a.status ELSE NULL END) AS day_12_K,
-    MAX(CASE WHEN DAY(dt.date_column) = 13 AND a.type = 'MASUK' THEN a.status ELSE NULL END) AS day_13_M,
-    MAX(CASE WHEN DAY(dt.date_column) = 13 AND a.type = 'KELUAR' THEN a.status ELSE NULL END) AS day_13_K,
-    MAX(CASE WHEN DAY(dt.date_column) = 14 AND a.type = 'MASUK' THEN a.status ELSE NULL END) AS day_14_M,
-    MAX(CASE WHEN DAY(dt.date_column) = 14 AND a.type = 'KELUAR' THEN a.status ELSE NULL END) AS day_14_K,
-    MAX(CASE WHEN DAY(dt.date_column) = 15 AND a.type = 'MASUK' THEN a.status ELSE NULL END) AS day_15_M,
-    MAX(CASE WHEN DAY(dt.date_column) = 15 AND a.type = 'KELUAR' THEN a.status ELSE NULL END) AS day_15_K,
-    MAX(CASE WHEN DAY(dt.date_column) = 16 AND a.type = 'MASUK' THEN a.status ELSE NULL END) AS day_16_M,
-    MAX(CASE WHEN DAY(dt.date_column) = 16 AND a.type = 'KELUAR' THEN a.status ELSE NULL END) AS day_16_K,
-    MAX(CASE WHEN DAY(dt.date_column) = 17 AND a.type = 'MASUK' THEN a.status ELSE NULL END) AS day_17_M,
-    MAX(CASE WHEN DAY(dt.date_column) = 17 AND a.type = 'KELUAR' THEN a.status ELSE NULL END) AS day_17_K,
-    MAX(CASE WHEN DAY(dt.date_column) = 18 AND a.type = 'MASUK' THEN a.status ELSE NULL END) AS day_18_M,
-    MAX(CASE WHEN DAY(dt.date_column) = 18 AND a.type = 'KELUAR' THEN a.status ELSE NULL END) AS day_18_K,
-    MAX(CASE WHEN DAY(dt.date_column) = 19 AND a.type = 'MASUK' THEN a.status ELSE NULL END) AS day_19_M,
-    MAX(CASE WHEN DAY(dt.date_column) = 19 AND a.type = 'KELUAR' THEN a.status ELSE NULL END) AS day_19_K,
-    MAX(CASE WHEN DAY(dt.date_column) = 20 AND a.type = 'MASUK' THEN a.status ELSE NULL END) AS day_20_M,
-    MAX(CASE WHEN DAY(dt.date_column) = 20 AND a.type = 'KELUAR' THEN a.status ELSE NULL END) AS day_20_K,
-    MAX(CASE WHEN DAY(dt.date_column) = 21 AND a.type = 'MASUK' THEN a.status ELSE NULL END) AS day_21_M,
-    MAX(CASE WHEN DAY(dt.date_column) = 21 AND a.type = 'KELUAR' THEN a.status ELSE NULL END) AS day_21_K,
-    MAX(CASE WHEN DAY(dt.date_column) = 22 AND a.type = 'MASUK' THEN a.status ELSE NULL END) AS day_22_M,
-    MAX(CASE WHEN DAY(dt.date_column) = 22 AND a.type = 'KELUAR' THEN a.status ELSE NULL END) AS day_22_K,
-    MAX(CASE WHEN DAY(dt.date_column) = 23 AND a.type = 'MASUK' THEN a.status ELSE NULL END) AS day_23_M,
-    MAX(CASE WHEN DAY(dt.date_column) = 23 AND a.type = 'KELUAR' THEN a.status ELSE NULL END) AS day_23_K,
-    MAX(CASE WHEN DAY(dt.date_column) = 24 AND a.type = 'MASUK' THEN a.status ELSE NULL END) AS day_24_M,
-    MAX(CASE WHEN DAY(dt.date_column) = 24 AND a.type = 'KELUAR' THEN a.status ELSE NULL END) AS day_24_K,
-    MAX(CASE WHEN DAY(dt.date_column) = 25 AND a.type = 'MASUK' THEN a.status ELSE NULL END) AS day_25_M,
-    MAX(CASE WHEN DAY(dt.date_column) = 25 AND a.type = 'KELUAR' THEN a.status ELSE NULL END) AS day_25_K,
-    MAX(CASE WHEN DAY(dt.date_column) = 26 AND a.type = 'MASUK' THEN a.status ELSE NULL END) AS day_26_M,
-    MAX(CASE WHEN DAY(dt.date_column) = 26 AND a.type = 'KELUAR' THEN a.status ELSE NULL END) AS day_26_K,
-    MAX(CASE WHEN DAY(dt.date_column) = 27 AND a.type = 'MASUK' THEN a.status ELSE NULL END) AS day_27_M,
-    MAX(CASE WHEN DAY(dt.date_column) = 27 AND a.type = 'KELUAR' THEN a.status ELSE NULL END) AS day_27_K,
-    MAX(CASE WHEN DAY(dt.date_column) = 28 AND a.type = 'MASUK' THEN a.status ELSE NULL END) AS day_28_M,
-    MAX(CASE WHEN DAY(dt.date_column) = 28 AND a.type = 'KELUAR' THEN a.status ELSE NULL END) AS day_28_K,
-    MAX(CASE WHEN DAY(dt.date_column) = 29 AND a.type = 'MASUK' THEN a.status ELSE NULL END) AS day_29_M,
-    MAX(CASE WHEN DAY(dt.date_column) = 29 AND a.type = 'KELUAR' THEN a.status ELSE NULL END) AS day_29_K,
-    MAX(CASE WHEN DAY(dt.date_column) = 30 AND a.type = 'MASUK' THEN a.status ELSE NULL END) AS day_30_M,
-    MAX(CASE WHEN DAY(dt.date_column) = 30 AND a.type = 'KELUAR' THEN a.status ELSE NULL END) AS day_30_K,
-    MAX(CASE WHEN DAY(dt.date_column) = 31 AND a.type = 'MASUK' THEN a.status ELSE NULL END) AS day_31_M,
-    MAX(CASE WHEN DAY(dt.date_column) = 31 AND a.type = 'KELUAR' THEN a.status ELSE NULL END) AS day_31_K
+     MAX(CASE WHEN DAY(dt.date_column) = 1 THEN 
+        COALESCE(h.holiday_name, 
+            CASE WHEN a.type = 'MASUK' THEN a.status 
+            WHEN ct_type.cuti_name IS NOT NULL THEN ct_type.cuti_name ELSE NULL END
+        ) END) AS day_1_M,
+MAX(CASE WHEN DAY(dt.date_column) = 1 THEN 
+        COALESCE(h.holiday_name, 
+            CASE WHEN a.type = 'KELUAR' THEN a.status 
+            WHEN ct_type.cuti_name IS NOT NULL THEN ct_type.cuti_name ELSE NULL END
+        ) END) AS day_1_K,
+MAX(CASE WHEN DAY(dt.date_column) = 2 THEN 
+        COALESCE(h.holiday_name, 
+            CASE WHEN a.type = 'MASUK' THEN a.status 
+            WHEN ct_type.cuti_name IS NOT NULL THEN ct_type.cuti_name ELSE NULL END
+        ) END) AS day_2_M,
+MAX(CASE WHEN DAY(dt.date_column) = 2 THEN 
+        COALESCE(h.holiday_name, 
+            CASE WHEN a.type = 'KELUAR' THEN a.status 
+            WHEN ct_type.cuti_name IS NOT NULL THEN ct_type.cuti_name ELSE NULL END
+        ) END) AS day_2_K,
+MAX(CASE WHEN DAY(dt.date_column) = 3 THEN 
+        COALESCE(h.holiday_name, 
+            CASE WHEN a.type = 'MASUK' THEN a.status 
+            WHEN ct_type.cuti_name IS NOT NULL THEN ct_type.cuti_name ELSE NULL END
+        ) END) AS day_3_M,
+MAX(CASE WHEN DAY(dt.date_column) = 3 THEN 
+        COALESCE(h.holiday_name, 
+            CASE WHEN a.type = 'KELUAR' THEN a.status 
+            WHEN ct_type.cuti_name IS NOT NULL THEN ct_type.cuti_name ELSE NULL END
+        ) END) AS day_3_K,
+MAX(CASE WHEN DAY(dt.date_column) = 4 THEN 
+        COALESCE(h.holiday_name, 
+            CASE WHEN a.type = 'MASUK' THEN a.status 
+            WHEN ct_type.cuti_name IS NOT NULL THEN ct_type.cuti_name ELSE NULL END
+        ) END) AS day_4_M,
+MAX(CASE WHEN DAY(dt.date_column) = 4 THEN 
+        COALESCE(h.holiday_name, 
+            CASE WHEN a.type = 'KELUAR' THEN a.status 
+            WHEN ct_type.cuti_name IS NOT NULL THEN ct_type.cuti_name ELSE NULL END
+        ) END) AS day_4_K,
+MAX(CASE WHEN DAY(dt.date_column) = 5 THEN 
+        COALESCE(h.holiday_name, 
+            CASE WHEN a.type = 'MASUK' THEN a.status 
+            WHEN ct_type.cuti_name IS NOT NULL THEN ct_type.cuti_name ELSE NULL END
+        ) END) AS day_5_M,
+MAX(CASE WHEN DAY(dt.date_column) = 5 THEN 
+        COALESCE(h.holiday_name, 
+            CASE WHEN a.type = 'KELUAR' THEN a.status 
+            WHEN ct_type.cuti_name IS NOT NULL THEN ct_type.cuti_name ELSE NULL END
+        ) END) AS day_5_K,
+         MAX(CASE WHEN DAY(dt.date_column) = 6 THEN 
+        COALESCE(h.holiday_name, 
+            CASE WHEN a.type = 'MASUK' THEN a.status 
+            WHEN ct_type.cuti_name IS NOT NULL THEN ct_type.cuti_name ELSE NULL END
+        ) END) AS day_6_M,
+MAX(CASE WHEN DAY(dt.date_column) = 6 THEN 
+        COALESCE(h.holiday_name, 
+            CASE WHEN a.type = 'KELUAR' THEN a.status 
+            WHEN ct_type.cuti_name IS NOT NULL THEN ct_type.cuti_name ELSE NULL END
+        ) END) AS day_6_K,
+MAX(CASE WHEN DAY(dt.date_column) = 7 THEN 
+        COALESCE(h.holiday_name, 
+            CASE WHEN a.type = 'MASUK' THEN a.status 
+            WHEN ct_type.cuti_name IS NOT NULL THEN ct_type.cuti_name ELSE NULL END
+        ) END) AS day_7_M,
+MAX(CASE WHEN DAY(dt.date_column) = 7 THEN 
+        COALESCE(h.holiday_name, 
+            CASE WHEN a.type = 'KELUAR' THEN a.status 
+            WHEN ct_type.cuti_name IS NOT NULL THEN ct_type.cuti_name ELSE NULL END
+        ) END) AS day_7_K,
+MAX(CASE WHEN DAY(dt.date_column) = 8 THEN 
+        COALESCE(h.holiday_name, 
+            CASE WHEN a.type = 'MASUK' THEN a.status 
+            WHEN ct_type.cuti_name IS NOT NULL THEN ct_type.cuti_name ELSE NULL END
+        ) END) AS day_8_M,
+MAX(CASE WHEN DAY(dt.date_column) = 8 THEN 
+        COALESCE(h.holiday_name, 
+            CASE WHEN a.type = 'KELUAR' THEN a.status 
+            WHEN ct_type.cuti_name IS NOT NULL THEN ct_type.cuti_name ELSE NULL END
+        ) END) AS day_8_K,
+MAX(CASE WHEN DAY(dt.date_column) = 9 THEN 
+        COALESCE(h.holiday_name, 
+            CASE WHEN a.type = 'MASUK' THEN a.status 
+            WHEN ct_type.cuti_name IS NOT NULL THEN ct_type.cuti_name ELSE NULL END
+        ) END) AS day_9_M,
+MAX(CASE WHEN DAY(dt.date_column) = 9 THEN 
+        COALESCE(h.holiday_name, 
+            CASE WHEN a.type = 'KELUAR' THEN a.status 
+            WHEN ct_type.cuti_name IS NOT NULL THEN ct_type.cuti_name ELSE NULL END
+        ) END) AS day_9_K,
+MAX(CASE WHEN DAY(dt.date_column) = 10 THEN 
+        COALESCE(h.holiday_name, 
+            CASE WHEN a.type = 'MASUK' THEN a.status 
+            WHEN ct_type.cuti_name IS NOT NULL THEN ct_type.cuti_name ELSE NULL END
+        ) END) AS day_10_M,
+MAX(CASE WHEN DAY(dt.date_column) = 10 THEN 
+        COALESCE(h.holiday_name, 
+            CASE WHEN a.type = 'KELUAR' THEN a.status 
+            WHEN ct_type.cuti_name IS NOT NULL THEN ct_type.cuti_name ELSE NULL END
+        ) END) AS day_10_K,
+MAX(CASE WHEN DAY(dt.date_column) = 11 THEN 
+        COALESCE(h.holiday_name, 
+            CASE WHEN a.type = 'MASUK' THEN a.status 
+            WHEN ct_type.cuti_name IS NOT NULL THEN ct_type.cuti_name ELSE NULL END
+        ) END) AS day_11_M,
+MAX(CASE WHEN DAY(dt.date_column) = 11 THEN 
+        COALESCE(h.holiday_name, 
+            CASE WHEN a.type = 'KELUAR' THEN a.status 
+            WHEN ct_type.cuti_name IS NOT NULL THEN ct_type.cuti_name ELSE NULL END
+        ) END) AS day_11_K,
+MAX(CASE WHEN DAY(dt.date_column) = 12 THEN 
+        COALESCE(h.holiday_name, 
+            CASE WHEN a.type = 'MASUK' THEN a.status 
+            WHEN ct_type.cuti_name IS NOT NULL THEN ct_type.cuti_name ELSE NULL END
+        ) END) AS day_12_M,
+MAX(CASE WHEN DAY(dt.date_column) = 12 THEN 
+        COALESCE(h.holiday_name, 
+            CASE WHEN a.type = 'KELUAR' THEN a.status 
+            WHEN ct_type.cuti_name IS NOT NULL THEN ct_type.cuti_name ELSE NULL END
+        ) END) AS day_12_K,
+MAX(CASE WHEN DAY(dt.date_column) = 13 THEN 
+        COALESCE(h.holiday_name, 
+            CASE WHEN a.type = 'MASUK' THEN a.status 
+            WHEN ct_type.cuti_name IS NOT NULL THEN ct_type.cuti_name ELSE NULL END
+        ) END) AS day_13_M,
+MAX(CASE WHEN DAY(dt.date_column) = 13 THEN 
+        COALESCE(h.holiday_name, 
+            CASE WHEN a.type = 'KELUAR' THEN a.status 
+            WHEN ct_type.cuti_name IS NOT NULL THEN ct_type.cuti_name ELSE NULL END
+        ) END) AS day_13_K,
+MAX(CASE WHEN DAY(dt.date_column) = 14 THEN 
+        COALESCE(h.holiday_name, 
+            CASE WHEN a.type = 'MASUK' THEN a.status 
+            WHEN ct_type.cuti_name IS NOT NULL THEN ct_type.cuti_name ELSE NULL END
+        ) END) AS day_14_M,
+MAX(CASE WHEN DAY(dt.date_column) = 14 THEN 
+        COALESCE(h.holiday_name, 
+            CASE WHEN a.type = 'KELUAR' THEN a.status 
+            WHEN ct_type.cuti_name IS NOT NULL THEN ct_type.cuti_name ELSE NULL END
+        ) END) AS day_14_K,
+MAX(CASE WHEN DAY(dt.date_column) = 15 THEN 
+        COALESCE(h.holiday_name, 
+            CASE WHEN a.type = 'MASUK' THEN a.status 
+            WHEN ct_type.cuti_name IS NOT NULL THEN ct_type.cuti_name ELSE NULL END
+        ) END) AS day_15_M,
+MAX(CASE WHEN DAY(dt.date_column) = 15 THEN 
+        COALESCE(h.holiday_name, 
+            CASE WHEN a.type = 'KELUAR' THEN a.status 
+            WHEN ct_type.cuti_name IS NOT NULL THEN ct_type.cuti_name ELSE NULL END
+        ) END) AS day_15_K,
+         MAX(CASE WHEN DAY(dt.date_column) = 16 THEN 
+        COALESCE(h.holiday_name, 
+            CASE WHEN a.type = 'MASUK' THEN a.status 
+            WHEN ct_type.cuti_name IS NOT NULL THEN ct_type.cuti_name ELSE NULL END
+        ) END) AS day_16_M,
+MAX(CASE WHEN DAY(dt.date_column) = 16 THEN 
+        COALESCE(h.holiday_name, 
+            CASE WHEN a.type = 'KELUAR' THEN a.status 
+            WHEN ct_type.cuti_name IS NOT NULL THEN ct_type.cuti_name ELSE NULL END
+        ) END) AS day_16_K,
+MAX(CASE WHEN DAY(dt.date_column) = 17 THEN 
+        COALESCE(h.holiday_name, 
+            CASE WHEN a.type = 'MASUK' THEN a.status 
+            WHEN ct_type.cuti_name IS NOT NULL THEN ct_type.cuti_name ELSE NULL END
+        ) END) AS day_17_M,
+MAX(CASE WHEN DAY(dt.date_column) = 17 THEN 
+        COALESCE(h.holiday_name, 
+            CASE WHEN a.type = 'KELUAR' THEN a.status 
+            WHEN ct_type.cuti_name IS NOT NULL THEN ct_type.cuti_name ELSE NULL END
+        ) END) AS day_17_K,
+MAX(CASE WHEN DAY(dt.date_column) = 18 THEN 
+        COALESCE(h.holiday_name, 
+            CASE WHEN a.type = 'MASUK' THEN a.status 
+            WHEN ct_type.cuti_name IS NOT NULL THEN ct_type.cuti_name ELSE NULL END
+        ) END) AS day_18_M,
+MAX(CASE WHEN DAY(dt.date_column) = 18 THEN 
+        COALESCE(h.holiday_name, 
+            CASE WHEN a.type = 'KELUAR' THEN a.status 
+            WHEN ct_type.cuti_name IS NOT NULL THEN ct_type.cuti_name ELSE NULL END
+        ) END) AS day_18_K,
+MAX(CASE WHEN DAY(dt.date_column) = 19 THEN 
+        COALESCE(h.holiday_name, 
+            CASE WHEN a.type = 'MASUK' THEN a.status 
+            WHEN ct_type.cuti_name IS NOT NULL THEN ct_type.cuti_name ELSE NULL END
+        ) END) AS day_19_M,
+MAX(CASE WHEN DAY(dt.date_column) = 19 THEN 
+        COALESCE(h.holiday_name, 
+            CASE WHEN a.type = 'KELUAR' THEN a.status 
+            WHEN ct_type.cuti_name IS NOT NULL THEN ct_type.cuti_name ELSE NULL END
+        ) END) AS day_19_K,
+MAX(CASE WHEN DAY(dt.date_column) = 20 THEN 
+        COALESCE(h.holiday_name, 
+            CASE WHEN a.type = 'MASUK' THEN a.status 
+            WHEN ct_type.cuti_name IS NOT NULL THEN ct_type.cuti_name ELSE NULL END
+        ) END) AS day_20_M,
+MAX(CASE WHEN DAY(dt.date_column) = 20 THEN 
+        COALESCE(h.holiday_name, 
+            CASE WHEN a.type = 'KELUAR' THEN a.status 
+            WHEN ct_type.cuti_name IS NOT NULL THEN ct_type.cuti_name ELSE NULL END
+        ) END) AS day_20_K,
+MAX(CASE WHEN DAY(dt.date_column) = 21 THEN 
+        COALESCE(h.holiday_name, 
+            CASE WHEN a.type = 'MASUK' THEN a.status 
+            WHEN ct_type.cuti_name IS NOT NULL THEN ct_type.cuti_name ELSE NULL END
+        ) END) AS day_21_M,
+MAX(CASE WHEN DAY(dt.date_column) = 21 THEN 
+        COALESCE(h.holiday_name, 
+            CASE WHEN a.type = 'KELUAR' THEN a.status 
+            WHEN ct_type.cuti_name IS NOT NULL THEN ct_type.cuti_name ELSE NULL END
+        ) END) AS day_21_K,
+MAX(CASE WHEN DAY(dt.date_column) = 22 THEN 
+        COALESCE(h.holiday_name, 
+            CASE WHEN a.type = 'MASUK' THEN a.status 
+            WHEN ct_type.cuti_name IS NOT NULL THEN ct_type.cuti_name ELSE NULL END
+        ) END) AS day_22_M,
+MAX(CASE WHEN DAY(dt.date_column) = 22 THEN 
+        COALESCE(h.holiday_name, 
+            CASE WHEN a.type = 'KELUAR' THEN a.status 
+            WHEN ct_type.cuti_name IS NOT NULL THEN ct_type.cuti_name ELSE NULL END
+        ) END) AS day_22_K,
+MAX(CASE WHEN DAY(dt.date_column) = 23 THEN 
+        COALESCE(h.holiday_name, 
+            CASE WHEN a.type = 'MASUK' THEN a.status 
+            WHEN ct_type.cuti_name IS NOT NULL THEN ct_type.cuti_name ELSE NULL END
+        ) END) AS day_23_M,
+MAX(CASE WHEN DAY(dt.date_column) = 23 THEN 
+        COALESCE(h.holiday_name, 
+            CASE WHEN a.type = 'KELUAR' THEN a.status 
+            WHEN ct_type.cuti_name IS NOT NULL THEN ct_type.cuti_name ELSE NULL END
+        ) END) AS day_23_K,
+MAX(CASE WHEN DAY(dt.date_column) = 24 THEN 
+        COALESCE(h.holiday_name, 
+            CASE WHEN a.type = 'MASUK' THEN a.status 
+            WHEN ct_type.cuti_name IS NOT NULL THEN ct_type.cuti_name ELSE NULL END
+        ) END) AS day_24_M,
+MAX(CASE WHEN DAY(dt.date_column) = 24 THEN 
+        COALESCE(h.holiday_name, 
+            CASE WHEN a.type = 'KELUAR' THEN a.status 
+            WHEN ct_type.cuti_name IS NOT NULL THEN ct_type.cuti_name ELSE NULL END
+        ) END) AS day_24_K,
+MAX(CASE WHEN DAY(dt.date_column) = 25 THEN 
+        COALESCE(h.holiday_name, 
+            CASE WHEN a.type = 'MASUK' THEN a.status 
+            WHEN ct_type.cuti_name IS NOT NULL THEN ct_type.cuti_name ELSE NULL END
+        ) END) AS day_25_M,
+MAX(CASE WHEN DAY(dt.date_column) = 25 THEN 
+        COALESCE(h.holiday_name, 
+            CASE WHEN a.type = 'KELUAR' THEN a.status 
+            WHEN ct_type.cuti_name IS NOT NULL THEN ct_type.cuti_name ELSE NULL END
+        ) END) AS day_25_K,
+MAX(CASE WHEN DAY(dt.date_column) = 26 THEN 
+        COALESCE(h.holiday_name, 
+            CASE WHEN a.type = 'MASUK' THEN a.status 
+            WHEN ct_type.cuti_name IS NOT NULL THEN ct_type.cuti_name ELSE NULL END
+        ) END) AS day_26_M,
+MAX(CASE WHEN DAY(dt.date_column) = 26 THEN 
+        COALESCE(h.holiday_name, 
+            CASE WHEN a.type = 'KELUAR' THEN a.status 
+            WHEN ct_type.cuti_name IS NOT NULL THEN ct_type.cuti_name ELSE NULL END
+        ) END) AS day_26_K,
+MAX(CASE WHEN DAY(dt.date_column) = 27 THEN 
+        COALESCE(h.holiday_name, 
+            CASE WHEN a.type = 'MASUK' THEN a.status 
+            WHEN ct_type.cuti_name IS NOT NULL THEN ct_type.cuti_name ELSE NULL END
+        ) END) AS day_27_M,
+MAX(CASE WHEN DAY(dt.date_column) = 27 THEN 
+        COALESCE(h.holiday_name, 
+            CASE WHEN a.type = 'KELUAR' THEN a.status 
+            WHEN ct_type.cuti_name IS NOT NULL THEN ct_type.cuti_name ELSE NULL END
+        ) END) AS day_27_K,
+MAX(CASE WHEN DAY(dt.date_column) = 28 THEN 
+        COALESCE(h.holiday_name, 
+            CASE WHEN a.type = 'MASUK' THEN a.status 
+            WHEN ct_type.cuti_name IS NOT NULL THEN ct_type.cuti_name ELSE NULL END
+        ) END) AS day_28_M,
+MAX(CASE WHEN DAY(dt.date_column) = 28 THEN 
+        COALESCE(h.holiday_name, 
+            CASE WHEN a.type = 'KELUAR' THEN a.status 
+            WHEN ct_type.cuti_name IS NOT NULL THEN ct_type.cuti_name ELSE NULL END
+        ) END) AS day_28_K,
+MAX(CASE WHEN DAY(dt.date_column) = 29 THEN 
+        COALESCE(h.holiday_name, 
+            CASE WHEN a.type = 'MASUK' THEN a.status 
+            WHEN ct_type.cuti_name IS NOT NULL THEN ct_type.cuti_name ELSE NULL END
+        ) END) AS day_29_M,
+MAX(CASE WHEN DAY(dt.date_column) = 29 THEN 
+        COALESCE(h.holiday_name, 
+            CASE WHEN a.type = 'KELUAR' THEN a.status 
+            WHEN ct_type.cuti_name IS NOT NULL THEN ct_type.cuti_name ELSE NULL END
+        ) END) AS day_29_K,
+MAX(CASE WHEN DAY(dt.date_column) = 30 THEN 
+        COALESCE(h.holiday_name, 
+            CASE WHEN a.type = 'MASUK' THEN a.status 
+            WHEN ct_type.cuti_name IS NOT NULL THEN ct_type.cuti_name ELSE NULL END
+        ) END) AS day_30_M,
+MAX(CASE WHEN DAY(dt.date_column) = 30 THEN 
+        COALESCE(h.holiday_name, 
+            CASE WHEN a.type = 'KELUAR' THEN a.status 
+            WHEN ct_type.cuti_name IS NOT NULL THEN ct_type.cuti_name ELSE NULL END
+        ) END) AS day_30_K,
+MAX(CASE WHEN DAY(dt.date_column) = 31 THEN 
+        COALESCE(h.holiday_name, 
+            CASE WHEN a.type = 'MASUK' THEN a.status 
+            WHEN ct_type.cuti_name IS NOT NULL THEN ct_type.cuti_name ELSE NULL END
+        ) END) AS day_31_M,
+MAX(CASE WHEN DAY(dt.date_column) = 31 THEN 
+        COALESCE(h.holiday_name, 
+            CASE WHEN a.type = 'KELUAR' THEN a.status 
+            WHEN ct_type.cuti_name IS NOT NULL THEN ct_type.cuti_name ELSE NULL END
+        ) END) AS day_31_K
     FROM
       users u
     JOIN
@@ -688,7 +951,12 @@ Absensi.laporanAbsensiActivityByUserId = (
     LEFT JOIN
       attendance a ON a.user_id = u.id 
       AND DATE(a.created_at) = DATE(dt.date_column)
-      AND a.activity_id = '${activity_id}'  -- Filter by activity_id
+      AND a.activity_id = '${activity_id}'
+    LEFT JOIN holidays h ON h.school_id = u.school_id
+      AND dt.date_column BETWEEN h.holiday_date_start AND h.holiday_date_end AND h.status = 'ON'
+    LEFT JOIN cuti ct ON ct.user_id = u.id
+      AND dt.date_column BETWEEN ct.start_date AND ct.end_date
+    LEFT JOIN cuti_type ct_type ON ct.cuti_type_id = ct_type.id AND ct.status = 'Approved'
     WHERE
       u.role = '160'
   `;
@@ -708,7 +976,6 @@ Absensi.laporanAbsensiActivityByUserId = (
   query += ` GROUP BY
     u.id, u.full_name, un.unit_name, c.class_name`;
 
-  console.log(query);
 
   db.query(query, (err, res) => {
     if (err) {
@@ -758,68 +1025,316 @@ Absensi.laporanAbsensiSubjectByUserId = (
       un.unit_name,
       c.class_name,
       -- Dynamically adding columns for each day of the current month (1 to 31)
-      MAX(CASE WHEN DAY(dt.date_column) = 1 AND a.type = 'MASUK' THEN a.status ELSE NULL END) AS day_1_M,
-    MAX(CASE WHEN DAY(dt.date_column) = 1 AND a.type = 'KELUAR' THEN a.status ELSE NULL END) AS day_1_K,
-    MAX(CASE WHEN DAY(dt.date_column) = 2 AND a.type = 'MASUK' THEN a.status ELSE NULL END) AS day_2_M,
-    MAX(CASE WHEN DAY(dt.date_column) = 2 AND a.type = 'KELUAR' THEN a.status ELSE NULL END) AS day_2_K,
-    MAX(CASE WHEN DAY(dt.date_column) = 3 AND a.type = 'MASUK' THEN a.status ELSE NULL END) AS day_3_M,
-    MAX(CASE WHEN DAY(dt.date_column) = 3 AND a.type = 'KELUAR' THEN a.status ELSE NULL END) AS day_3_K,
-    MAX(CASE WHEN DAY(dt.date_column) = 4 AND a.type = 'MASUK' THEN a.status ELSE NULL END) AS day_4_M,
-    MAX(CASE WHEN DAY(dt.date_column) = 4 AND a.type = 'KELUAR' THEN a.status ELSE NULL END) AS day_4_K,
-    MAX(CASE WHEN DAY(dt.date_column) = 5 AND a.type = 'MASUK' THEN a.status ELSE NULL END) AS day_5_M,
-    MAX(CASE WHEN DAY(dt.date_column) = 5 AND a.type = 'KELUAR' THEN a.status ELSE NULL END) AS day_5_K,
-    MAX(CASE WHEN DAY(dt.date_column) = 6 AND a.type = 'MASUK' THEN a.status ELSE NULL END) AS day_6_M,
-    MAX(CASE WHEN DAY(dt.date_column) = 6 AND a.type = 'KELUAR' THEN a.status ELSE NULL END) AS day_6_K,
-    MAX(CASE WHEN DAY(dt.date_column) = 7 AND a.type = 'MASUK' THEN a.status ELSE NULL END) AS day_7_M,
-    MAX(CASE WHEN DAY(dt.date_column) = 7 AND a.type = 'KELUAR' THEN a.status ELSE NULL END) AS day_7_K,
-    MAX(CASE WHEN DAY(dt.date_column) = 8 AND a.type = 'MASUK' THEN a.status ELSE NULL END) AS day_8_M,
-    MAX(CASE WHEN DAY(dt.date_column) = 8 AND a.type = 'KELUAR' THEN a.status ELSE NULL END) AS day_8_K,
-    MAX(CASE WHEN DAY(dt.date_column) = 9 AND a.type = 'MASUK' THEN a.status ELSE NULL END) AS day_9_M,
-    MAX(CASE WHEN DAY(dt.date_column) = 9 AND a.type = 'KELUAR' THEN a.status ELSE NULL END) AS day_9_K,
-    MAX(CASE WHEN DAY(dt.date_column) = 10 AND a.type = 'MASUK' THEN a.status ELSE NULL END) AS day_10_M,
-    MAX(CASE WHEN DAY(dt.date_column) = 10 AND a.type = 'KELUAR' THEN a.status ELSE NULL END) AS day_10_K,
-    MAX(CASE WHEN DAY(dt.date_column) = 11 AND a.type = 'MASUK' THEN a.status ELSE NULL END) AS day_11_M,
-    MAX(CASE WHEN DAY(dt.date_column) = 11 AND a.type = 'KELUAR' THEN a.status ELSE NULL END) AS day_11_K,
-    MAX(CASE WHEN DAY(dt.date_column) = 12 AND a.type = 'MASUK' THEN a.status ELSE NULL END) AS day_12_M,
-    MAX(CASE WHEN DAY(dt.date_column) = 12 AND a.type = 'KELUAR' THEN a.status ELSE NULL END) AS day_12_K,
-    MAX(CASE WHEN DAY(dt.date_column) = 13 AND a.type = 'MASUK' THEN a.status ELSE NULL END) AS day_13_M,
-    MAX(CASE WHEN DAY(dt.date_column) = 13 AND a.type = 'KELUAR' THEN a.status ELSE NULL END) AS day_13_K,
-    MAX(CASE WHEN DAY(dt.date_column) = 14 AND a.type = 'MASUK' THEN a.status ELSE NULL END) AS day_14_M,
-    MAX(CASE WHEN DAY(dt.date_column) = 14 AND a.type = 'KELUAR' THEN a.status ELSE NULL END) AS day_14_K,
-    MAX(CASE WHEN DAY(dt.date_column) = 15 AND a.type = 'MASUK' THEN a.status ELSE NULL END) AS day_15_M,
-    MAX(CASE WHEN DAY(dt.date_column) = 15 AND a.type = 'KELUAR' THEN a.status ELSE NULL END) AS day_15_K,
-    MAX(CASE WHEN DAY(dt.date_column) = 16 AND a.type = 'MASUK' THEN a.status ELSE NULL END) AS day_16_M,
-    MAX(CASE WHEN DAY(dt.date_column) = 16 AND a.type = 'KELUAR' THEN a.status ELSE NULL END) AS day_16_K,
-    MAX(CASE WHEN DAY(dt.date_column) = 17 AND a.type = 'MASUK' THEN a.status ELSE NULL END) AS day_17_M,
-    MAX(CASE WHEN DAY(dt.date_column) = 17 AND a.type = 'KELUAR' THEN a.status ELSE NULL END) AS day_17_K,
-    MAX(CASE WHEN DAY(dt.date_column) = 18 AND a.type = 'MASUK' THEN a.status ELSE NULL END) AS day_18_M,
-    MAX(CASE WHEN DAY(dt.date_column) = 18 AND a.type = 'KELUAR' THEN a.status ELSE NULL END) AS day_18_K,
-    MAX(CASE WHEN DAY(dt.date_column) = 19 AND a.type = 'MASUK' THEN a.status ELSE NULL END) AS day_19_M,
-    MAX(CASE WHEN DAY(dt.date_column) = 19 AND a.type = 'KELUAR' THEN a.status ELSE NULL END) AS day_19_K,
-    MAX(CASE WHEN DAY(dt.date_column) = 20 AND a.type = 'MASUK' THEN a.status ELSE NULL END) AS day_20_M,
-    MAX(CASE WHEN DAY(dt.date_column) = 20 AND a.type = 'KELUAR' THEN a.status ELSE NULL END) AS day_20_K,
-    MAX(CASE WHEN DAY(dt.date_column) = 21 AND a.type = 'MASUK' THEN a.status ELSE NULL END) AS day_21_M,
-    MAX(CASE WHEN DAY(dt.date_column) = 21 AND a.type = 'KELUAR' THEN a.status ELSE NULL END) AS day_21_K,
-    MAX(CASE WHEN DAY(dt.date_column) = 22 AND a.type = 'MASUK' THEN a.status ELSE NULL END) AS day_22_M,
-    MAX(CASE WHEN DAY(dt.date_column) = 22 AND a.type = 'KELUAR' THEN a.status ELSE NULL END) AS day_22_K,
-    MAX(CASE WHEN DAY(dt.date_column) = 23 AND a.type = 'MASUK' THEN a.status ELSE NULL END) AS day_23_M,
-    MAX(CASE WHEN DAY(dt.date_column) = 23 AND a.type = 'KELUAR' THEN a.status ELSE NULL END) AS day_23_K,
-    MAX(CASE WHEN DAY(dt.date_column) = 24 AND a.type = 'MASUK' THEN a.status ELSE NULL END) AS day_24_M,
-    MAX(CASE WHEN DAY(dt.date_column) = 24 AND a.type = 'KELUAR' THEN a.status ELSE NULL END) AS day_24_K,
-    MAX(CASE WHEN DAY(dt.date_column) = 25 AND a.type = 'MASUK' THEN a.status ELSE NULL END) AS day_25_M,
-    MAX(CASE WHEN DAY(dt.date_column) = 25 AND a.type = 'KELUAR' THEN a.status ELSE NULL END) AS day_25_K,
-    MAX(CASE WHEN DAY(dt.date_column) = 26 AND a.type = 'MASUK' THEN a.status ELSE NULL END) AS day_26_M,
-    MAX(CASE WHEN DAY(dt.date_column) = 26 AND a.type = 'KELUAR' THEN a.status ELSE NULL END) AS day_26_K,
-    MAX(CASE WHEN DAY(dt.date_column) = 27 AND a.type = 'MASUK' THEN a.status ELSE NULL END) AS day_27_M,
-    MAX(CASE WHEN DAY(dt.date_column) = 27 AND a.type = 'KELUAR' THEN a.status ELSE NULL END) AS day_27_K,
-    MAX(CASE WHEN DAY(dt.date_column) = 28 AND a.type = 'MASUK' THEN a.status ELSE NULL END) AS day_28_M,
-    MAX(CASE WHEN DAY(dt.date_column) = 28 AND a.type = 'KELUAR' THEN a.status ELSE NULL END) AS day_28_K,
-    MAX(CASE WHEN DAY(dt.date_column) = 29 AND a.type = 'MASUK' THEN a.status ELSE NULL END) AS day_29_M,
-    MAX(CASE WHEN DAY(dt.date_column) = 29 AND a.type = 'KELUAR' THEN a.status ELSE NULL END) AS day_29_K,
-    MAX(CASE WHEN DAY(dt.date_column) = 30 AND a.type = 'MASUK' THEN a.status ELSE NULL END) AS day_30_M,
-    MAX(CASE WHEN DAY(dt.date_column) = 30 AND a.type = 'KELUAR' THEN a.status ELSE NULL END) AS day_30_K,
-    MAX(CASE WHEN DAY(dt.date_column) = 31 AND a.type = 'MASUK' THEN a.status ELSE NULL END) AS day_31_M,
-    MAX(CASE WHEN DAY(dt.date_column) = 31 AND a.type = 'KELUAR' THEN a.status ELSE NULL END) AS day_31_K
+     MAX(CASE WHEN DAY(dt.date_column) = 1 THEN 
+        COALESCE(h.holiday_name, 
+            CASE WHEN a.type = 'MASUK' THEN a.status 
+            WHEN ct_type.cuti_name IS NOT NULL THEN ct_type.cuti_name ELSE NULL END
+        ) END) AS day_1_M,
+MAX(CASE WHEN DAY(dt.date_column) = 1 THEN 
+        COALESCE(h.holiday_name, 
+            CASE WHEN a.type = 'KELUAR' THEN a.status 
+            WHEN ct_type.cuti_name IS NOT NULL THEN ct_type.cuti_name ELSE NULL END
+        ) END) AS day_1_K,
+MAX(CASE WHEN DAY(dt.date_column) = 2 THEN 
+        COALESCE(h.holiday_name, 
+            CASE WHEN a.type = 'MASUK' THEN a.status 
+            WHEN ct_type.cuti_name IS NOT NULL THEN ct_type.cuti_name ELSE NULL END
+        ) END) AS day_2_M,
+MAX(CASE WHEN DAY(dt.date_column) = 2 THEN 
+        COALESCE(h.holiday_name, 
+            CASE WHEN a.type = 'KELUAR' THEN a.status 
+            WHEN ct_type.cuti_name IS NOT NULL THEN ct_type.cuti_name ELSE NULL END
+        ) END) AS day_2_K,
+MAX(CASE WHEN DAY(dt.date_column) = 3 THEN 
+        COALESCE(h.holiday_name, 
+            CASE WHEN a.type = 'MASUK' THEN a.status 
+            WHEN ct_type.cuti_name IS NOT NULL THEN ct_type.cuti_name ELSE NULL END
+        ) END) AS day_3_M,
+MAX(CASE WHEN DAY(dt.date_column) = 3 THEN 
+        COALESCE(h.holiday_name, 
+            CASE WHEN a.type = 'KELUAR' THEN a.status 
+            WHEN ct_type.cuti_name IS NOT NULL THEN ct_type.cuti_name ELSE NULL END
+        ) END) AS day_3_K,
+MAX(CASE WHEN DAY(dt.date_column) = 4 THEN 
+        COALESCE(h.holiday_name, 
+            CASE WHEN a.type = 'MASUK' THEN a.status 
+            WHEN ct_type.cuti_name IS NOT NULL THEN ct_type.cuti_name ELSE NULL END
+        ) END) AS day_4_M,
+MAX(CASE WHEN DAY(dt.date_column) = 4 THEN 
+        COALESCE(h.holiday_name, 
+            CASE WHEN a.type = 'KELUAR' THEN a.status 
+            WHEN ct_type.cuti_name IS NOT NULL THEN ct_type.cuti_name ELSE NULL END
+        ) END) AS day_4_K,
+MAX(CASE WHEN DAY(dt.date_column) = 5 THEN 
+        COALESCE(h.holiday_name, 
+            CASE WHEN a.type = 'MASUK' THEN a.status 
+            WHEN ct_type.cuti_name IS NOT NULL THEN ct_type.cuti_name ELSE NULL END
+        ) END) AS day_5_M,
+MAX(CASE WHEN DAY(dt.date_column) = 5 THEN 
+        COALESCE(h.holiday_name, 
+            CASE WHEN a.type = 'KELUAR' THEN a.status 
+            WHEN ct_type.cuti_name IS NOT NULL THEN ct_type.cuti_name ELSE NULL END
+        ) END) AS day_5_K,
+         MAX(CASE WHEN DAY(dt.date_column) = 6 THEN 
+        COALESCE(h.holiday_name, 
+            CASE WHEN a.type = 'MASUK' THEN a.status 
+            WHEN ct_type.cuti_name IS NOT NULL THEN ct_type.cuti_name ELSE NULL END
+        ) END) AS day_6_M,
+MAX(CASE WHEN DAY(dt.date_column) = 6 THEN 
+        COALESCE(h.holiday_name, 
+            CASE WHEN a.type = 'KELUAR' THEN a.status 
+            WHEN ct_type.cuti_name IS NOT NULL THEN ct_type.cuti_name ELSE NULL END
+        ) END) AS day_6_K,
+MAX(CASE WHEN DAY(dt.date_column) = 7 THEN 
+        COALESCE(h.holiday_name, 
+            CASE WHEN a.type = 'MASUK' THEN a.status 
+            WHEN ct_type.cuti_name IS NOT NULL THEN ct_type.cuti_name ELSE NULL END
+        ) END) AS day_7_M,
+MAX(CASE WHEN DAY(dt.date_column) = 7 THEN 
+        COALESCE(h.holiday_name, 
+            CASE WHEN a.type = 'KELUAR' THEN a.status 
+            WHEN ct_type.cuti_name IS NOT NULL THEN ct_type.cuti_name ELSE NULL END
+        ) END) AS day_7_K,
+MAX(CASE WHEN DAY(dt.date_column) = 8 THEN 
+        COALESCE(h.holiday_name, 
+            CASE WHEN a.type = 'MASUK' THEN a.status 
+            WHEN ct_type.cuti_name IS NOT NULL THEN ct_type.cuti_name ELSE NULL END
+        ) END) AS day_8_M,
+MAX(CASE WHEN DAY(dt.date_column) = 8 THEN 
+        COALESCE(h.holiday_name, 
+            CASE WHEN a.type = 'KELUAR' THEN a.status 
+            WHEN ct_type.cuti_name IS NOT NULL THEN ct_type.cuti_name ELSE NULL END
+        ) END) AS day_8_K,
+MAX(CASE WHEN DAY(dt.date_column) = 9 THEN 
+        COALESCE(h.holiday_name, 
+            CASE WHEN a.type = 'MASUK' THEN a.status 
+            WHEN ct_type.cuti_name IS NOT NULL THEN ct_type.cuti_name ELSE NULL END
+        ) END) AS day_9_M,
+MAX(CASE WHEN DAY(dt.date_column) = 9 THEN 
+        COALESCE(h.holiday_name, 
+            CASE WHEN a.type = 'KELUAR' THEN a.status 
+            WHEN ct_type.cuti_name IS NOT NULL THEN ct_type.cuti_name ELSE NULL END
+        ) END) AS day_9_K,
+MAX(CASE WHEN DAY(dt.date_column) = 10 THEN 
+        COALESCE(h.holiday_name, 
+            CASE WHEN a.type = 'MASUK' THEN a.status 
+            WHEN ct_type.cuti_name IS NOT NULL THEN ct_type.cuti_name ELSE NULL END
+        ) END) AS day_10_M,
+MAX(CASE WHEN DAY(dt.date_column) = 10 THEN 
+        COALESCE(h.holiday_name, 
+            CASE WHEN a.type = 'KELUAR' THEN a.status 
+            WHEN ct_type.cuti_name IS NOT NULL THEN ct_type.cuti_name ELSE NULL END
+        ) END) AS day_10_K,
+MAX(CASE WHEN DAY(dt.date_column) = 11 THEN 
+        COALESCE(h.holiday_name, 
+            CASE WHEN a.type = 'MASUK' THEN a.status 
+            WHEN ct_type.cuti_name IS NOT NULL THEN ct_type.cuti_name ELSE NULL END
+        ) END) AS day_11_M,
+MAX(CASE WHEN DAY(dt.date_column) = 11 THEN 
+        COALESCE(h.holiday_name, 
+            CASE WHEN a.type = 'KELUAR' THEN a.status 
+            WHEN ct_type.cuti_name IS NOT NULL THEN ct_type.cuti_name ELSE NULL END
+        ) END) AS day_11_K,
+MAX(CASE WHEN DAY(dt.date_column) = 12 THEN 
+        COALESCE(h.holiday_name, 
+            CASE WHEN a.type = 'MASUK' THEN a.status 
+            WHEN ct_type.cuti_name IS NOT NULL THEN ct_type.cuti_name ELSE NULL END
+        ) END) AS day_12_M,
+MAX(CASE WHEN DAY(dt.date_column) = 12 THEN 
+        COALESCE(h.holiday_name, 
+            CASE WHEN a.type = 'KELUAR' THEN a.status 
+            WHEN ct_type.cuti_name IS NOT NULL THEN ct_type.cuti_name ELSE NULL END
+        ) END) AS day_12_K,
+MAX(CASE WHEN DAY(dt.date_column) = 13 THEN 
+        COALESCE(h.holiday_name, 
+            CASE WHEN a.type = 'MASUK' THEN a.status 
+            WHEN ct_type.cuti_name IS NOT NULL THEN ct_type.cuti_name ELSE NULL END
+        ) END) AS day_13_M,
+MAX(CASE WHEN DAY(dt.date_column) = 13 THEN 
+        COALESCE(h.holiday_name, 
+            CASE WHEN a.type = 'KELUAR' THEN a.status 
+            WHEN ct_type.cuti_name IS NOT NULL THEN ct_type.cuti_name ELSE NULL END
+        ) END) AS day_13_K,
+MAX(CASE WHEN DAY(dt.date_column) = 14 THEN 
+        COALESCE(h.holiday_name, 
+            CASE WHEN a.type = 'MASUK' THEN a.status 
+            WHEN ct_type.cuti_name IS NOT NULL THEN ct_type.cuti_name ELSE NULL END
+        ) END) AS day_14_M,
+MAX(CASE WHEN DAY(dt.date_column) = 14 THEN 
+        COALESCE(h.holiday_name, 
+            CASE WHEN a.type = 'KELUAR' THEN a.status 
+            WHEN ct_type.cuti_name IS NOT NULL THEN ct_type.cuti_name ELSE NULL END
+        ) END) AS day_14_K,
+MAX(CASE WHEN DAY(dt.date_column) = 15 THEN 
+        COALESCE(h.holiday_name, 
+            CASE WHEN a.type = 'MASUK' THEN a.status 
+            WHEN ct_type.cuti_name IS NOT NULL THEN ct_type.cuti_name ELSE NULL END
+        ) END) AS day_15_M,
+MAX(CASE WHEN DAY(dt.date_column) = 15 THEN 
+        COALESCE(h.holiday_name, 
+            CASE WHEN a.type = 'KELUAR' THEN a.status 
+            WHEN ct_type.cuti_name IS NOT NULL THEN ct_type.cuti_name ELSE NULL END
+        ) END) AS day_15_K,
+         MAX(CASE WHEN DAY(dt.date_column) = 16 THEN 
+        COALESCE(h.holiday_name, 
+            CASE WHEN a.type = 'MASUK' THEN a.status 
+            WHEN ct_type.cuti_name IS NOT NULL THEN ct_type.cuti_name ELSE NULL END
+        ) END) AS day_16_M,
+MAX(CASE WHEN DAY(dt.date_column) = 16 THEN 
+        COALESCE(h.holiday_name, 
+            CASE WHEN a.type = 'KELUAR' THEN a.status 
+            WHEN ct_type.cuti_name IS NOT NULL THEN ct_type.cuti_name ELSE NULL END
+        ) END) AS day_16_K,
+MAX(CASE WHEN DAY(dt.date_column) = 17 THEN 
+        COALESCE(h.holiday_name, 
+            CASE WHEN a.type = 'MASUK' THEN a.status 
+            WHEN ct_type.cuti_name IS NOT NULL THEN ct_type.cuti_name ELSE NULL END
+        ) END) AS day_17_M,
+MAX(CASE WHEN DAY(dt.date_column) = 17 THEN 
+        COALESCE(h.holiday_name, 
+            CASE WHEN a.type = 'KELUAR' THEN a.status 
+            WHEN ct_type.cuti_name IS NOT NULL THEN ct_type.cuti_name ELSE NULL END
+        ) END) AS day_17_K,
+MAX(CASE WHEN DAY(dt.date_column) = 18 THEN 
+        COALESCE(h.holiday_name, 
+            CASE WHEN a.type = 'MASUK' THEN a.status 
+            WHEN ct_type.cuti_name IS NOT NULL THEN ct_type.cuti_name ELSE NULL END
+        ) END) AS day_18_M,
+MAX(CASE WHEN DAY(dt.date_column) = 18 THEN 
+        COALESCE(h.holiday_name, 
+            CASE WHEN a.type = 'KELUAR' THEN a.status 
+            WHEN ct_type.cuti_name IS NOT NULL THEN ct_type.cuti_name ELSE NULL END
+        ) END) AS day_18_K,
+MAX(CASE WHEN DAY(dt.date_column) = 19 THEN 
+        COALESCE(h.holiday_name, 
+            CASE WHEN a.type = 'MASUK' THEN a.status 
+            WHEN ct_type.cuti_name IS NOT NULL THEN ct_type.cuti_name ELSE NULL END
+        ) END) AS day_19_M,
+MAX(CASE WHEN DAY(dt.date_column) = 19 THEN 
+        COALESCE(h.holiday_name, 
+            CASE WHEN a.type = 'KELUAR' THEN a.status 
+            WHEN ct_type.cuti_name IS NOT NULL THEN ct_type.cuti_name ELSE NULL END
+        ) END) AS day_19_K,
+MAX(CASE WHEN DAY(dt.date_column) = 20 THEN 
+        COALESCE(h.holiday_name, 
+            CASE WHEN a.type = 'MASUK' THEN a.status 
+            WHEN ct_type.cuti_name IS NOT NULL THEN ct_type.cuti_name ELSE NULL END
+        ) END) AS day_20_M,
+MAX(CASE WHEN DAY(dt.date_column) = 20 THEN 
+        COALESCE(h.holiday_name, 
+            CASE WHEN a.type = 'KELUAR' THEN a.status 
+            WHEN ct_type.cuti_name IS NOT NULL THEN ct_type.cuti_name ELSE NULL END
+        ) END) AS day_20_K,
+MAX(CASE WHEN DAY(dt.date_column) = 21 THEN 
+        COALESCE(h.holiday_name, 
+            CASE WHEN a.type = 'MASUK' THEN a.status 
+            WHEN ct_type.cuti_name IS NOT NULL THEN ct_type.cuti_name ELSE NULL END
+        ) END) AS day_21_M,
+MAX(CASE WHEN DAY(dt.date_column) = 21 THEN 
+        COALESCE(h.holiday_name, 
+            CASE WHEN a.type = 'KELUAR' THEN a.status 
+            WHEN ct_type.cuti_name IS NOT NULL THEN ct_type.cuti_name ELSE NULL END
+        ) END) AS day_21_K,
+MAX(CASE WHEN DAY(dt.date_column) = 22 THEN 
+        COALESCE(h.holiday_name, 
+            CASE WHEN a.type = 'MASUK' THEN a.status 
+            WHEN ct_type.cuti_name IS NOT NULL THEN ct_type.cuti_name ELSE NULL END
+        ) END) AS day_22_M,
+MAX(CASE WHEN DAY(dt.date_column) = 22 THEN 
+        COALESCE(h.holiday_name, 
+            CASE WHEN a.type = 'KELUAR' THEN a.status 
+            WHEN ct_type.cuti_name IS NOT NULL THEN ct_type.cuti_name ELSE NULL END
+        ) END) AS day_22_K,
+MAX(CASE WHEN DAY(dt.date_column) = 23 THEN 
+        COALESCE(h.holiday_name, 
+            CASE WHEN a.type = 'MASUK' THEN a.status 
+            WHEN ct_type.cuti_name IS NOT NULL THEN ct_type.cuti_name ELSE NULL END
+        ) END) AS day_23_M,
+MAX(CASE WHEN DAY(dt.date_column) = 23 THEN 
+        COALESCE(h.holiday_name, 
+            CASE WHEN a.type = 'KELUAR' THEN a.status 
+            WHEN ct_type.cuti_name IS NOT NULL THEN ct_type.cuti_name ELSE NULL END
+        ) END) AS day_23_K,
+MAX(CASE WHEN DAY(dt.date_column) = 24 THEN 
+        COALESCE(h.holiday_name, 
+            CASE WHEN a.type = 'MASUK' THEN a.status 
+            WHEN ct_type.cuti_name IS NOT NULL THEN ct_type.cuti_name ELSE NULL END
+        ) END) AS day_24_M,
+MAX(CASE WHEN DAY(dt.date_column) = 24 THEN 
+        COALESCE(h.holiday_name, 
+            CASE WHEN a.type = 'KELUAR' THEN a.status 
+            WHEN ct_type.cuti_name IS NOT NULL THEN ct_type.cuti_name ELSE NULL END
+        ) END) AS day_24_K,
+MAX(CASE WHEN DAY(dt.date_column) = 25 THEN 
+        COALESCE(h.holiday_name, 
+            CASE WHEN a.type = 'MASUK' THEN a.status 
+            WHEN ct_type.cuti_name IS NOT NULL THEN ct_type.cuti_name ELSE NULL END
+        ) END) AS day_25_M,
+MAX(CASE WHEN DAY(dt.date_column) = 25 THEN 
+        COALESCE(h.holiday_name, 
+            CASE WHEN a.type = 'KELUAR' THEN a.status 
+            WHEN ct_type.cuti_name IS NOT NULL THEN ct_type.cuti_name ELSE NULL END
+        ) END) AS day_25_K,
+MAX(CASE WHEN DAY(dt.date_column) = 26 THEN 
+        COALESCE(h.holiday_name, 
+            CASE WHEN a.type = 'MASUK' THEN a.status 
+            WHEN ct_type.cuti_name IS NOT NULL THEN ct_type.cuti_name ELSE NULL END
+        ) END) AS day_26_M,
+MAX(CASE WHEN DAY(dt.date_column) = 26 THEN 
+        COALESCE(h.holiday_name, 
+            CASE WHEN a.type = 'KELUAR' THEN a.status 
+            WHEN ct_type.cuti_name IS NOT NULL THEN ct_type.cuti_name ELSE NULL END
+        ) END) AS day_26_K,
+MAX(CASE WHEN DAY(dt.date_column) = 27 THEN 
+        COALESCE(h.holiday_name, 
+            CASE WHEN a.type = 'MASUK' THEN a.status 
+            WHEN ct_type.cuti_name IS NOT NULL THEN ct_type.cuti_name ELSE NULL END
+        ) END) AS day_27_M,
+MAX(CASE WHEN DAY(dt.date_column) = 27 THEN 
+        COALESCE(h.holiday_name, 
+            CASE WHEN a.type = 'KELUAR' THEN a.status 
+            WHEN ct_type.cuti_name IS NOT NULL THEN ct_type.cuti_name ELSE NULL END
+        ) END) AS day_27_K,
+MAX(CASE WHEN DAY(dt.date_column) = 28 THEN 
+        COALESCE(h.holiday_name, 
+            CASE WHEN a.type = 'MASUK' THEN a.status 
+            WHEN ct_type.cuti_name IS NOT NULL THEN ct_type.cuti_name ELSE NULL END
+        ) END) AS day_28_M,
+MAX(CASE WHEN DAY(dt.date_column) = 28 THEN 
+        COALESCE(h.holiday_name, 
+            CASE WHEN a.type = 'KELUAR' THEN a.status 
+            WHEN ct_type.cuti_name IS NOT NULL THEN ct_type.cuti_name ELSE NULL END
+        ) END) AS day_28_K,
+MAX(CASE WHEN DAY(dt.date_column) = 29 THEN 
+        COALESCE(h.holiday_name, 
+            CASE WHEN a.type = 'MASUK' THEN a.status 
+            WHEN ct_type.cuti_name IS NOT NULL THEN ct_type.cuti_name ELSE NULL END
+        ) END) AS day_29_M,
+MAX(CASE WHEN DAY(dt.date_column) = 29 THEN 
+        COALESCE(h.holiday_name, 
+            CASE WHEN a.type = 'KELUAR' THEN a.status 
+            WHEN ct_type.cuti_name IS NOT NULL THEN ct_type.cuti_name ELSE NULL END
+        ) END) AS day_29_K,
+MAX(CASE WHEN DAY(dt.date_column) = 30 THEN 
+        COALESCE(h.holiday_name, 
+            CASE WHEN a.type = 'MASUK' THEN a.status 
+            WHEN ct_type.cuti_name IS NOT NULL THEN ct_type.cuti_name ELSE NULL END
+        ) END) AS day_30_M,
+MAX(CASE WHEN DAY(dt.date_column) = 30 THEN 
+        COALESCE(h.holiday_name, 
+            CASE WHEN a.type = 'KELUAR' THEN a.status 
+            WHEN ct_type.cuti_name IS NOT NULL THEN ct_type.cuti_name ELSE NULL END
+        ) END) AS day_30_K,
+MAX(CASE WHEN DAY(dt.date_column) = 31 THEN 
+        COALESCE(h.holiday_name, 
+            CASE WHEN a.type = 'MASUK' THEN a.status 
+            WHEN ct_type.cuti_name IS NOT NULL THEN ct_type.cuti_name ELSE NULL END
+        ) END) AS day_31_M,
+MAX(CASE WHEN DAY(dt.date_column) = 31 THEN 
+        COALESCE(h.holiday_name, 
+            CASE WHEN a.type = 'KELUAR' THEN a.status 
+            WHEN ct_type.cuti_name IS NOT NULL THEN ct_type.cuti_name ELSE NULL END
+        ) END) AS day_31_K
     FROM
       users u
     JOIN
@@ -893,7 +1408,12 @@ Absensi.laporanAbsensiSubjectByUserId = (
     LEFT JOIN
       attendance a ON a.user_id = u.id 
       AND DATE(a.created_at) = DATE(dt.date_column)
-      AND a.subject_id = '${subject_id}'  -- Filter by activity_id
+      AND a.subject_id = '${subject_id}'
+      LEFT JOIN holidays h ON h.school_id = u.school_id
+      AND dt.date_column BETWEEN h.holiday_date_start AND h.holiday_date_end AND h.status = 'ON'
+    LEFT JOIN cuti ct ON ct.user_id = u.id
+      AND dt.date_column BETWEEN ct.start_date AND ct.end_date
+    LEFT JOIN cuti_type ct_type ON ct.cuti_type_id = ct_type.id AND ct.status = 'Approved'
     WHERE
       u.role = '160'
   `;
@@ -994,8 +1514,23 @@ Absensi.deleteAbsensi = (uid, result) => {
     result(null, res);
   });
 };
+
+
 Absensi.deleteActivities = (uid, result) => {
   let query = `DELETE FROM activities WHERE id = '${uid}'`;
+  db.query(query, (err, res) => {
+    if (err) {
+      console.log("error: ", err);
+      result(err, null);
+      return;
+    }
+    // console.log(`Deleted activities with ID ${uid}`);
+    result(null, res);
+  });
+};
+
+Absensi.deleteAbsensiAktif = (uid, result) => {
+  let query = `DELETE FROM setting_absensi WHERE id = '${uid}'`;
   db.query(query, (err, res) => {
     if (err) {
       console.log("error: ", err);
@@ -1017,6 +1552,18 @@ Absensi.detailAbsensi = async (id, result) => {
     }
 
     // console.log("Activities: ", res);
+    result(null, res[0]);
+  });
+};
+Absensi.detailSettingAbsensi = async (id, result) => {
+  let query = "SELECT * from setting_absensi where id = '" + id + "'";
+  db.query(query, (err, res) => {
+    if (err) {
+      console.log("error: ", err);
+      result(null, err);
+      return;
+    }
+
     result(null, res[0]);
   });
 };

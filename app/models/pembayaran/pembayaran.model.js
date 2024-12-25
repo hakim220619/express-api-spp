@@ -1614,7 +1614,6 @@ Pembayaran.createTopUpPending = (newPayment, result) => {
 Pembayaran.updateSuccessFree = async (newPayment, result) => {
   const { dataPayment, order_id, redirect_url, total_amount } = newPayment;
   const uid = `${uuidv4()}-${Date.now()}`;
-  console.log(newPayment);
 
   const { DB_HOST, DB_NAME, DB_USER, DB_PASSWORD } = process.env;
   const pool = mysql.createPool({
@@ -1667,7 +1666,6 @@ Pembayaran.updateSuccessFree = async (newPayment, result) => {
   }
 
   const newBalance = balance - total_affiliate;
-  console.log(newBalance);
 
   await paymentConnection.query("UPDATE school SET balance = ? WHERE id = ?", [
     newBalance,

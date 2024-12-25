@@ -37,8 +37,6 @@ exports.listAbsensiByUserId = (req, res, next) => {
   const user_id = req.query.user_id;
   const years = req.query.years;
   const month = req.query.month;
-  console.log(req.query);
-  
 
   Absensi.listAbsensiByUserId(user_id, years, month, (err, data) => {
     if (err)
@@ -271,7 +269,6 @@ exports.createAbsensiWithToken = [
         type: type,
         status: status,
       };
-      console.log(attendance);
 
       Absensi.createAbsensiWithToken(attendance, (err, data) => {
         if (err) {
@@ -312,6 +309,49 @@ exports.updateAbsensi = [
       // console.log(Absensi);
 
       Absensi.updateAbsensi(Absen, (err, data) => {
+        if (err) {
+          return res.status(500).send({
+            message:
+              err.message || "Some error occurred while updating the Absensi.",
+          });
+        } else {
+          res.send(data);
+        }
+      });
+    } catch (error) {
+      res.status(500).send({ message: "Error updating Absensis" });
+    }
+  },
+];
+
+// Update existing Admin
+exports.updateAbsensiAktif = [
+  upload.none(),
+  async (req, res) => {
+    if (!req.body) {
+      return res.status(400).send({
+        message: "Content cannot be empty!",
+      });
+    }
+
+    try {
+      const activityIdValue =
+        req.body.data.activity_id === "" ? null : req.body.data.activity_id;
+      const subjectIdValue =
+        req.body.data.subject_id === "" ? null : req.body.data.subject_id;
+
+      const AbsensiAktif = {
+        id: req.body.data.id,
+        school_id: req.body.data.school_id,
+        unit_id: req.body.data.unit_id,
+        status: req.body.data.status,
+        deskripsi: req.body.data.deskripsi,
+        activity_id: activityIdValue, // Use conditional value for activity_id
+        subject_id: subjectIdValue, // Use conditional value for subject_id
+        updated_at: new Date(),
+      };
+
+      Absensi.updateAbsensiAktif(AbsensiAktif, (err, data) => {
         if (err) {
           return res.status(500).send({
             message:
@@ -455,8 +495,6 @@ exports.updateActivities = [
         updated_at: new Date(),
       };
 
-      console.log(Activities);
-
       // Save to database
       Absensi.updateActivities(Activities, (err, data) => {
         if (err) {
@@ -488,11 +526,28 @@ exports.deleteAbsensi = (req, res) => {
     }
   });
 };
+
+
 // Delete an Admin
 exports.deleteActivities = (req, res) => {
   const uid = req.body.data;
 
   Absensi.deleteActivities(uid, (err, data) => {
+    if (err) {
+      return res.status(500).send({
+        message: err.message || "Some error occurred while deleting the Admin.",
+      });
+    } else {
+      res.send(data);
+    }
+  });
+};
+
+// Delete an Admin
+exports.deleteAbsensiAktif = (req, res) => {
+  const uid = req.body.data;
+
+  Absensi.deleteAbsensiAktif(uid, (err, data) => {
     if (err) {
       return res.status(500).send({
         message: err.message || "Some error occurred while deleting the Admin.",
@@ -519,6 +574,18 @@ exports.detailAbsensi = (req, res, next) => {
   const id = req.body.id;
 
   Absensi.detailAbsensi(id, (err, data) => {
+    if (err)
+      res.status(500).send({
+        message:
+          err.message || "Some error occurred while retrieving tutorials.",
+      });
+    else res.send(data);
+  });
+};
+exports.detailSettingAbsensi = (req, res, next) => {
+  const id = req.body.uid;
+
+  Absensi.detailSettingAbsensi(id, (err, data) => {
     if (err)
       res.status(500).send({
         message:

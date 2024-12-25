@@ -96,8 +96,14 @@ module.exports = (app) => {
 
   router.get("/list-absensi-by-userId", token.authenticateToken, Absensi.listAbsensiByUserId);
   router.get("/list-absensi-aktif", token.authenticateToken, Absensi.listAbsensiAktif);
+  router.post("/detailSettingAbsensi", token.authenticateToken, Absensi.detailSettingAbsensi);
   router.post("/absensi-with-token", Absensi.createAbsensiWithToken);
   router.post("/create-absensi-aktif", token.authenticateToken, Absensi.createAbsensiAktif);
+  router.post("/update-absensi-aktif", token.authenticateToken, Absensi.updateAbsensiAktif);
+  router.post("/delete-absensi-aktif", token.authenticateToken, Absensi.deleteAbsensiAktif);
+
+
+  
   //activities
   router.get("/list-activities", token.authenticateToken, Absensi.listActivities);
   router.post("/create-activities", token.authenticateToken, Absensi.createActivities);

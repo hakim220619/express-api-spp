@@ -46,16 +46,16 @@ const axios = require("axios");
 
 Siswa.registerSiswa = (newUsers, result) => {
   // Tentukan query dan parameter berdasarkan apakah ada unit_id atau tidak
-  let queryUnit = `SELECT * FROM unit WHERE school_id = '${newUsers.school_id}' and `;
+  let queryUnit = `SELECT * FROM unit WHERE school_id = '${newUsers.school_id}' `;
 
+  console.log(newUsers.unit_id);
   console.log(newUsers.unit_name);
 
   if (newUsers.unit_id) {
     // Cek apakah newUsers.unit_id ada dan terdefinisi
-    queryUnit += `id = '${newUsers.unit_id}'`;
-  } else {
-    queryUnit += `unit_name = '${newUsers.unit_name}'`;
-  }
+    queryUnit += ` and id = '${newUsers.unit_id}'`;
+  } 
+console.log(queryUnit);
 
 
   // Eksekusi query untuk mendapatkan data unit

@@ -583,6 +583,7 @@ SettingPembayaran.listSettingPembayaran = (
   if (unit_id) {
     query += ` AND sp.unit_id = '${unit_id}'`;
   }
+  query += " ORDER BY sp.created_at desc"
   // console.log(query);
 
   db.query(query, (err, res) => {
@@ -635,7 +636,7 @@ SettingPembayaran.listSettingPembayaranDetail = (
     query += ` AND p.unit_id = '${unit_id}'`;
   }
 
-  query += ` GROUP BY p.user_id, p.setting_payment_uid`;
+  query += ` GROUP BY p.user_id, p.setting_payment_uid, p.class_id`;
   console.log(query);
 
   db.query(query, (err, res) => {

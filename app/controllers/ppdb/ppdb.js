@@ -6,7 +6,6 @@ const path = require("path");
 const fs = require("fs");
 const db = require("../../config/db.config");
 
-
 const baseUploadDir = "uploads/school/siswa_baru";
 if (!fs.existsSync(baseUploadDir)) {
   fs.mkdirSync(baseUploadDir, { recursive: true });
@@ -40,8 +39,16 @@ exports.createSettingPpdb = [
   async (req, res) => {
     try {
       // Validasi input request body
-      const { school_id, unit_id, years, amount, status, address, url, target } =
-        req.body;
+      const {
+        school_id,
+        unit_id,
+        years,
+        amount,
+        status,
+        address,
+        url,
+        target,
+      } = req.body;
 
       // Validasi wajib untuk unit_id, years, dan amount
       if (!unit_id || !years || !amount) {
@@ -140,23 +147,25 @@ const storageV1 = multer.diskStorage({
 
 const uploadV1 = multer({ storage: storageV1 });
 
-
 exports.sendDataSiswaBaruAll = [
   uploadV1.fields([
     { name: "kartuKeluarga", maxCount: 1 },
     { name: "akteLahir", maxCount: 1 },
     { name: "ktpOrangtua", maxCount: 1 },
     { name: "ijasah", maxCount: 1 },
+    { name: "rapor", maxCount: 1 },
+    { name: "passFotoSiswa", maxCount: 1 },
   ]),
   async (req, res) => {
-    // Validasi permintaan
+    // Validate request payload
     if (!req.body) {
       return res.status(400).send({
         message: "Content cannot be empty!",
       });
     }
+// console.log(req.body);
 
-    // Daftar field yang wajib ada
+    // List of required fields
     const requiredFields = [
       "id",
       "fullName",
@@ -170,149 +179,106 @@ exports.sendDataSiswaBaruAll = [
       "motherName",
     ];
 
-    // Cek apakah semua field yang diperlukan ada dan tidak null
-    for (const field of requiredFields) {
-      if (!req.body[field]) {
-        return res.status(400).send({
-          message: `${field} cannot be empty!`,
-        });
+    // Check if all required fields are present and non-null
+    // for (const field of requiredFields) {
+    //   if (!req.body[field]) {
+    //     return res.status(400).send({
+    //       message: `${field} cannot be empty!`,
+    //     });
+    //   }
+    // }
+
+    // Function to handle potentially invalid values
+    const handleInvalid = (value) => {
+      if (value === "undefined" || value === undefined || value === NaN) {
+        return '';
       }
-    }
+      return value;
+    };
 
-    const {
-      id,
-      fullName,
-      nick_name,
-      gender,
-      nik,
-      nisn,
-      birth_place_date,
-      birth_date,
-      birth_cert_no,
-      address,
-      religion,
-      rt,
-      rw,
-      dusun,
-      kecamatan,
-      school,
-      siblings,
-      transportation,
-      travelHours,
-      travelMinutes,
-      distanceInKm,
-      distanceToSchool,
-      height,
-      weight,
-      mobilePhone,
-      phone,
-      homePhone,
-      email,
-      kpsNumber,
-      kpsReceiver,
-      fatherName,
-      fatherNik,
-      fatherBirthYear,
-      fatherEducation,
-      fatherJob,
-      fatherIncome,
-      motherName,
-      motherNik,
-      motherBirthYear,
-      motherEducation,
-      motherJob,
-      motherIncome,
-      guardianName,
-      guardianNik,
-      guardianBirthYear,
-      guardianEducation,
-      guardianJob,
-      guardianIncome,
-    } = req.body;
+    // Function to handle potentially invalid numeric values (e.g., income fields)
+    const parseIncome = (value) => {
+      const num = parseInt(value.replace(/[Rp.]/g, ""), 10);
+      return isNaN(num) ? null : num;
+    };
 
-    // Ekstrak jalur file dari multer
+    // Extract file paths from multer
     const files = req.files;
 
-    const kartuKeluarga = files.kartuKeluarga
-      ? files.kartuKeluarga[0].path
-      : req.body.kartuKeluarga;
-    const akteLahir = files.akteLahir ? files.akteLahir[0].path : req.body.akteLahir;
-    const ktpOrangtua = files.ktpOrangtua ? files.ktpOrangtua[0].path : req.body.ktpOrangtua;
-    const ijasah = files.ijasah ? files.ijasah[0].path : req.body.ijasah;
+    const studentData = {
+      cs_id:  handleInvalid(req.body.id),
+      full_name: handleInvalid(req.body.fullName),
+      nick_name: handleInvalid(req.body.nick_name),
+      gender: handleInvalid(req.body.gender),
+      nik: handleInvalid(req.body.nik),
+      nisn: handleInvalid(req.body.nisn),
+      birth_place_date: handleInvalid(req.body.birth_place_date),
+      birth_date: handleInvalid(req.body.birth_date),
+      birth_cert_no: handleInvalid(req.body.birth_cert_no),
+      address: handleInvalid(req.body.address),
+      religion: handleInvalid(req.body.religion),
+      rt: handleInvalid(req.body.rt),
+      rw: handleInvalid(req.body.rw),
+      dusun: handleInvalid(req.body.dusun),
+      kecamatan: handleInvalid(req.body.kecamatan),
+      school: handleInvalid(req.body.school),
+      siblings: handleInvalid(req.body.siblings),
+      transportation: handleInvalid(req.body.transportation),
+      travel_hours: handleInvalid(req.body.travelHours),
+      travel_minutes: handleInvalid(req.body.travelMinutes),
+      distance_in_km: handleInvalid(req.body.distanceInKm),
+      distance_to_school: handleInvalid(req.body.distanceToSchool),
+      height: handleInvalid(req.body.height),
+      weight: handleInvalid(req.body.weight),
+      mobile_phone: handleInvalid(req.body.mobilePhone),
+      phone: handleInvalid(req.body.phone),
+      home_phone: handleInvalid(req.body.homePhone),
+      email: handleInvalid(req.body.email),
+      kps_number: handleInvalid(req.body.kpsNumber),
+      kps_receiver: handleInvalid(req.body.kpsReceiver),
+      father_name: handleInvalid(req.body.fatherName),
+      father_nik: handleInvalid(req.body.fatherNik),
+      father_birth_year: handleInvalid(req.body.fatherBirthYear),
+      father_education: handleInvalid(req.body.fatherEducation),
+      father_job: handleInvalid(req.body.fatherJob),
+      father_income: handleInvalid(req.body.fatherIncome),
+      mother_name: handleInvalid(req.body.motherName),
+      mother_nik: handleInvalid(req.body.motherNik),
+      mother_birth_year: handleInvalid(req.body.motherBirthYear),
+      mother_education: handleInvalid(req.body.motherEducation),
+      mother_job: handleInvalid(req.body.motherJob),
+      mother_income: handleInvalid(req.body.motherIncome),
+      guardian_name: handleInvalid(req.body.guardianName),
+      guardian_nik: handleInvalid(req.body.guardianNik),
+      guardian_birth_year: handleInvalid(req.body.guardianBirthYear),
+      guardian_education: handleInvalid(req.body.guardianEducation),
+      guardian_job: handleInvalid(req.body.guardianJob),
+      guardian_income: handleInvalid(req.body.guardianIncome),
+      kartu_keluarga: files.kartuKeluarga ? files.kartuKeluarga[0].path : handleInvalid(req.body.kartuKeluarga),
+      akte_lahir: files.akteLahir ? files.akteLahir[0].path : handleInvalid(req.body.akteLahir),
+      ktp_orangtua: files.ktpOrangtua ? files.ktpOrangtua[0].path : handleInvalid(req.body.ktpOrangtua),
+      ijasah: files.ijasah ? files.ijasah[0].path : handleInvalid(req.body.ijasah),
+      rapor: files.rapor ? files.rapor[0].path : handleInvalid(req.body.rapor),
+      passFotoSiswa: files.passFotoSiswa ? files.passFotoSiswa[0].path : handleInvalid(req.body.passFotoSiswa),
+      registrantType: handleInvalid(req.body.registrantType),
+      placement: handleInvalid(req.body.placement),
+      lastEducation: handleInvalid(req.body.lastEducation),
+      graduationYear: handleInvalid(req.body.graduationYear),
+      schoolOrigin: handleInvalid(req.body.schoolOrigin),
+      continuedStudy: handleInvalid(req.body.continuedStudy),
+      lastClass: handleInvalid(req.body.lastClass),
+      lastSchoolName: handleInvalid(req.body.lastSchoolName),
+      graduationYearFromLastSchool: handleInvalid(req.body.graduationYearFromLastSchool),
+      created_at: new Date(),
+    };
 
     try {
-      // Kompresi gambar jika ada
-
-      // Buat objek data siswa baru
-      const studentData = {
-        cs_id: id,
-        full_name: fullName,
-        nick_name: nick_name,
-        gender: gender,
-        nik: nik,
-        nisn: nisn,
-        birth_place_date: birth_place_date,
-        birth_date: birth_date,
-        birth_cert_no: birth_cert_no,
-        address: address,
-        religion: religion,
-        rt: rt,
-        rw: rw,
-        dusun: dusun,
-        kecamatan: kecamatan,
-        school: school,
-        siblings: siblings,
-        transportation: transportation,
-        travel_hours: travelHours,
-        travel_minutes: travelMinutes,
-        distance_in_km: distanceInKm,
-        distance_to_school: distanceToSchool,
-        height: height,
-        weight: weight,
-        mobile_phone: mobilePhone,
-        phone: phone,
-        home_phone: homePhone,
-        email: email,
-        kps_number: kpsNumber,
-        kps_receiver: kpsReceiver,
-        father_name: fatherName,
-        father_nik: fatherNik,
-        father_birth_year: fatherBirthYear,
-        father_education: fatherEducation,
-        father_job: fatherJob,
-        father_income: parseInt(fatherIncome.replace(/[Rp.]/g, ""), 10),
-        mother_name: motherName,
-        mother_nik: motherNik,
-        mother_birth_year: motherBirthYear,
-        mother_education: motherEducation,
-        mother_job: motherJob,
-        mother_income: parseInt(motherIncome.replace(/[Rp.]/g, ""), 10),
-        guardian_name: guardianName === "undefined" ? "" : guardianName,
-        guardian_nik: guardianNik === "undefined" ? "" : guardianNik,
-        guardian_birth_year:
-          guardianBirthYear === "undefined" ? "" : guardianBirthYear,
-        guardian_education:
-          guardianEducation === "undefined" ? "" : guardianEducation,
-        guardian_job: guardianJob === "undefined" ? "" : guardianJob,
-        guardian_income: guardianIncome
-          ? isNaN(parseInt(guardianIncome.replace(/[Rp.]/g, ""), 10))
-            ? null
-            : parseInt(guardianIncome.replace(/[Rp.]/g, ""), 10)
-          : null,
-        kartu_keluarga: kartuKeluarga,
-        akte_lahir: akteLahir,
-        ktp_orangtua: ktpOrangtua,
-        ijasah: ijasah,
-        created_at: new Date(),
-      };
-
-      // Simpan data siswa ke database
+      // Save student data to database
+      // Uncomment and modify the following line according to your DB handling code
       Ppdb.sendDataSiswaBaruAll(studentData, (err, data) => {
         if (err) {
           return res.status(500).send({
-            message:
-              err.message ||
-              "Some error occurred while saving the student data.",
+            message: err.message || "Some error occurred while saving the student data.",
           });
         } else {
           res.send(data);
@@ -323,6 +289,8 @@ exports.sendDataSiswaBaruAll = [
     }
   },
 ];
+
+
 
 // Update existing Admin
 exports.updatePpdb = [
@@ -364,7 +332,7 @@ exports.updatePpdb = [
 ];
 
 exports.updatePpdbSetting = [
-  upload.single('image'), // Menggunakan upload.single untuk menangani upload file
+  upload.single("image"), // Menggunakan upload.single untuk menangani upload file
   async (req, res) => {
     if (!req.body) {
       return res.status(400).send({
@@ -384,8 +352,7 @@ exports.updatePpdbSetting = [
         }
 
         const existingPpdb = result[0]; // Ambil data PPDB yang ada
-    
-        
+
         // Jika data PPDB tidak ditemukan, kirim respons error
         if (!existingPpdb) {
           return res.status(404).send({ message: "PPDB not found." });
@@ -412,13 +379,13 @@ exports.updatePpdbSetting = [
             existingPpdb.school_id.toString(),
             existingPpdb.image
           );
-         
+
           fs.unlink(oldImagePath, (err) => {
             if (err) {
               console.error("Failed to delete old image:", err);
             }
           });
-          
+
           ppdb.image = req.file.filename; // Menyimpan path gambar baru
         }
 
@@ -426,7 +393,8 @@ exports.updatePpdbSetting = [
         Ppdb.updatePpdbSetting(ppdb, (err, data) => {
           if (err) {
             return res.status(500).send({
-              message: err.message || "Some error occurred while updating the Ppdb.",
+              message:
+                err.message || "Some error occurred while updating the Ppdb.",
             });
           } else {
             res.send(data);
@@ -438,9 +406,6 @@ exports.updatePpdbSetting = [
     }
   },
 ];
-
-
-
 
 // Delete an Admin
 exports.delete = (req, res) => {
@@ -458,7 +423,7 @@ exports.delete = (req, res) => {
 };
 exports.deleteSettingPpdb = (req, res) => {
   const uid = req.body.data;
-console.log(uid);
+  console.log(uid);
 
   Ppdb.deleteSettingPpdb(uid, (err, data) => {
     if (err) {
@@ -543,7 +508,6 @@ exports.PpdbStudentDetailAdminAll = (req, res, next) => {
     else res.send(data);
   });
 };
-
 
 exports.detailSiswaBaru = (req, res, next) => {
   const id = req.body.uid;

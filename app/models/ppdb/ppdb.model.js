@@ -77,8 +77,20 @@ Ppdb.sendDataSiswaBaruAll = (newUsers, result) => {
     akte_lahir = VALUES(akte_lahir),
     ktp_orangtua = VALUES(ktp_orangtua),
     ijasah = VALUES(ijasah),
+    rapor = VALUES(rapor),
+    passFotoSiswa = VALUES(passFotoSiswa),
+    registrantType = VALUES(registrantType),
+    placement = VALUES(placement),
+    lastEducation = VALUES(lastEducation),
+    graduationYear = VALUES(graduationYear),
+    schoolOrigin = VALUES(schoolOrigin),
+    continuedStudy = VALUES(continuedStudy),
+    lastClass = VALUES(lastClass),
+    lastSchoolName = VALUES(lastSchoolName),
+    graduationYearFromLastSchool = VALUES(graduationYearFromLastSchool),
     created_at = VALUES(created_at)
   `;
+
 
   db.query(query, [newUsers], (err, res) => {
     if (err) {
@@ -90,16 +102,16 @@ Ppdb.sendDataSiswaBaruAll = (newUsers, result) => {
     const isUpdate = res.affectedRows > 1;
 
     if (isUpdate) {
-      console.log("Updated calon_siswa_detail: ", {
-        id: newUsers.cs_id,
-        ...newUsers,
-      });
+      // console.log("Updated calon_siswa_detail: ", {
+      //   id: newUsers.cs_id,
+      //   ...newUsers,
+      // });
       result(null, { id: newUsers.cs_id, ...newUsers });
     } else {
-      console.log("Created calon_siswa_detail: ", {
-        id: res.insertId || newUsers.cs_id,
-        ...newUsers,
-      });
+      // console.log("Created calon_siswa_detail: ", {
+      //   id: res.insertId || newUsers.cs_id,
+      //   ...newUsers,
+      // });
       result(null, { id: res.insertId || newUsers.cs_id, ...newUsers });
     }
   });

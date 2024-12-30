@@ -25,16 +25,17 @@ Dashboard.listPaymentByMonths = (sp_name, school_id, user_id, result) => {
     sp.sp_name,
     ut.unit_name,
     p.unit_id,
-      -- Aggregating amounts from the payment table
-   ((SELECT SUM(pp.amount) FROM payment pp WHERE pp.user_id=p.user_id AND pp.status = 'Paid' AND pp.setting_payment_uid=p.setting_payment_uid) + (SELECT SUM(af.amount) * (SELECT COUNT(pp.id) FROM payment pp WHERE pp.user_id=p.user_id AND pp.status = 'Paid' AND pp.setting_payment_uid=p.setting_payment_uid) FROM affiliate af WHERE af.school_id=p.school_id )) as paid,
-   
-   ((SELECT SUM(pp.amount) FROM payment pp WHERE pp.user_id=p.user_id AND pp.status = 'Verified' AND pp.setting_payment_uid=p.setting_payment_uid) + (SELECT SUM(af.amount) * (SELECT COUNT(pp.id) FROM payment pp WHERE pp.user_id=p.user_id AND pp.status = 'Verified' AND pp.setting_payment_uid=p.setting_payment_uid) FROM affiliate af WHERE af.school_id=p.school_id )) as verified,
-   
-      ((SELECT SUM(pp.amount) FROM payment pp WHERE pp.user_id=p.user_id AND pp.status = 'Pending' AND pp.setting_payment_uid=p.setting_payment_uid) + (SELECT SUM(af.amount) * (SELECT COUNT(pp.id) FROM payment pp WHERE pp.user_id=p.user_id AND pp.status = 'Pending' AND pp.setting_payment_uid=p.setting_payment_uid) FROM affiliate af WHERE af.school_id=p.school_id )) as pending,
+     -- Aggregating amounts from the payment table
+   ((SELECT SUM(pp.amount) FROM payment pp WHERE pp.user_id=p.user_id AND pp.status = 'Paid' AND pp.setting_payment_uid=p.setting_payment_uid AND pp.class_id=p.class_id) + (SELECT SUM(af.amount) * (SELECT COUNT(pp.id) FROM payment pp WHERE pp.user_id=p.user_id AND pp.status = 'Paid' AND pp.setting_payment_uid=p.setting_payment_uid AND pp.class_id=p.class_id) FROM affiliate af WHERE af.school_id=p.school_id )) as paid,
+
+   ((SELECT SUM(pp.amount) FROM payment pp WHERE pp.user_id=p.user_id AND pp.status = 'Verified' AND pp.setting_payment_uid=p.setting_payment_uid AND pp.class_id=p.class_id) + (SELECT SUM(af.amount) * (SELECT COUNT(pp.id) FROM payment pp WHERE pp.user_id=p.user_id AND pp.status = 'Verified' AND pp.setting_payment_uid=p.setting_payment_uid AND pp.class_id=p.class_id) FROM affiliate af WHERE af.school_id=p.school_id )) as verified,
+
+      ((SELECT SUM(pp.amount) FROM payment pp WHERE pp.user_id=p.user_id AND pp.status = 'Pending' AND pp.setting_payment_uid=p.setting_payment_uid AND pp.class_id=p.class_id) + (SELECT SUM(af.amount) * (SELECT COUNT(pp.id) FROM payment pp WHERE pp.user_id=p.user_id AND pp.status = 'Pending' AND pp.setting_payment_uid=p.setting_payment_uid AND pp.class_id=p.class_id) FROM affiliate af WHERE af.school_id=p.school_id )) as pending,
    -- end
-    (SELECT COUNT(ppp.id) FROM payment ppp WHERE ppp.status = 'Pending' AND ppp.user_id = p.user_id AND ppp.setting_payment_uid=p.setting_payment_uid) as total,
-    
-(SELECT SUM(af.amount) * (SELECT COUNT(ppp.id) FROM payment ppp WHERE ppp.status = 'Pending' AND ppp.user_id = p.user_id AND ppp.setting_payment_uid=p.setting_payment_uid) FROM affiliate af WHERE af.school_id=p.school_id) as affiliate,
+    (SELECT COUNT(ppp.id) FROM payment ppp WHERE ppp.status = 'Pending' AND ppp.user_id = p.user_id AND ppp.setting_payment_uid=p.setting_payment_uid AND ppp.class_id=p.class_id) as total,
+
+(SELECT SUM(af.amount) * (SELECT COUNT(ppp.id) FROM payment ppp WHERE ppp.status = 'Pending' AND ppp.user_id = p.user_id AND ppp.setting_payment_uid=p.setting_payment_uid AND ppp.class_id=p.class_id) FROM affiliate af WHERE af.school_id=p.school_id) as affiliate,
+   
    
 
     -- Calculating status_lunas based on aggregated values in the payment table
@@ -134,7 +135,7 @@ JOIN
     query += ` AND p.user_id = '${user_id}'`;
   }
 
-  query += `GROUP BY p.setting_payment_uid ORDER BY p.type DESC`;
+  query += `GROUP BY p.setting_payment_uid,  p.class_id ORDER BY p.created_at DESC`;
 // console.log(query);
 
   db.query(query, (err, res) => {
@@ -172,16 +173,16 @@ Dashboard.listPaymentByMonthsByAdmin = (
     sp.sp_name,
     ut.unit_name,
     p.unit_id,
-     -- Aggregating amounts from the payment table
-   ((SELECT SUM(pp.amount) FROM payment pp WHERE pp.user_id=p.user_id AND pp.status = 'Paid' AND pp.setting_payment_uid=p.setting_payment_uid) + (SELECT SUM(af.amount) * (SELECT COUNT(pp.id) FROM payment pp WHERE pp.user_id=p.user_id AND pp.status = 'Paid' AND pp.setting_payment_uid=p.setting_payment_uid) FROM affiliate af WHERE af.school_id=p.school_id )) as paid,
-   
-   ((SELECT SUM(pp.amount) FROM payment pp WHERE pp.user_id=p.user_id AND pp.status = 'Verified' AND pp.setting_payment_uid=p.setting_payment_uid) + (SELECT SUM(af.amount) * (SELECT COUNT(pp.id) FROM payment pp WHERE pp.user_id=p.user_id AND pp.status = 'Verified' AND pp.setting_payment_uid=p.setting_payment_uid) FROM affiliate af WHERE af.school_id=p.school_id )) as verified,
-   
-      ((SELECT SUM(pp.amount) FROM payment pp WHERE pp.user_id=p.user_id AND pp.status = 'Pending' AND pp.setting_payment_uid=p.setting_payment_uid) + (SELECT SUM(af.amount) * (SELECT COUNT(pp.id) FROM payment pp WHERE pp.user_id=p.user_id AND pp.status = 'Pending' AND pp.setting_payment_uid=p.setting_payment_uid) FROM affiliate af WHERE af.school_id=p.school_id )) as pending,
+    -- Aggregating amounts from the payment table
+   ((SELECT SUM(pp.amount) FROM payment pp WHERE pp.user_id=p.user_id AND pp.status = 'Paid' AND pp.setting_payment_uid=p.setting_payment_uid AND pp.class_id=p.class_id) + (SELECT SUM(af.amount) * (SELECT COUNT(pp.id) FROM payment pp WHERE pp.user_id=p.user_id AND pp.status = 'Paid' AND pp.setting_payment_uid=p.setting_payment_uid AND pp.class_id=p.class_id) FROM affiliate af WHERE af.school_id=p.school_id )) as paid,
+
+   ((SELECT SUM(pp.amount) FROM payment pp WHERE pp.user_id=p.user_id AND pp.status = 'Verified' AND pp.setting_payment_uid=p.setting_payment_uid AND pp.class_id=p.class_id) + (SELECT SUM(af.amount) * (SELECT COUNT(pp.id) FROM payment pp WHERE pp.user_id=p.user_id AND pp.status = 'Verified' AND pp.setting_payment_uid=p.setting_payment_uid AND pp.class_id=p.class_id) FROM affiliate af WHERE af.school_id=p.school_id )) as verified,
+
+      ((SELECT SUM(pp.amount) FROM payment pp WHERE pp.user_id=p.user_id AND pp.status = 'Pending' AND pp.setting_payment_uid=p.setting_payment_uid AND pp.class_id=p.class_id) + (SELECT SUM(af.amount) * (SELECT COUNT(pp.id) FROM payment pp WHERE pp.user_id=p.user_id AND pp.status = 'Pending' AND pp.setting_payment_uid=p.setting_payment_uid AND pp.class_id=p.class_id) FROM affiliate af WHERE af.school_id=p.school_id )) as pending,
    -- end
-    (SELECT COUNT(ppp.id) FROM payment ppp WHERE ppp.status = 'Pending' AND ppp.user_id = p.user_id AND ppp.setting_payment_uid=p.setting_payment_uid) as total,
-    
-(SELECT SUM(af.amount) * (SELECT COUNT(ppp.id) FROM payment ppp WHERE ppp.status = 'Pending' AND ppp.user_id = p.user_id AND ppp.setting_payment_uid=p.setting_payment_uid) FROM affiliate af WHERE af.school_id=p.school_id) as affiliate,
+    (SELECT COUNT(ppp.id) FROM payment ppp WHERE ppp.status = 'Pending' AND ppp.user_id = p.user_id AND ppp.setting_payment_uid=p.setting_payment_uid AND ppp.class_id=p.class_id) as total,
+
+(SELECT SUM(af.amount) * (SELECT COUNT(ppp.id) FROM payment ppp WHERE ppp.status = 'Pending' AND ppp.user_id = p.user_id AND ppp.setting_payment_uid=p.setting_payment_uid AND ppp.class_id=p.class_id) FROM affiliate af WHERE af.school_id=p.school_id) as affiliate,
    
 
     -- Calculating status_lunas based on aggregated values in the payment table
@@ -284,8 +285,8 @@ JOIN
     query += ` AND p.unit_id = '${unit_id}'`;
   }
 
-  query += `GROUP BY p.setting_payment_uid ORDER BY p.type DESC`;
-  // console.log(query);
+  query += `GROUP BY p.setting_payment_uid, p.class_id ORDER BY p.created_at DESC`;
+  console.log(query);
 
   db.query(query, (err, res) => {
     if (err) {

@@ -82,6 +82,13 @@ module.exports = (app) => {
   router.post("/update-kelas", token.authenticateToken, Kelas.updateKelas);
   router.post("/delete-kelas", token.authenticateToken, Kelas.delete);
   router.post("/detailKelas", token.authenticateToken, Kelas.detailKelas);
+
+  //Pindah Kelas
+  
+  router.get("/list-pindah-kelas", token.authenticateToken, Kelas.listPindahKelas);
+  router.post("/pindah-kelas-siswa-by-kelas", token.authenticateToken, Kelas.pindahKelasByUserId);
+  router.post("/kembali-kelas-siswa-by-kelas", token.authenticateToken, Kelas.kembaliKelasByUserId);
+
   //absensi
   router.get("/list-absensi", token.authenticateToken, Absensi.listAbsensi);
   router.get("/list-absensi-kegiatan-by-userId", token.authenticateToken, Absensi.listAbsensiKegiatanByUserId);

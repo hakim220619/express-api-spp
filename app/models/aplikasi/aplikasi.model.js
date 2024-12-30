@@ -37,7 +37,6 @@ Aplikasi.update = (newAplikasi, school, result) => {
         result({ kind: "not_found" }, null);
         return;
       }
-      console.log("Updated Aplikasi: ", { id: newAplikasi.id, ...newAplikasi });
 
       // Update school setelah aplikasi berhasil diupdate
       db.query(

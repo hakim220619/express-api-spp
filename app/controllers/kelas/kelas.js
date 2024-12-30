@@ -18,6 +18,18 @@ exports.listKelas = (req, res, next) => {
     else res.send(data);
   });
 };
+exports.listPindahKelas = (req, res, next) => {
+  const full_name = req.query.q;
+  const school_id = req.query.school_id;
+
+  Kelas.listPindahKelas(full_name, school_id, (err, data) => {
+    if (err)
+      res.status(500).send({
+        message: err.message || "Some error occurred while retrieving Data.",
+      });
+    else res.send(data);
+  });
+};
 
 // Create new Admin
 exports.createKelas = [
@@ -81,6 +93,78 @@ exports.updateKelas = [
         updated_at: new Date(),
       }); 
       Kelas.update(kelas, (err, data) => {
+        if (err) {
+          return res.status(500).send({
+            message:
+              err.message || "Some error occurred while updating the Kelas.",
+          });
+        } else {
+          res.send(data);
+        }
+      });
+    } catch (error) {
+      res.status(500).send({ message: "Error updating Kelass" });
+    }
+  },
+];
+
+// Update existing Admin
+exports.pindahKelasByUserId = [
+  upload.none(),
+  async (req, res) => {
+    if (!req.body) {
+      return res.status(400).send({
+        message: "Content cannot be empty!",
+      });
+    }
+// console.log(req.body);
+
+    try {
+      const Pindahkelas = {
+        unit_from: req.body.unit_from,
+        class_from: req.body.class_from,
+        unit_to: req.body.unit_to,
+        class_to: req.body.class_to,
+        students: req.body.students,
+        updated_at: new Date(),
+      }; 
+      Kelas.pindahKelasByUserId(Pindahkelas, (err, data) => {
+        if (err) {
+          return res.status(500).send({
+            message:
+              err.message || "Some error occurred while updating the Kelas.",
+          });
+        } else {
+          res.send(data);
+        }
+      });
+    } catch (error) {
+      res.status(500).send({ message: "Error updating Kelass" });
+    }
+  },
+];
+
+// Update existing Admin
+exports.kembaliKelasByUserId = [
+  upload.none(),
+  async (req, res) => {
+    if (!req.body) {
+      return res.status(400).send({
+        message: "Content cannot be empty!",
+      });
+    }
+// console.log(req.body);
+
+    try {
+      const Pindahkelas = {
+        unit_from: req.body.unit_from,
+        class_from: req.body.class_from,
+        unit_to: req.body.unit_to,
+        class_to: req.body.class_to,
+        students: req.body.students,
+        updated_at: new Date(),
+      }; 
+      Kelas.pindahKelasByUserId(Pindahkelas, (err, data) => {
         if (err) {
           return res.status(500).send({
             message:

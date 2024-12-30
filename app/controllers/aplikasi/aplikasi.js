@@ -68,6 +68,8 @@ exports.updateAplikasi = [
         logo: logoPath, // Use the uploaded file path or existing logo
         copy_right: req.body.copy_right,
         versi: req.body.versi,
+        is_whatsapp: req.body.is_whatsapp,
+        is_production: req.body.is_production,
         token_whatsapp: req.body.token_whatsapp,
         urlCreateTransaksiMidtrans: req.body.urlCreateTransaksiMidtrans,
         urlCekTransaksiMidtrans: req.body.urlCekTransaksiMidtrans,

@@ -51,7 +51,7 @@ SettingPembayaran.create = (newSettingPembayaran, result) => {
 
 SettingPembayaran.createPaymentByFree = (newSettingPembayaran, result) => {
   const query =
-    "SELECT id, full_name, major_id, class_id FROM users WHERE unit_id = ? and major_id = ? AND class_id = ? AND school_id = ? AND role = '160'";
+    "SELECT id, full_name, major_id, class_id FROM users WHERE unit_id = ? and major_id = ? AND class_id = ? AND school_id = ? AND role = '160' AND status != 'LULUS'";
 
   db.query(
     query,

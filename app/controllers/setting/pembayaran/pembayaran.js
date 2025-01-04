@@ -257,20 +257,13 @@ exports.createPaymentByStudent = [
         // Log the data received for debugging
 
         if (err) {
-          console.error("Error in createPaymentByStudent: ", err);
-          res.status(500).send({
+          return res.status(500).send({
             message:
-              err.message || "Some error occurred while creating the payment.",
+              err.message ||
+              "Some error occurred while creating the payment.",
           });
         }
-
-        // Check if data is empty or invalid
-        if (!data) {
-          res.status(404).send({ message: "No data returned." });
-        }
-        if (data != null) {
-          res.send(data);
-        }
+        res.send(data);
       });
     } catch (error) {
       console.error("Error creating payment: ", error);

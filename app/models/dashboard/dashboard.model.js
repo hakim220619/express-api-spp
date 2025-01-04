@@ -51,6 +51,7 @@ Dashboard.listPaymentByMonths = (sp_name, school_id, user_id, result) => {
      WHERE pd.user_id = p.user_id
      AND pd.status = 'Pending'
      AND pd.setting_payment_uid = p.setting_payment_uid
+     AND pd.payment_id=p.uid
      AND p.type = 'BEBAS') AS detail_pending,
 
     -- Subquery for detail_verified specific to type 'BEBAS'
@@ -59,6 +60,7 @@ Dashboard.listPaymentByMonths = (sp_name, school_id, user_id, result) => {
      WHERE pd.user_id = p.user_id
      AND pd.status = 'Verified'
      AND pd.setting_payment_uid = p.setting_payment_uid
+     AND pd.payment_id=p.uid
      AND p.type = 'BEBAS') AS detail_verified,
 
     -- Subquery for detail_paid specific to type 'BEBAS'
@@ -67,6 +69,7 @@ Dashboard.listPaymentByMonths = (sp_name, school_id, user_id, result) => {
      WHERE pd.user_id = p.user_id
      AND pd.status = 'Paid'
      AND pd.setting_payment_uid = p.setting_payment_uid
+     AND pd.payment_id=p.uid
      AND p.type = 'BEBAS') AS detail_paid,
 
     -- Adjusting status_lunas_detail based on the detail_paid and pending values
@@ -198,6 +201,7 @@ Dashboard.listPaymentByMonthsByAdmin = (
      WHERE pd.user_id = p.user_id
      AND pd.status = 'Pending'
      AND pd.setting_payment_uid = p.setting_payment_uid
+     AND pd.payment_id=p.uid
      AND p.type = 'BEBAS') AS detail_pending,
 
     -- Subquery for detail_verified specific to type 'BEBAS'
@@ -206,6 +210,7 @@ Dashboard.listPaymentByMonthsByAdmin = (
      WHERE pd.user_id = p.user_id
      AND pd.status = 'Verified'
      AND pd.setting_payment_uid = p.setting_payment_uid
+     AND pd.payment_id=p.uid
      AND p.type = 'BEBAS') AS detail_verified,
 
     -- Subquery for detail_paid specific to type 'BEBAS'
@@ -214,6 +219,7 @@ Dashboard.listPaymentByMonthsByAdmin = (
      WHERE pd.user_id = p.user_id
      AND pd.status = 'Paid'
      AND pd.setting_payment_uid = p.setting_payment_uid
+     AND pd.payment_id=p.uid
      AND p.type = 'BEBAS') AS detail_paid,
 
     -- Adjusting status_lunas_detail based on the detail_paid and pending values
@@ -286,7 +292,7 @@ JOIN
   }
 
   query += `GROUP BY p.setting_payment_uid, p.class_id ORDER BY p.created_at DESC`;
-  console.log(query);
+  // console.log(query);
 
   db.query(query, (err, res) => {
     if (err) {

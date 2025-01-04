@@ -1779,36 +1779,82 @@ Pembayaran.updateSuccessFree = async (newPayment, result) => {
     }
   );
   db.query(
-    "INSERT INTO payment_detail (order_id, metode_pembayaran, redirect_url, status, created_at, uid, user_id, payment_id, setting_payment_uid, type, amount) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-    [
-      order_id, // order_id
-      "Online", // metode_pembayaran
-      redirect_url, // redirect_url
-      "Paid", // status
-      new Date(), // updated_at
-      uid, // new field uid
-      dataPayment.user_id, // new field user_id
-      dataPayment.uid, // new field payment_id
-      dataPayment.setting_payment_uid, // new field setting_payment_uid
-      dataPayment.type, // new field type
-      newPayment.total_amount, // new field amount
-    ],
-    (err, res) => {
+    "SELECT * FROM payment_detail WHERE order_id = ?",
+    [order_id],
+    (err, rows) => {
       if (err) {
-        console.error("Error: ", err);
-        result(err, null); // Return error if there is one
+        console.error("Error checking payment_detail: ", err);
+        result(err, null);
+      } else if (rows.length > 0) {
+        // Record exists, update it
+        db.query(
+          "UPDATE payment_detail SET metode_pembayaran = ?, redirect_url = ?, status = ?, created_at = ?, uid = ?, user_id = ?, payment_id = ?, setting_payment_uid = ?, type = ?, amount = ? WHERE order_id = ?",
+          [
+            "Online", // metode_pembayaran
+            redirect_url, // redirect_url
+            "Paid", // status
+            new Date(), // created_at
+            uid, // new uid
+            dataPayment.user_id, // user_id
+            dataPayment.uid, // payment_id
+            dataPayment.setting_payment_uid, // setting_payment_uid
+            dataPayment.type, // type
+            newPayment.total_amount, // amount
+            order_id, // order_id for WHERE clause
+          ],
+          (updateErr, updateRes) => {
+            if (updateErr) {
+              console.error("Error updating payment_detail: ", updateErr);
+              result(updateErr, null);
+            } else {
+              console.log("Payment updated successfully", {
+                id: rows[0].id, // Use the existing ID
+                ...newPayment,
+              });
+              result(null, {
+                message: "Payment updated successfully",
+                id: rows[0].id,
+              });
+            }
+          }
+        );
       } else {
-        console.log("Payment inserted successfully", {
-          id: res.insertId,
-          ...newPayment,
-        });
-        result(null, {
-          message: "Payment inserted successfully",
-          id: res.insertId,
-        });
+        // Record does not exist, insert a new one
+        db.query(
+          "INSERT INTO payment_detail (order_id, metode_pembayaran, redirect_url, status, created_at, uid, user_id, payment_id, setting_payment_uid, type, amount) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+          [
+            order_id, // order_id
+            "Online", // metode_pembayaran
+            redirect_url, // redirect_url
+            "Paid", // status
+            new Date(), // created_at
+            uid, // new field uid
+            dataPayment.user_id, // user_id
+            dataPayment.uid, // payment_id
+            dataPayment.setting_payment_uid, // setting_payment_uid
+            dataPayment.type, // type
+            newPayment.total_amount, // amount
+          ],
+          (insertErr, insertRes) => {
+            if (insertErr) {
+              console.error("Error inserting into payment_detail: ", insertErr);
+              result(insertErr, null);
+            } else {
+              console.log("Payment inserted successfully", {
+                id: insertRes.insertId,
+                ...newPayment,
+              });
+              result(null, {
+                message: "Payment inserted successfully",
+                id: insertRes.insertId,
+              });
+            }
+          }
+        );
       }
     }
   );
+  
 };
 
 module.exports = Pembayaran;

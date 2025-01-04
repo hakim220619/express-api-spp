@@ -47,7 +47,6 @@ Kelas.update = (newUsers, result) => {
 };
 
 Kelas.pindahKelasByUserId = (newData, result) => {
-  console.log(newData);
 
   const { unit_from, class_from, unit_to, class_to, students, updated_at } = newData;
 
@@ -74,6 +73,121 @@ Kelas.pindahKelasByUserId = (newData, result) => {
           }
           console.log("Updated User: ", { id: student.id, unit_to, class_to });
           resolve({ id: student.id, unit_to, class_to });
+        }
+      );
+    });
+  });
+
+  Promise.allSettled(promises)
+    .then((results) => {
+      const successfulUpdates = results
+        .filter((result) => result.status === "fulfilled")
+        .map((result) => result.value);
+
+      const failedUpdates = results
+        .filter((result) => result.status === "rejected")
+        .map((result) => result.reason);
+
+      if (failedUpdates.length > 0) {
+        console.error("Some updates failed: ", failedUpdates);
+        result({ kind: "partial_failure", failedUpdates }, successfulUpdates);
+        return;
+      }
+
+      console.log("All students updated successfully.", successfulUpdates);
+      result(null, successfulUpdates);
+    })
+    .catch((error) => {
+      console.error("Unexpected error: ", error);
+      result(error, null);
+    });
+};
+
+Kelas.lulusKembaliKelasByUserId = (newData, result) => {
+
+  const { unit_from, status, unit_to, class_from, students, updated_at } = newData;
+
+  if (!students || !Array.isArray(students) || students.length === 0) {
+    result({ kind: "no_students" }, null);
+    return;
+  }
+
+  const promises = students.map((student) => {
+    return new Promise((resolve, reject) => {
+      db.query(
+        "UPDATE users SET unit_id = ?, class_id = ?, status = ?, updated_at = ? WHERE id = ?",
+        [unit_from, class_from, status,  updated_at, student.id],
+        (err, res) => {
+          if (err) {
+            console.error("Error: ", err);
+            reject(err);
+            return;
+          }
+          if (res.affectedRows === 0) {
+            // Not found User with the id
+            reject({ kind: "not_found", id: student.id });
+            return;
+          }
+          console.log("Updated User: ", { id: student.id });
+          resolve({ id: student.id });
+        }
+      );
+    });
+  });
+
+  Promise.allSettled(promises)
+    .then((results) => {
+      const successfulUpdates = results
+        .filter((result) => result.status === "fulfilled")
+        .map((result) => result.value);
+
+      const failedUpdates = results
+        .filter((result) => result.status === "rejected")
+        .map((result) => result.reason);
+
+      if (failedUpdates.length > 0) {
+        console.error("Some updates failed: ", failedUpdates);
+        result({ kind: "partial_failure", failedUpdates }, successfulUpdates);
+        return;
+      }
+
+      console.log("All students updated successfully.", successfulUpdates);
+      result(null, successfulUpdates);
+    })
+    .catch((error) => {
+      console.error("Unexpected error: ", error);
+      result(error, null);
+    });
+};
+
+Kelas.lulusKelasByUserId = (newData, result) => {
+  console.log(newData);
+
+  const { status, students, updated_at } = newData;
+
+  if (!students || !Array.isArray(students) || students.length === 0) {
+    result({ kind: "no_students" }, null);
+    return;
+  }
+
+  const promises = students.map((student) => {
+    return new Promise((resolve, reject) => {
+      db.query(
+        "UPDATE users SET  status = ?, updated_at = ? WHERE id = ?",
+        [status, updated_at, student.id],
+        (err, res) => {
+          if (err) {
+            console.error("Error: ", err);
+            reject(err);
+            return;
+          }
+          if (res.affectedRows === 0) {
+            // Not found User with the id
+            reject({ kind: "not_found", id: student.id });
+            return;
+          }
+          console.log("Updated User: ", { id: student.id });
+          resolve({ id: student.id });
         }
       );
     });
@@ -133,10 +247,10 @@ Kelas.listKelas = (unit_name, school_id, status, result) => {
 
 Kelas.listPindahKelas = (full_name, school_id, result) => {
   let query =
-    "SELECT ROW_NUMBER() OVER () AS no, u.id, u.full_name, c.class_name, c.id as class_id, u.status, un.unit_name  FROM users u, class c, unit un WHERE u.class_id=c.id AND c.unit_id=un.id ";
+    "SELECT ROW_NUMBER() OVER () AS no, u.id, u.full_name, c.class_name, c.id as class_id, u.status, un.unit_name, u.unit_id  FROM users u, class c, unit un WHERE u.class_id=c.id AND c.unit_id=un.id ";
 
   if (full_name) {
-    query += ` AND un.full_name like '%${full_name}%'`;
+    query += ` AND u.full_name like '%${full_name}%'`;
   }
   if (school_id) {
     query += ` AND u.school_id = '${school_id}'`;

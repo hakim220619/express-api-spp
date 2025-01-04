@@ -148,7 +148,6 @@ General.getListPayment = async (result) => {
   });
 };
 
-
 General.getActivityBySchoolId = async (school_id, result) => {
   let query = "SELECT * from mm_logs where 1=1";
   if (school_id) {
@@ -207,7 +206,6 @@ General.getTeacher = async (school_id, result) => {
 };
 
 General.getActivities = async (school_id, result) => {
-  
   let query = "SELECT * from activities where 1=1 ";
   if (school_id) {
     query += ` AND school_id = '${school_id}'`;
@@ -218,12 +216,13 @@ General.getActivities = async (school_id, result) => {
       result(null, err);
       return;
     }
-    
+
     result(null, res);
   });
 };
 General.getSubjects = async (school_id, result) => {
-  let query = "SELECT s.*, c.class_name from subjects s, class c where s.class_id=c.id ";
+  let query =
+    "SELECT s.*, c.class_name from subjects s, class c where s.class_id=c.id ";
   if (school_id) {
     query += ` AND s.school_id = '${school_id}'`;
   }
@@ -233,11 +232,10 @@ General.getSubjects = async (school_id, result) => {
       result(null, err);
       return;
     }
-    
+
     result(null, res);
   });
 };
-
 
 General.getListPpdbActive = async (school_id, result) => {
   let query =
@@ -269,7 +267,7 @@ General.getDataAbsensiFromToken = async (token, result) => {
     INNER JOIN unit u ON sa.unit_id = u.id
     INNER JOIN activities ac ON sa.activity_id = ac.id
   `;
-  
+
   if (token) {
     query += ` WHERE sa.token = '${token}'`;
   }
@@ -284,7 +282,7 @@ General.getDataAbsensiFromToken = async (token, result) => {
     // Check if the result is empty
     if (res.length === 0) {
       console.log("No data found, checking alternate query...");
-      
+
       // Try the alternate query with subjects
       let fallbackQuery = `
         SELECT sa.*, a.logo, s.address, a.owner, u.unit_name, sb.subject_name, 
@@ -296,7 +294,6 @@ General.getDataAbsensiFromToken = async (token, result) => {
         INNER JOIN subjects sb ON sa.subject_id = sb.id
         WHERE sa.token = '${token}'
       `;
-      
 
       db.query(fallbackQuery, (err, res) => {
         if (err) {
@@ -304,12 +301,12 @@ General.getDataAbsensiFromToken = async (token, result) => {
           result(null, err);
           return;
         }
-        
+
         // Return the result of the fallback query
         if (res.length === 0) {
           console.log("No data found in fallback query.");
         }
-        result(null, res[0] );
+        result(null, res[0]);
       });
     } else {
       // If data found, return the result
@@ -318,11 +315,8 @@ General.getDataAbsensiFromToken = async (token, result) => {
   });
 };
 
-
-
 General.getListBalanceByUserId = async (school_id, user_id, result) => {
-  let query =
-    "select saldo from users where 1=1 ";
+  let query = "select saldo from users where 1=1 ";
   if (school_id) {
     query += ` AND school_id = '${school_id}'`;
   }
@@ -342,8 +336,7 @@ General.getListBalanceByUserId = async (school_id, user_id, result) => {
   });
 };
 General.getRiwayatToUpByUserId = async (school_id, user_id, result) => {
-  let query =
-    "select * from transactions where 1=1 ";
+  let query = "select * from transactions where 1=1 ";
   if (school_id) {
     query += ` AND school_id = '${school_id}'`;
   }
@@ -631,43 +624,50 @@ General.cekPin = async (user_id, school_id, pin, result) => {
   try {
     // Query untuk mengambil PIN yang sudah di-hash dari database
     const getUserQuery = "SELECT pin FROM users WHERE id = ? AND school_id = ?";
-    db.query(getUserQuery, [user_id, school_id], async (getUserErr, getUserRes) => {
-      if (getUserErr) {
-        console.log("Error: ", getUserErr);
-        return result({
-          error: true,
-          message: "An error occurred",
-          details: getUserErr,
-        });
-      }
-
-      // Jika user tidak ditemukan
-      if (getUserRes.length === 0) {
-        return result({ error: true, message: "User not found" });
-      }
-
-      // Ambil hash PIN dari database
-      const storedHashPin = getUserRes[0].pin;
-
-      // Verifikasi PIN yang dimasukkan dengan hash yang ada di database
-      bcrypt.compare(pin, storedHashPin, (compareErr, isMatch) => {
-        if (compareErr) {
-          console.log("Error comparing PIN: ", compareErr);
+    db.query(
+      getUserQuery,
+      [user_id, school_id],
+      async (getUserErr, getUserRes) => {
+        if (getUserErr) {
+          console.log("Error: ", getUserErr);
           return result({
             error: true,
-            message: "An error occurred while verifying the PIN",
-            details: compareErr,
+            message: "An error occurred",
+            details: getUserErr,
           });
         }
 
-        if (!isMatch) {
-          return result({ error: true, message: "Masukan PIN dengan benar!" });
+        // Jika user tidak ditemukan
+        if (getUserRes.length === 0) {
+          return result({ error: true, message: "User not found" });
         }
 
-        // Jika PIN cocok, maka user berhasil diverifikasi
-        return result(null, { error: false, message: "PIN is correct" });
-      });
-    });
+        // Ambil hash PIN dari database
+        const storedHashPin = getUserRes[0].pin;
+
+        // Verifikasi PIN yang dimasukkan dengan hash yang ada di database
+        bcrypt.compare(pin, storedHashPin, (compareErr, isMatch) => {
+          if (compareErr) {
+            console.log("Error comparing PIN: ", compareErr);
+            return result({
+              error: true,
+              message: "An error occurred while verifying the PIN",
+              details: compareErr,
+            });
+          }
+
+          if (!isMatch) {
+            return result({
+              error: true,
+              message: "Masukan PIN dengan benar!",
+            });
+          }
+
+          // Jika PIN cocok, maka user berhasil diverifikasi
+          return result(null, { error: false, message: "PIN is correct" });
+        });
+      }
+    );
   } catch (err) {
     console.log("Unexpected error: ", err);
     return result({
@@ -681,56 +681,69 @@ General.cekPin = async (user_id, school_id, pin, result) => {
 General.newPin = async (user_id, school_id, pin, current_pin, result) => {
   try {
     // Query untuk mengecek apakah user sudah memiliki PIN yang terdaftar
-    const checkUserPinQuery = "SELECT pin FROM users WHERE id = ? AND school_id = ?";
-    db.query(checkUserPinQuery, [user_id, school_id], async (checkErr, checkRes) => {
-      if (checkErr) {
-        console.log("Error: ", checkErr);
-        return result({
-          error: true,
-          message: "An error occurred while checking PIN",
-          details: checkErr,
-        });
-      }
-
-      // Jika user tidak ditemukan
-      if (checkRes.length === 0) {
-        return result({ error: true, message: "User not found" });
-      }
-
-      // Ambil PIN yang terdaftar di database
-      const storedPin = checkRes[0].pin;
-
-      // Cek apakah PIN saat ini sesuai dengan PIN yang terdaftar
-      const isCurrentPinCorrect = await bcrypt.compare(current_pin, storedPin);
-      if (!isCurrentPinCorrect) {
-        return result({
-          error: true,
-          message: "Current PIN is incorrect. Please enter the correct PIN.",
-        });
-      }
-
-      // Hash PIN baru yang dimasukkan
-      const hashedPin = await bcrypt.hash(pin, 10);
-
-      // Update PIN di database
-      const updatePinQuery = "UPDATE users SET pin = ? WHERE id = ? AND school_id = ?";
-      db.query(updatePinQuery, [hashedPin, user_id, school_id], (updateErr, updateRes) => {
-        if (updateErr) {
-          console.log("Error updating PIN: ", updateErr);
+    const checkUserPinQuery =
+      "SELECT pin FROM users WHERE id = ? AND school_id = ?";
+    db.query(
+      checkUserPinQuery,
+      [user_id, school_id],
+      async (checkErr, checkRes) => {
+        if (checkErr) {
+          console.log("Error: ", checkErr);
           return result({
             error: true,
-            message: "An error occurred while updating the PIN",
-            details: updateErr,
+            message: "An error occurred while checking PIN",
+            details: checkErr,
           });
         }
 
-        // Jika update berhasil
-        return result(null, {
-          error: false,
-          message: "PIN successfully updated",
-        });
-      });
-    });
+        // Jika user tidak ditemukan
+        if (checkRes.length === 0) {
+          return result({ error: true, message: "User not found" });
+        }
+
+        // Ambil PIN yang terdaftar di database
+        const storedPin = checkRes[0].pin;
+
+        // Cek apakah PIN saat ini sesuai dengan PIN yang terdaftar
+        const isCurrentPinCorrect = await bcrypt.compare(
+          current_pin,
+          storedPin
+        );
+        if (!isCurrentPinCorrect) {
+          return result({
+            error: true,
+            message: "Current PIN is incorrect. Please enter the correct PIN.",
+          });
+        }
+
+        // Hash PIN baru yang dimasukkan
+        const hashedPin = await bcrypt.hash(pin, 10);
+
+        // Update PIN di database
+        const updatePinQuery =
+          "UPDATE users SET pin = ? WHERE id = ? AND school_id = ?";
+        db.query(
+          updatePinQuery,
+          [hashedPin, user_id, school_id],
+          (updateErr, updateRes) => {
+            if (updateErr) {
+              console.log("Error updating PIN: ", updateErr);
+              return result({
+                error: true,
+                message: "An error occurred while updating the PIN",
+                details: updateErr,
+              });
+            }
+
+            // Jika update berhasil
+            return result(null, {
+              error: false,
+              message: "PIN successfully updated",
+            });
+          }
+        );
+      }
+    );
   } catch (err) {
     console.log("Unexpected error: ", err);
     return result({
@@ -743,47 +756,57 @@ General.newPin = async (user_id, school_id, pin, current_pin, result) => {
 General.resetPin = async (user_id, school_id, result) => {
   try {
     // Query untuk mengecek apakah user sudah memiliki PIN yang terdaftar
-    const checkUserPinQuery = "SELECT pin FROM users WHERE id = ? AND school_id = ?";
-    db.query(checkUserPinQuery, [user_id, school_id], async (checkErr, checkRes) => {
-      if (checkErr) {
-        console.log("Error: ", checkErr);
-        return result({
-          error: true,
-          message: "An error occurred while checking PIN",
-          details: checkErr,
-        });
-      }
-
-      // Jika user tidak ditemukan
-      if (checkRes.length === 0) {
-        return result({ error: true, message: "User not found" });
-      }
-
-      // Menggunakan PIN default "123456"
-      const defaultPin = "123456";
-
-      // Hash PIN default "123456"
-      const hashedPin = await bcrypt.hash(defaultPin, 10);
-
-      // Update PIN di database
-      const updatePinQuery = "UPDATE users SET pin = ? WHERE id = ? AND school_id = ?";
-      db.query(updatePinQuery, [hashedPin, user_id, school_id], (updateErr, updateRes) => {
-        if (updateErr) {
-          console.log("Error updating PIN: ", updateErr);
+    const checkUserPinQuery =
+      "SELECT pin FROM users WHERE id = ? AND school_id = ?";
+    db.query(
+      checkUserPinQuery,
+      [user_id, school_id],
+      async (checkErr, checkRes) => {
+        if (checkErr) {
+          console.log("Error: ", checkErr);
           return result({
             error: true,
-            message: "An error occurred while updating the PIN",
-            details: updateErr,
+            message: "An error occurred while checking PIN",
+            details: checkErr,
           });
         }
 
-        // Jika update berhasil
-        return result(null, {
-          error: false,
-          message: "PIN successfully updated to default '123456'",
-        });
-      });
-    });
+        // Jika user tidak ditemukan
+        if (checkRes.length === 0) {
+          return result({ error: true, message: "User not found" });
+        }
+
+        // Menggunakan PIN default "123456"
+        const defaultPin = "123456";
+
+        // Hash PIN default "123456"
+        const hashedPin = await bcrypt.hash(defaultPin, 10);
+
+        // Update PIN di database
+        const updatePinQuery =
+          "UPDATE users SET pin = ? WHERE id = ? AND school_id = ?";
+        db.query(
+          updatePinQuery,
+          [hashedPin, user_id, school_id],
+          (updateErr, updateRes) => {
+            if (updateErr) {
+              console.log("Error updating PIN: ", updateErr);
+              return result({
+                error: true,
+                message: "An error occurred while updating the PIN",
+                details: updateErr,
+              });
+            }
+
+            // Jika update berhasil
+            return result(null, {
+              error: false,
+              message: "PIN successfully updated to default '123456'",
+            });
+          }
+        );
+      }
+    );
   } catch (err) {
     console.log("Unexpected error: ", err);
     return result({
@@ -793,12 +816,6 @@ General.resetPin = async (user_id, school_id, result) => {
     });
   }
 };
-
-
-
-
-
-
 
 General.sendMessages = async (message, phone, school_id) => {
   try {
@@ -907,7 +924,7 @@ General.sendMessageBroadcast = async (
 
         if (queryRes && queryRes.length > 0) {
           // Ambil url, token, dan informasi pengirim dari query result
-          const { urlWa: url, token_whatsapp: token, sender } = queryRes[0];                                                            
+          const { urlWa: url, token_whatsapp: token, sender } = queryRes[0];
 
           // Mengirim pesan setelah semua data pembayaran diperbarui
           try {
@@ -1147,8 +1164,6 @@ WHERE
 
     // Fetch payment records where metode_pembayaran is Midtrans and status is Verified
     db.query(query, async (err, rows) => {
-      console.log(rows.length);
-
       if (err) {
         console.log("error: ", err);
         result(err, null);
@@ -1187,14 +1202,13 @@ WHERE
       const authHeader = Buffer.from(midtransServerKey + ":").toString(
         "base64"
       );
-      console.log(midtransServerKey);
+      // console.log(midtransServerKey);
 
       try {
         const paymentPromises = rows.map(async (payment, index) => {
-          // console.log(payment.type);
+          // console.log(payment);
           if (payment.type == "BULANAN") {
             try {
-              let paymentConnection;
               const url = `${dataAplikasi[0].urlCekTransaksiMidtrans}/v2/${payment.order_id}/status`;
 
               // Make request to Midtrans API
@@ -1206,21 +1220,29 @@ WHERE
               });
 
               const dataResponse = response.data;
-              paymentConnection = await pool.getConnection();
 
               // Start a transaction
-              await paymentConnection.beginTransaction();
-              if (dataResponse.transaction_status == "expire") {
+              if (
+                dataResponse.transaction_status === "expire" ||
+                dataResponse.transaction_status === "cancel"
+              ) {
                 await paymentConnection.query(
                   "UPDATE payment SET order_id = ?, metode_pembayaran = ?, redirect_url = ?, status = ? WHERE order_id = ?",
                   ["", "", "", "Pending", dataResponse.order_id] // Adding order_id in the WHERE clause
                 );
                 console.log("succes update");
               }
-
+              // if (dataResponse.status_code == "404") {
+              //   result(null, {
+              //     success: true,
+              //     message: "Transactions error.",
+              //   });
+              // }
               if (dataResponse.status_code == 200) {
-                // Get a new connection for each payment processing
+                // const paymentConnection = await pool.getConnection();
 
+                // Get a new connection for each payment processing
+                await paymentConnection.beginTransaction();
                 // console.log(paymentConnection);
                 // Check school balance
                 const [schoolRes] = await paymentConnection.query(
@@ -1263,13 +1285,12 @@ WHERE
                   throw new Error("Saldo tidak cukup aff");
                 }
 
-                // console.log(affiliateRes);
-
                 if (affiliateRes.length === 0) {
                   throw new Error("No affiliates found");
                 }
 
                 const newBalance = balance - total_affiliate;
+                console.log(newBalance);
 
                 // // Update school balance
                 await paymentConnection.query(
@@ -1305,7 +1326,7 @@ WHERE
                   });
                 });
 
-                paymentConnection.query(
+                await paymentConnection.query(
                   "UPDATE payment SET status = ?, updated_at = ? WHERE order_id = ?",
                   ["Paid", new Date(), payment.order_id], // Use payment.order_id here
                   (error, results) => {
@@ -1333,9 +1354,7 @@ WHERE
                   years: payment.years,
                 };
 
-                await insertKas(kasData).then((response) => {
-                  console.log(response);
-                });
+                await insertKas(kasData);
 
                 // Log the transaction
                 const logData = {
@@ -1418,7 +1437,7 @@ WHERE
                         );
 
                         // Output hasil format pesan untuk debugging
-                        console.log(formattedMessage);
+                        // console.log(formattedMessage);
 
                         // Mengirim pesan setelah semua data pembayaran diperbarui
                         sendMessage(
@@ -1437,7 +1456,7 @@ WHERE
                           status: true,
                         };
 
-                        await insertMmLogs(logData);
+                        insertMmLogs(logData);
                       }
                     }
                   );
@@ -1454,10 +1473,10 @@ WHERE
             } finally {
               if (paymentConnection) paymentConnection.release(); // Release the paymentConnection back to the pool
             }
+          
           } else {
             try {
               for (const payment of rows) {
-                console.log(payment);
 
                 const url = `${dataAplikasi[0].urlCekTransaksiMidtrans}/v2/${payment.order_id}/status`;
                 // console.log(url);
@@ -1481,9 +1500,11 @@ WHERE
                   connectionLimit: 10,
                   queueLimit: 0,
                 });
-                // console.log(dataResponse);
+                paymentConnection = await pool.getConnection();
+                await paymentConnection.beginTransaction();
 
-                if (dataResponse.transaction_status == "expire") {
+                if (dataResponse.transaction_status === 'expire' || dataResponse.transaction_status === 'cancel') {
+                  await paymentConnection.beginTransaction();
                   await paymentConnection.query(
                     "DELETE FROM `payment_detail` WHERE order_id = ?",
                     [dataResponse.order_id] // Adding order_id in the WHERE clause
@@ -1492,12 +1513,9 @@ WHERE
                 }
                 if (dataResponse.status_code == 200) {
                   // Get a new connection for each payment processing
-                  const paymentConnection = await pool.getConnection();
-                  // console.log(paymentConnection);
 
                   try {
                     // Start a transaction
-                    await paymentConnection.beginTransaction();
 
                     // Check school balance
                     const [schoolRes] = await paymentConnection.query(
@@ -1571,10 +1589,10 @@ WHERE
                       }
                     );
                     db.query(
-                      `SELECT tm.*, a.urlWa, a.token_whatsapp, a.sender 
-                       FROM template_message tm 
+                      `SELECT tm.*, a.urlWa, a.token_whatsapp, a.sender
+                       FROM template_message tm
                        JOIN aplikasi a ON tm.school_id = a.school_id
-                       WHERE tm.deskripsi LIKE '%cekTransaksiSuccesMidtransFree%'  
+                       WHERE tm.deskripsi LIKE '%cekTransaksiSuccesMidtransFree%'
                        AND tm.school_id = ?`,
                       [school_id],
                       async (err, queryRes) => {
@@ -1691,28 +1709,27 @@ WHERE
                   } catch (error) {
                     console.error("Error processing payment:", error);
                     // Rollback the transaction if an error occurs
-                    await paymentConnection.rollback();
+                    if (paymentConnection) await paymentConnection.rollback();
                     result(error, null);
                   } finally {
                     // Release the connection back to the pool
-                    paymentConnection.release();
+                    if (paymentConnection) paymentConnection.release();
                   }
                 }
-              }
 
-              result(null, {
-                success: true,
-                message: "Transactions checked and updated successfully.",
-              });
+              }
+              
             } catch (err) {
               console.error("Error during payment check:", err);
               result(err, null);
             }
           }
+          await Promise.all(paymentPromises);
+
         });
 
         // Wait for all payment promises to complete
-        await Promise.all(paymentPromises);
+        // await Promise.all(paymentPromises);
 
         result(null, {
           success: true,
@@ -1720,12 +1737,12 @@ WHERE
         });
       } catch (err) {
         console.error("Error during payment check:", err);
-        result(err, null);
+        result(null);
       }
     });
   } catch (err) {
     console.error("Error during payment check:", err);
-    result(err, null);
+    result(null);
   }
 };
 
@@ -2033,7 +2050,7 @@ and p.user_id = '${userId}'`;
         result(err, null);
         return;
       }
-// console.log(rows);
+      // console.log(rows);
 
       if (rows.length === 0) {
         console.log("No verified payments found.");
@@ -2064,14 +2081,14 @@ and p.user_id = '${userId}'`;
       );
 
       const midtransServerKey = dataAplikasi[0].serverKey;
-      console.log(midtransServerKey);
-      
+      console.log(dataAplikasi);
+
       const authHeader = Buffer.from(midtransServerKey + ":").toString(
         "base64"
       );
       try {
         const paymentPromises = rows.map(async (payment, index) => {
-          // console.log(payment);
+          console.log(payment.order_id);
 
           let paymentConnection;
           try {
@@ -2086,16 +2103,20 @@ and p.user_id = '${userId}'`;
             });
 
             const dataResponse = response.data;
-            console.log(dataResponse);
-            
-            if (dataResponse.transaction_status == "expire") {
+            // console.log(dataResponse);
+
+            if (
+              dataResponse.transaction_status === "expire" ||
+              dataResponse.transaction_status === "cancel"
+            ) {
+              console.log("asdasd");
+              paymentConnection = await pool.getConnection();
               await paymentConnection.query(
-                "UPDATE payment SET order_id = ?, metode_pembayaran = ?, redirect_url = ?, status = ? WHERE order_id = ?",
-                ["", "", "", "Pending", dataResponse.order_id] // Adding order_id in the WHERE clause
+                "UPDATE payment SET order_id = ?, metode_pembayaran = ?, redirect_url = ?, status = ?, updated_at = ? WHERE order_id = ?",
+                ["", "", "", "Pending", null, dataResponse.order_id] // Adding order_id in the WHERE clause
               );
               console.log("succes update");
             }
-
             if (dataResponse.status_code == 200) {
               // Get a new connection for each payment processing
               paymentConnection = await pool.getConnection();
@@ -2415,7 +2436,12 @@ and pd.user_id = '${userId}'`;
           const dataResponse = response.data;
           // console.log(dataResponse);
 
-          if (dataResponse.transaction_status == "expire") {
+          if (
+            dataResponse.transaction_status === "expire" ||
+            dataResponse.transaction_status === "cancel"
+          ) {
+            const paymentConnection = await pool.getConnection();
+
             await paymentConnection.query(
               "DELETE FROM `payment_detail` WHERE order_id = ?",
               [dataResponse.order_id] // Adding order_id in the WHERE clause
@@ -2820,11 +2846,10 @@ and ts.user_id = '${userId}'`;
                 "UPDATE users SET saldo = COALESCE(saldo, 0) + ? WHERE id = ?",
                 [payment.amount, payment.user_id] // Use payment.user_id here
               );
-              
-              
+
               const currentYear = new Date().getFullYear();
               const nextYear = currentYear + 1;
-              
+
               // Update payment.years to reflect "currentYear/nextYear"
               years = `${currentYear}/${nextYear}`;
               const kasData = {
@@ -2877,7 +2902,7 @@ and ts.user_id = '${userId}'`;
                     // Memeriksa jenis pembayaran dan mengisi placeholder dengan data yang sesuai
                     let replacements = {
                       nama_lengkap: payment.full_name,
-                      nama_pembayaran: 'Top Up',                     
+                      nama_pembayaran: "Top Up",
                       kelas: payment.class_name,
                       id_pembayaran: payment.order_id,
                       nama_sekolah: payment.school_name,

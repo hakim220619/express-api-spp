@@ -108,7 +108,7 @@ exports.updateKelas = [
   },
 ];
 
-// Update existing Admin
+
 exports.pindahKelasByUserId = [
   upload.none(),
   async (req, res) => {
@@ -129,6 +129,73 @@ exports.pindahKelasByUserId = [
         updated_at: new Date(),
       }; 
       Kelas.pindahKelasByUserId(Pindahkelas, (err, data) => {
+        if (err) {
+          return res.status(500).send({
+            message:
+              err.message || "Some error occurred while updating the Kelas.",
+          });
+        } else {
+          res.send(data);
+        }
+      });
+    } catch (error) {
+      res.status(500).send({ message: "Error updating Kelass" });
+    }
+  },
+];
+
+exports.lulusKelasByUserId = [
+  upload.none(),
+  async (req, res) => {
+    if (!req.body) {
+      return res.status(400).send({
+        message: "Content cannot be empty!",
+      });
+    }
+// console.log(req.body);
+
+    try {
+      const LulusKelas = {
+        status: req.body.status,
+        students: req.body.students,
+        updated_at: new Date(),
+      }; 
+      Kelas.lulusKelasByUserId(LulusKelas, (err, data) => {
+        if (err) {
+          return res.status(500).send({
+            message:
+              err.message || "Some error occurred while updating the Kelas.",
+          });
+        } else {
+          res.send(data);
+        }
+      });
+    } catch (error) {
+      res.status(500).send({ message: "Error updating Kelass" });
+    }
+  },
+];
+
+exports.lulusKembaliKelasByUserId = [
+  upload.none(),
+  async (req, res) => {
+    if (!req.body) {
+      return res.status(400).send({
+        message: "Content cannot be empty!",
+      });
+    }
+// console.log(req.body);
+
+    try {
+      const LulusKelas = {
+        unit_from: req.body.unit_from,
+        class_from: req.body.class_from,
+        unit_to: req.body.unit_to,
+        status: req.body.status,
+        students: req.body.students,
+        updated_at: new Date(),
+      }; 
+      Kelas.lulusKembaliKelasByUserId(LulusKelas, (err, data) => {
         if (err) {
           return res.status(500).send({
             message:

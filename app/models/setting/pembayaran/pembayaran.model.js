@@ -149,7 +149,7 @@ SettingPembayaran.createPaymentByFree = (newSettingPembayaran, result) => {
 };
 
 SettingPembayaran.createPaymentByMonth = (newSettingPembayaran, result) => {
-  const monthQuery = "SELECT * FROM months where month_status = 'ON'";
+  const monthQuery = `SELECT * FROM months where month_status = 'ON' AND school_id = '${newSettingPembayaran.school_id}'`;
   db.query(monthQuery, (monthErr, months) => {
     if (monthErr) {
       console.log("error fetching months: ", monthErr);
@@ -161,11 +161,11 @@ SettingPembayaran.createPaymentByMonth = (newSettingPembayaran, result) => {
 
     // Menambahkan pengecekan jika jumlah bulan tidak sama dengan 12
     if (monthsCount !== months.length) {
-      return result({ message: "Jumlah bulan harus 12" }, null);
+      return result({ message: `Jumlah bulan harus ${months.length}` }, null);
     }
 
     const query =
-      "SELECT id, full_name, major_id, class_id, unit_id FROM users WHERE unit_id = ? and major_id = ? AND class_id = ? AND school_id = ? AND role = '160'";
+      "SELECT id, full_name, major_id, class_id, unit_id FROM users WHERE unit_id = ? and major_id = ? AND class_id = ? AND school_id = ? AND role = '160' AND status != 'LULUS'";
 
     db.query(
       query,
@@ -199,6 +199,8 @@ SettingPembayaran.createPaymentByMonth = (newSettingPembayaran, result) => {
               newSettingPembayaran.major_id,
             ],
             (checkErr, existingPayments) => {
+              console.log(existingPayments);
+              
               if (checkErr) {
                 console.log("error checking existing payment: ", checkErr);
                 return result(
@@ -288,7 +290,7 @@ SettingPembayaran.createPaymentByStudent = (newSettingPembayaran, result) => {
         // Tambahkan pengecekan jika monthsCount tidak sama dengan 12
         if (monthsCount !== months.length) {
           return result(
-            { message: "Jumlah bulan tidak valid. Harus 12 bulan." },
+            { message: `Jumlah bulan tidak valid. Harus ${months.length} bulan.` },
             null
           );
         }
@@ -308,6 +310,8 @@ SettingPembayaran.createPaymentByStudent = (newSettingPembayaran, result) => {
               newSettingPembayaran.major_id,
             ],
             (checkErr, existingPayments) => {
+              console.log(existingPayments);
+              
               if (checkErr) {
                 console.log("error checking existing payment: ", checkErr);
                 return result(
@@ -315,6 +319,7 @@ SettingPembayaran.createPaymentByStudent = (newSettingPembayaran, result) => {
                   null
                 );
               }
+              
 
               if (existingPayments.length === 0) {
                 // Loop untuk setiap bulan

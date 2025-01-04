@@ -378,6 +378,7 @@ exports.getDetailClassMajorUsers = (req, res, next) => {
 };
 exports.cekTransaksiSuccesMidtrans = (req, res, next) => {
   const school_id = req.query.school_id
+  
   General.cekTransaksiSuccesMidtrans(school_id, (err, data) => {
     if (err)
       res.status(500).send({

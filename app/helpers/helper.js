@@ -110,7 +110,7 @@ const insertKas = async (kasData) => {
       kasData.flag,
       kasData.years
     ]);
-// console.log(result);
+console.log(result);
 
     return {
       status: "success",

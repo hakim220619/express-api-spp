@@ -139,7 +139,7 @@ JOIN
   }
 
   query += `GROUP BY p.setting_payment_uid,  p.class_id ORDER BY p.created_at DESC`;
-// console.log(query);
+
 
   db.query(query, (err, res) => {
     if (err) {

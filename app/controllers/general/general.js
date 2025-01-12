@@ -338,9 +338,34 @@ exports.resetPin = (req, res, next) => {
 
 
 exports.sendMessages = (req, res) => {
+  console.log(req.body)
   const { message, number, school_id } = req.body;
   // Contoh fungsi sendMessages untuk mengirim pesan WhatsApp
   General.sendMessages(message, number, school_id, (err, data) => {
+    if (err) {
+      return res.status(500).send({
+        message: err.message || "Terjadi kesalahan saat mengirim pesan.",
+      });
+    } else res.send(data);
+  });
+};
+
+exports.sendMessagesPaymentSuccess = (req, res) => {
+  const { dataUsers, number, school_id } = req.body;
+  // Contoh fungsi sendMessagesPaymentSuccess untuk mengirim pesan WhatsApp
+  General.sendMessagesPaymentSuccess(dataUsers, number, school_id, (err, data) => {
+    if (err) {
+      return res.status(500).send({
+        message: err.message || "Terjadi kesalahan saat mengirim pesan.",
+      });
+    } else res.send(data);
+  });
+};
+
+exports.sendMessagesPaymentSuccessFree = (req, res) => {
+  const { dataUsers, number, school_id } = req.body;
+  // Contoh fungsi sendMessagesPaymentSuccessFree untuk mengirim pesan WhatsApp
+  General.sendMessagesPaymentSuccessFree(dataUsers, number, school_id, (err, data) => {
     if (err) {
       return res.status(500).send({
         message: err.message || "Terjadi kesalahan saat mengirim pesan.",

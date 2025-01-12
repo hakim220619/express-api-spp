@@ -296,6 +296,8 @@ module.exports = (app) => {
   router.post("/reset-new-password", general.resetNewPassword);
   router.post("/new-password-all",  token.authenticateToken, general.newPasswordAll);
   router.post("/send-message",  token.authenticateToken, general.sendMessages);
+  router.post("/send-message-payment-success",  token.authenticateToken, general.sendMessagesPaymentSuccess);
+  router.post("/send-message-payment-success-free",  token.authenticateToken, general.sendMessagesPaymentSuccessFree);
   router.post("/cekPin", token.authenticateToken, general.cekPin);
   router.post("/newPin", token.authenticateToken, general.newPin);
   router.post("/resetPin", token.authenticateToken, general.resetPin);

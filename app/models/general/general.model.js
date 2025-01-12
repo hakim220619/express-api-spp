@@ -896,6 +896,336 @@ General.sendMessages = async (message, phone, school_id) => {
   }
 };
 
+General.sendMessagesPaymentSuccess = async (
+  dataUsers,
+  phone,
+  school_id,
+  result
+) => {
+  try {
+    let failedMessages = [];
+    let successMessages = [];
+
+    const query = `
+      SELECT a.urlWa, a.token_whatsapp, a.sender 
+      FROM aplikasi a 
+      WHERE a.school_id = '${school_id}'`;
+
+    db.query(query, (err, queryRes) => {
+      if (err) {
+        console.error("Error executing query: ", err);
+        result(null, {
+          status: "error",
+          message: "Terjadi kesalahan saat mengambil data aplikasi.",
+          error: err.message,
+        });
+        return;
+      }
+
+      if (queryRes && queryRes.length > 0) {
+        const templateQuery = `
+          SELECT tm.*, a.urlWa, a.token_whatsapp, a.sender 
+          FROM template_message tm, aplikasi a 
+          WHERE tm.school_id=a.school_id 
+          AND tm.deskripsi LIKE '%cekTransaksiSuccesMidtransByUserIdByMonth%'  
+          AND tm.school_id = '${dataUsers.school_id}'`;
+
+        db.query(templateQuery, async (err, templateRes) => {
+          if (err) {
+            console.error(
+              "Error fetching template and WhatsApp details: ",
+              err
+            );
+            result({
+              status: "error",
+              message: "Terjadi kesalahan saat mengambil data template.",
+              error: err.message,
+            });
+            return;
+          }
+
+          if (templateRes && templateRes.length > 0) {
+            const {
+              urlWa: url,
+              token_whatsapp: token,
+              sender,
+              message: template_message,
+            } = templateRes[0];
+
+            let replacements = {
+              nama_lengkap: dataUsers.full_name,
+              nama_pembayaran: dataUsers.sp_name,
+              bulan: dataUsers.month, // Replaces bulan with the list of months
+              tahun: dataUsers.years,
+              kelas: dataUsers.class_name,
+              id_pembayaran: dataUsers.order_id || dataUsers.id,
+              nama_sekolah: dataUsers.school_name,
+              jenis_pembayaran_midtrans:
+                dataUsers.metode_pembayaran === "Online" ? dataUsers.jenis_pembayaran : "Tunai",
+              total_midtrans: formatRupiah(
+                dataUsers.amount + dataUsers.affiliate
+              ),
+            };
+
+            const formattedMessage = template_message.replace(
+              /\$\{(\w+)\}/g,
+              (_, key) => replacements[key] || ""
+            );
+
+            console.log(formattedMessage);
+
+            sendMessage(url, token, phone, formattedMessage);
+
+            const logData = {
+              school_id: dataUsers.school_id,
+              user_id: dataUsers.user_id,
+              activity: "SendMessage",
+              detail: formattedMessage,
+              action: "Insert",
+              status: true,
+            };
+
+            insertMmLogs(logData);
+            successMessages.push(phone);
+          } else {
+            console.error(
+              "Tidak ada template pesan atau data WhatsApp yang ditemukan."
+            );
+            failedMessages.push(phone);
+          }
+
+          result(null, {
+            status: failedMessages.length > 0 ? "failed" : "success",
+            message:
+              failedMessages.length > 0
+                ? "Beberapa pesan gagal dikirim."
+                : "Semua pesan berhasil terkirim!",
+            failed: failedMessages,
+            success: successMessages,
+          });
+          return;
+        });
+      } else {
+        console.error("Tidak ada data aplikasi yang ditemukan.");
+        failedMessages.push(phone);
+
+        result(null, {
+          status: "failed",
+          message: "Tidak ada data aplikasi yang ditemukan.",
+          failed: failedMessages,
+        });
+        return;
+      }
+    });
+  } catch (err) {
+    console.error("Terjadi kesalahan:", err);
+    result(null, {
+      status: "error",
+      message: "Terjadi kesalahan saat mengirim pesan.",
+      error: err.message,
+    });
+    return;
+  }
+};
+
+General.sendMessagesPaymentSuccessFree = async (
+  dataUsers,
+  phone,
+  school_id,
+  result
+) => {
+  try {
+const { DB_HOST, DB_NAME, DB_USER, DB_PASSWORD } = process.env;
+  const pool = mysql.createPool({
+    host: DB_HOST,
+    user: DB_USER,
+    password: DB_PASSWORD,
+    database: DB_NAME,
+    waitForConnections: true,
+    connectionLimit: 10,
+    queueLimit: 0,
+  });
+
+  let paymentConnection;
+  paymentConnection = await pool.getConnection();
+
+  const [dataAplikasi] = await paymentConnection.query(
+    "SELECT * FROM aplikasi WHERE school_id = ?",
+    [dataUsers.school_id]
+  );
+
+  const midtransServerKey = dataAplikasi[0].serverKey;
+  console.log(dataAplikasi);
+
+  const authHeader = Buffer.from(midtransServerKey + ":").toString("base64");
+
+  const url = `${dataAplikasi[0].urlCekTransaksiMidtrans}/v2/${dataUsers.order_id}/status`;
+
+  // Make request to Midtrans API
+  const response = await axios.get(url, {
+    headers: {
+      Authorization: `Basic ${authHeader}`,
+      "Content-Type": "application/json",
+    },
+  });
+
+  const dataResponse = response.data;
+
+
+  // if (dataResponse.status_code == 200) {
+
+
+    let failedMessages = [];
+    let successMessages = [];
+
+
+    let jenisPembayaran = "";
+
+if (dataUsers.metode_pembayaran == 'Online') {
+  
+
+
+    if (dataResponse.permata_va_number) {
+      jenisPembayaran = "Permata".toUpperCase();
+    } else if (dataResponse.payment_type === "bank_transfer") {
+      jenisPembayaran = dataResponse.va_numbers
+        ? dataResponse.va_numbers[0].bank.toUpperCase()
+        : "";
+    } else if (dataResponse.payment_type === "echannel") {
+      jenisPembayaran = "Mandiri".toUpperCase();
+    } else if (dataResponse.payment_type === "qris") {
+      jenisPembayaran =
+        `${dataResponse.payment_type.toUpperCase()}, ${dataResponse.issuer
+          .replace(/airpay/gi, "")
+          .toUpperCase()}` || "";
+    } else {
+      jenisPembayaran = `${dataResponse.payment_type.toUpperCase()}, ${dataResponse.issuer
+        .replace(/airpay/gi, "")
+        .toUpperCase()}`;
+    }
+  } else {
+    jenisPembayaran = 'Tunai'
+  }
+    const query = `
+      SELECT a.urlWa, a.token_whatsapp, a.sender 
+      FROM aplikasi a 
+      WHERE a.school_id = '${school_id}'`;
+
+    db.query(query, (err, queryRes) => {
+      if (err) {
+        console.error("Error executing query: ", err);
+        result(null, {
+          status: "error",
+          message: "Terjadi kesalahan saat mengambil data aplikasi.",
+          error: err.message,
+        });
+        return;
+      }
+
+      if (queryRes && queryRes.length > 0) {
+        const templateQuery = `
+          SELECT tm.*, a.urlWa, a.token_whatsapp, a.sender 
+          FROM template_message tm, aplikasi a 
+          WHERE tm.school_id=a.school_id 
+          AND tm.deskripsi LIKE '%cekTransaksiSuccesMidtransByUserIdFree%'  
+          AND tm.school_id = '${school_id}'`;
+
+        db.query(templateQuery, async (err, templateRes) => {
+          if (err) {
+            console.error(
+              "Error fetching template and WhatsApp details: ",
+              err
+            );
+            result({
+              status: "error",
+              message: "Terjadi kesalahan saat mengambil data template.",
+              error: err.message,
+            });
+            return;
+          }
+
+          if (templateRes && templateRes.length > 0) {
+            const {
+              urlWa: url,
+              token_whatsapp: token,
+              sender,
+              message: template_message,
+            } = templateRes[0];
+
+            let replacements = {
+              nama_lengkap: dataUsers.full_name,
+              nama_pembayaran: dataUsers.sp_name,
+              tahun: dataUsers.years,
+              kelas: dataUsers.class_name,
+              id_pembayaran: dataUsers.order_id,
+              nama_sekolah: dataUsers.school_name,
+              jenis_pembayaran_midtrans: jenisPembayaran,
+              total_midtrans: formatRupiah(dataUsers.amount + dataUsers.affiliate),
+            };
+
+            const formattedMessage = template_message.replace(
+              /\$\{(\w+)\}/g,
+              (_, key) => replacements[key] || ""
+            );
+
+            console.log(formattedMessage);
+
+            sendMessage(url, token, phone, formattedMessage);
+
+            const logData = {
+              school_id: dataUsers.school_id,
+              user_id: dataUsers.user_id,
+              activity: "SendMessage",
+              detail: formattedMessage,
+              action: "Insert",
+              status: true,
+            };
+
+            insertMmLogs(logData);
+            successMessages.push(phone);
+          } else {
+            console.error(
+              "Tidak ada template pesan atau data WhatsApp yang ditemukan."
+            );
+            failedMessages.push(phone);
+          }
+
+          result(null, {
+            status: failedMessages.length > 0 ? "failed" : "success",
+            message:
+              failedMessages.length > 0
+                ? "Beberapa pesan gagal dikirim."
+                : "Semua pesan berhasil terkirim!",
+            failed: failedMessages,
+            success: successMessages,
+          });
+          return;
+        });
+      } else {
+        console.error("Tidak ada data aplikasi yang ditemukan.");
+        failedMessages.push(phone);
+
+        result(null, {
+          status: "failed",
+          message: "Tidak ada data aplikasi yang ditemukan.",
+          failed: failedMessages,
+        });
+        return;
+      }
+    });
+  
+  } catch (err) {
+    console.error("Terjadi kesalahan:", err);
+    result(null, {
+      status: "error",
+      message: "Terjadi kesalahan saat mengirim pesan.",
+      error: err.message,
+    });
+    return;
+  }
+  
+};
+
 General.sendMessageBroadcast = async (
   dataUsers,
   message,
@@ -1325,10 +1655,29 @@ WHERE
                     );
                   });
                 });
+                let jenisPembayaran = "";
 
+                if (dataResponse.permata_va_number) {
+                  jenisPembayaran = "Permata".toUpperCase();
+                } else if (dataResponse.payment_type === "bank_transfer") {
+                  jenisPembayaran = dataResponse.va_numbers
+                    ? dataResponse.va_numbers[0].bank.toUpperCase()
+                    : "";
+                } else if (dataResponse.payment_type === "echannel") {
+                  jenisPembayaran = "Mandiri".toUpperCase();
+                } else if (dataResponse.payment_type === "qris") {
+                  jenisPembayaran =
+                    `${dataResponse.payment_type.toUpperCase()}, ${dataResponse.issuer
+                      .replace(/airpay/gi, "")
+                      .toUpperCase()}` || "";
+                } else {
+                  jenisPembayaran = `${dataResponse.payment_type.toUpperCase()}, ${dataResponse.issuer
+                    .replace(/airpay/gi, "")
+                    .toUpperCase()}`;
+                }
                 await paymentConnection.query(
-                  "UPDATE payment SET status = ?, updated_at = ? WHERE order_id = ?",
-                  ["Paid", new Date(), payment.order_id], // Use payment.order_id here
+                  "UPDATE payment SET status = ?, jenis_pembayaran = ?, updated_by = ?, updated_at = ? WHERE order_id = ?",
+                  ["Paid", jenisPembayaran, payment.user_id,  new Date(), payment.order_id], // Use payment.order_id here
                   (error, results) => {
                     if (error) {
                       console.error("Error updating payment status:", error);
@@ -1412,23 +1761,11 @@ WHERE
                           kelas: payment.class_name,
                           id_pembayaran: payment.order_id,
                           nama_sekolah: payment.school_name,
-                          jenis_pembayaran_midtrans: "",
+                          jenis_pembayaran_midtrans: jenisPembayaran,
                           total_midtrans: formatRupiah(
                             dataResponse.gross_amount
                           ),
                         };
-
-                        if (dataResponse.payment_type == "bank_transfer") {
-                          replacements.jenis_pembayaran_midtrans =
-                            dataResponse.va_numbers
-                              ? dataResponse.va_numbers[0].bank
-                              : "";
-                        } else if (dataResponse.payment_type == "echannel") {
-                          replacements.jenis_pembayaran_midtrans = "Mandiri";
-                        } else if (dataResponse.payment_type == "qris") {
-                          replacements.jenis_pembayaran_midtrans =
-                            dataResponse.acquirer || "";
-                        }
 
                         // Fungsi untuk menggantikan setiap placeholder di template
                         const formattedMessage = template_message.replace(
@@ -1473,11 +1810,9 @@ WHERE
             } finally {
               if (paymentConnection) paymentConnection.release(); // Release the paymentConnection back to the pool
             }
-          
           } else {
             try {
               for (const payment of rows) {
-
                 const url = `${dataAplikasi[0].urlCekTransaksiMidtrans}/v2/${payment.order_id}/status`;
                 // console.log(url);
 
@@ -1503,7 +1838,10 @@ WHERE
                 paymentConnection = await pool.getConnection();
                 await paymentConnection.beginTransaction();
 
-                if (dataResponse.transaction_status === 'expire' || dataResponse.transaction_status === 'cancel') {
+                if (
+                  dataResponse.transaction_status === "expire" ||
+                  dataResponse.transaction_status === "cancel"
+                ) {
                   await paymentConnection.beginTransaction();
                   await paymentConnection.query(
                     "DELETE FROM `payment_detail` WHERE order_id = ?",
@@ -1588,6 +1926,26 @@ WHERE
                         );
                       }
                     );
+                    let jenisPembayaran = "";
+
+                if (dataResponse.permata_va_number) {
+                  jenisPembayaran = "Permata".toUpperCase();
+                } else if (dataResponse.payment_type === "bank_transfer") {
+                  jenisPembayaran = dataResponse.va_numbers
+                    ? dataResponse.va_numbers[0].bank.toUpperCase()
+                    : "";
+                } else if (dataResponse.payment_type === "echannel") {
+                  jenisPembayaran = "Mandiri".toUpperCase();
+                } else if (dataResponse.payment_type === "qris") {
+                  jenisPembayaran =
+                    `${dataResponse.payment_type.toUpperCase()}, ${dataResponse.issuer
+                      .replace(/airpay/gi, "")
+                      .toUpperCase()}` || "";
+                } else {
+                  jenisPembayaran = `${dataResponse.payment_type.toUpperCase()}, ${dataResponse.issuer
+                    .replace(/airpay/gi, "")
+                    .toUpperCase()}`;
+                }
                     db.query(
                       `SELECT tm.*, a.urlWa, a.token_whatsapp, a.sender
                        FROM template_message tm
@@ -1622,23 +1980,11 @@ WHERE
                             kelas: payment.class_name,
                             id_pembayaran: payment.order_id,
                             nama_sekolah: payment.school_name,
-                            jenis_pembayaran_midtrans: "",
+                            jenis_pembayaran_midtrans: jenisPembayaran,
                             total_midtrans: formatRupiah(
                               dataResponse.gross_amount
                             ),
                           };
-
-                          if (dataResponse.payment_type == "bank_transfer") {
-                            replacements.jenis_pembayaran_midtrans =
-                              dataResponse.va_numbers
-                                ? dataResponse.va_numbers[0].bank
-                                : "";
-                          } else if (dataResponse.payment_type == "echannel") {
-                            replacements.jenis_pembayaran_midtrans = "Mandiri";
-                          } else if (dataResponse.payment_type == "qris") {
-                            replacements.jenis_pembayaran_midtrans =
-                              dataResponse.acquirer || "";
-                          }
 
                           // Fungsi untuk menggantikan setiap placeholder di template
                           const formattedMessage = template_message.replace(
@@ -1673,8 +2019,8 @@ WHERE
 
                     // Update payment status
                     await paymentConnection.query(
-                      "UPDATE payment_detail SET status = ?, updated_at = ? WHERE order_id = ?",
-                      ["Paid", new Date(), payment.order_id] // Use payment.order_id here
+                      "UPDATE payment_detail SET status = ?, jenis_pembayaran = ?, updated_by = ?, updated_at = ? WHERE order_id = ?",
+                      ["Paid", jenisPembayaran, payment.user_id, new Date(), payment.order_id] // Use payment.order_id here
                     );
                     const kasData = {
                       school_id: payment.school_id,
@@ -1716,16 +2062,13 @@ WHERE
                     if (paymentConnection) paymentConnection.release();
                   }
                 }
-
               }
-              
             } catch (err) {
               console.error("Error during payment check:", err);
               result(err, null);
             }
           }
           await Promise.all(paymentPromises);
-
         });
 
         // Wait for all payment promises to complete
@@ -2103,13 +2446,11 @@ and p.user_id = '${userId}'`;
             });
 
             const dataResponse = response.data;
-            // console.log(dataResponse);
 
             if (
               dataResponse.transaction_status === "expire" ||
               dataResponse.transaction_status === "cancel"
             ) {
-              console.log("asdasd");
               paymentConnection = await pool.getConnection();
               await paymentConnection.query(
                 "UPDATE payment SET order_id = ?, metode_pembayaran = ?, redirect_url = ?, status = ?, updated_at = ? WHERE order_id = ?",
@@ -2205,10 +2546,32 @@ and p.user_id = '${userId}'`;
                   );
                 });
               });
+              
+              let jenisPembayaran = "";
+
+              if (dataResponse.permata_va_number) {
+                jenisPembayaran = "Permata".toUpperCase();
+              } else if (dataResponse.payment_type === "bank_transfer") {
+                jenisPembayaran = dataResponse.va_numbers
+                  ? dataResponse.va_numbers[0].bank.toUpperCase()
+                  : "";
+              } else if (dataResponse.payment_type === "echannel") {
+                jenisPembayaran = "Mandiri".toUpperCase();
+              } else if (dataResponse.payment_type === "qris") {
+                jenisPembayaran =
+                  `${dataResponse.payment_type.toUpperCase()}, ${dataResponse.issuer
+                    .replace(/airpay/gi, "")
+                    .toUpperCase()}` || "";
+              } else {
+                jenisPembayaran = `${dataResponse.payment_type.toUpperCase()}, ${dataResponse.issuer
+                  .replace(/airpay/gi, "")
+                  .toUpperCase()}`;
+              }
+console.log(jenisPembayaran);
 
               paymentConnection.query(
-                "UPDATE payment SET status = ?, updated_at = ? WHERE order_id = ?",
-                ["Paid", new Date(), payment.order_id], // Use payment.order_id here
+                "UPDATE payment SET status = ?, jenis_pembayaran = ?, updated_at = ?, updated_by = ? WHERE order_id = ?",
+                ["Paid", jenisPembayaran, new Date(),payment.user_id, payment.order_id,  ], // Use payment.order_id here
                 (error, results) => {
                   if (error) {
                     console.error("Error updating payment status:", error);
@@ -2282,23 +2645,11 @@ and p.user_id = '${userId}'`;
                         kelas: payment.class_name,
                         id_pembayaran: payment.order_id,
                         nama_sekolah: payment.school_name,
-                        jenis_pembayaran_midtrans: "",
+                        jenis_pembayaran_midtrans: jenisPembayaran,
                         total_midtrans: formatRupiah(dataResponse.gross_amount),
                       };
 
-                      // Determine payment type for `jenis_pembayaran_midtrans`
-                      if (dataResponse.payment_type == "bank_transfer") {
-                        replacements.jenis_pembayaran_midtrans =
-                          dataResponse.va_numbers
-                            ? dataResponse.va_numbers[0].bank
-                            : "";
-                      } else if (dataResponse.payment_type == "echannel") {
-                        replacements.jenis_pembayaran_midtrans = "Mandiri";
-                      } else if (dataResponse.payment_type == "qris") {
-                        replacements.jenis_pembayaran_midtrans =
-                          dataResponse.acquirer || "";
-                      }
-
+                     
                       // Replace placeholders in the template
                       const formattedMessage = template_message.replace(
                         /\$\{(\w+)\}/g,
@@ -2533,11 +2884,30 @@ and pd.user_id = '${userId}'`;
 
               // Wait for all affiliate transactions to complete
               await Promise.all(transactionPromises);
+              let jenisPembayaran = "";
 
+              if (dataResponse.permata_va_number) {
+                jenisPembayaran = "Permata".toUpperCase();
+              } else if (dataResponse.payment_type === "bank_transfer") {
+                jenisPembayaran = dataResponse.va_numbers
+                  ? dataResponse.va_numbers[0].bank.toUpperCase()
+                  : "";
+              } else if (dataResponse.payment_type === "echannel") {
+                jenisPembayaran = "Mandiri".toUpperCase();
+              } else if (dataResponse.payment_type === "qris") {
+                jenisPembayaran =
+                  `${dataResponse.payment_type.toUpperCase()}, ${dataResponse.issuer
+                    .replace(/airpay/gi, "")
+                    .toUpperCase()}` || "";
+              } else {
+                jenisPembayaran = `${dataResponse.payment_type.toUpperCase()}, ${dataResponse.issuer
+                  .replace(/airpay/gi, "")
+                  .toUpperCase()}`;
+              }
               // Update payment status
               await paymentConnection.query(
-                "UPDATE payment_detail SET status = ?, updated_at = ? WHERE order_id = ?",
-                ["Paid", new Date(), payment.order_id] // Use payment.order_id here
+                "UPDATE payment_detail SET status = ?, jenis_pembayaran = ?, updated_by = ?, updated_at = ? WHERE order_id = ?",
+                ["Paid", jenisPembayaran, payment.user_id,  new Date(), payment.order_id] // Use payment.order_id here
               );
 
               const kasData = {
@@ -2565,7 +2935,7 @@ and pd.user_id = '${userId}'`;
               };
 
               await insertMmLogs(logData);
-
+            
               db.query(
                 `SELECT tm.*, a.urlWa, a.token_whatsapp, a.sender 
                  FROM template_message tm, aplikasi a 
@@ -2595,21 +2965,9 @@ and pd.user_id = '${userId}'`;
                       kelas: payment.class_name,
                       id_pembayaran: payment.order_id,
                       nama_sekolah: payment.school_name,
-                      jenis_pembayaran_midtrans: "",
+                      jenis_pembayaran_midtrans: jenisPembayaran,
                       total_midtrans: formatRupiah(dataResponse.gross_amount),
                     };
-
-                    if (dataResponse.payment_type == "bank_transfer") {
-                      replacements.jenis_pembayaran_midtrans =
-                        dataResponse.va_numbers
-                          ? dataResponse.va_numbers[0].bank
-                          : "";
-                    } else if (dataResponse.payment_type == "echannel") {
-                      replacements.jenis_pembayaran_midtrans = "Mandiri";
-                    } else if (dataResponse.payment_type == "qris") {
-                      replacements.jenis_pembayaran_midtrans =
-                        dataResponse.acquirer || "";
-                    }
 
                     // Fungsi untuk menggantikan setiap placeholder di template
                     const formattedMessage = template_message.replace(

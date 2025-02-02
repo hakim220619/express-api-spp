@@ -65,7 +65,7 @@ General.getAplikasiBySchool = async (school_id, result) => {
     }
 
     // console.log("role: ", res);
-    result(null, res[0]);
+    result(null, res);
   });
 };
 General.getUsersAffiliate = async (result) => {

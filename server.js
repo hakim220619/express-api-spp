@@ -43,7 +43,7 @@ require("./app/routes/routes.js")(app);
 
 // set port, listen for requests
 const PORT = process.env.PORT || 8080;
-const HOST = '192.168.1.79'; // Default ke '0.0.0.0' agar mendengarkan semua IP
+const HOST = '192.168.88.121';
 
 app.listen(PORT, HOST, async () => {
   console.log(`Server is running on http://${HOST}:${PORT}`);

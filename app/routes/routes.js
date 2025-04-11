@@ -2,6 +2,7 @@ module.exports = (app) => {
   // const tutorials = require("../controllers/tutorial.controller.js");
   const Admin = require("../controllers/admin/admin.js");
   const Siswa = require("../controllers/siswa/siswa.js");
+  const menu = require("../controllers/menu/menu.js");
   const Register = require("../controllers/Auth/register.js");
   const Login = require("../controllers/Auth/login.js");
   const Kelas = require("../controllers/kelas/kelas.js");
@@ -301,6 +302,9 @@ module.exports = (app) => {
   router.post("/cekPin", token.authenticateToken, general.cekPin);
   router.post("/newPin", token.authenticateToken, general.newPin);
   router.post("/resetPin", token.authenticateToken, general.resetPin);
+
+  router.get("/menu", menu.listMenu);
+
 
 
   router.get("/cekFunction", general.cekFunction);

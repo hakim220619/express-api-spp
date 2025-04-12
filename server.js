@@ -1,16 +1,13 @@
 const express = require("express");
-// const bodyParser = require("body-parser"); /* deprecated */
 const cors = require('cors');
+const os = require('os'); // To get the network interfaces
 const path = require('path');
-
 
 const app = express();
 // Serve static files from the 'uploads' directory
 app.use(cors({
-  origin: '*', // Atau bisa diatur ke domain spesifik yang diizinkan
+  origin: '*', // Or configure it for specific allowed domains
 }));
-
-
 
 app.use((req, res, next) => {
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -25,27 +22,36 @@ app.options('*', (req, res) => {
   res.sendStatus(200);
 });
 
-
 app.use('/uploads', express.static('uploads'));
 
-// parse requests of content-type - application/json
+// Parse requests of content-type - application/json
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
-// parse requests of content-type - application/x-www-form-urlencoded
-app.use(express.urlencoded({ extended: true })); /* bodyParser.urlencoded() is deprecated */
-// simple route
+
+// Simple route
 app.get("/", (req, res) => {
   res.json({ message: "Welcome to Api DLH." });
 });
 
 require("./app/routes/routes.js")(app);
 
+// Get the local network IP address
+const getLocalIp = () => {
+  const interfaces = os.networkInterfaces();
+  for (let iface in interfaces) {
+    for (let i = 0; i < interfaces[iface].length; i++) {
+      const alias = interfaces[iface][i];
+      if (alias.family === 'IPv4' && !alias.internal) {
+        return alias.address; // Return the first non-internal IPv4 address
+      }
+    }
+  }
+  return '127.0.0.1'; // Default to localhost if no other IP is found
+};
 
-// set port, listen for requests
+const HOST = getLocalIp();
 const PORT = process.env.PORT || 8080;
-const HOST = '192.168.88.121';
 
 app.listen(PORT, HOST, async () => {
   console.log(`Server is running on http://${HOST}:${PORT}`);
 });
-

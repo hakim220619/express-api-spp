@@ -13,58 +13,113 @@ exports.listMenu = (req, res, next) => {
       res.status(500).send({
         message: err.message || "Some error occurred while retrieving Data.",
       });
-    else res.send({data: data});
+    else res.send({ data: data });
+  });
+};
+exports.listMenuPermission = (req, res, next) => {
+  const name = req.query.q;
+  const school_id = req.query.school_id;
+  const status = req.query.status;
+
+  Menu.listMenuPermission(name, school_id, status, (err, data) => {
+    if (err)
+      res.status(500).send({
+        message: err.message || "Some error occurred while retrieving Data.",
+      });
+    else res.send({ data: data });
   });
 };
 
 // Create new Admin
 exports.createMenu = [
-    upload.none(),
-    async (req, res) => {
-      // Validate request
-      if (!req.body) {
-        return res.status(400).send({
-          message: "Content cannot be empty!",
-        });
-      }
-  
-      const { school_id, user_id, description, transaction_type, amount } = req.body;
-  
-      try {
-        // Get the current year
-        const currentYear = new Date().getFullYear();
-        const nextYear = currentYear + 1;
-        const academicYear = `${currentYear}/${nextYear}`; // e.g., "2024/2025"
-  
-        // Create new kas object
-        const kas = {
-          school_id: school_id,
-          user_id: user_id,
-          deskripsi: description,
-          type: transaction_type,
-          amount: amount,
-          flag: 1,
-          years: academicYear,
-          created_at: new Date(),
-        };
-  
-        // Save kas to the database
-        Menu.create(kas, (err, data) => {
-          if (err) {
-            return res.status(500).send({
-              message:
-                err.message || "Some error occurred while creating the Menu.",
-            });
-          } else {
-            res.send(data);
-          }
-        });
-      } catch (error) {
-        res.status(500).send({ message: "Error creating Menu" });
-      }
-    },
-  ];
-  
+  upload.none(),
+  async (req, res) => {
+    // Validate request
+    if (!req.body) {
+      return res.status(400).send({
+        message: "Content cannot be empty!",
+      });
+    }
+
+    const { parent_id, name, icon, status, address, order_list } = req.body;
+
+    try {
+
+      const menu = {
+        parent_id: parent_id || null,
+        name: name,
+        icon: icon,
+        address: address,
+        order_list: order_list,
+        created_at: new Date(),
+        updated_at: new Date()
+      };
+
+
+
+      // Save Menu to the database
+      Menu.create(menu, (err, data) => {
+        if (err) {
+          return res.status(500).send({
+            message:
+              err.message || "Some error occurred while creating the Menu.",
+          });
+        } else {
+          res.send(data);
+        }
+      });
+    } catch (error) {
+      res.status(500).send({ message: "Error creating Menu" });
+    }
+  },
+];
+
+// Create new Admin
+exports.createMenuPermission = [
+  upload.none(),
+  async (req, res) => {
+    // Validate request
+    if (!req.body) {
+      return res.status(400).send({
+        message: "Content cannot be empty!",
+      });
+    }
+
+    const { school_id, menu_id, role_id, created, read, updated, deleted } = req.body;
+
+    try {
+
+      const menu = {
+        school_id: school_id || null,
+        menu_id: menu_id,
+        role_id: role_id,
+        created: created,
+        read: read,
+        updated: updated,
+        deleted: deleted,
+        created_at: new Date(),
+        updated_at: new Date()
+      };
+
+
+
+      // Save Menu to the database
+      Menu.createMenuPermission(menu, (err, data) => {
+        if (err) {
+          return res.status(500).send({
+            message:
+              err.message || "Some error occurred while creating the Menu.",
+          });
+        } else {
+          res.send(data);
+        }
+      });
+    } catch (error) {
+      res.status(500).send({ message: "Error creating Menu" });
+    }
+  },
+];
+
 
 // Update existing Admin
 exports.updateMenu = [
@@ -77,15 +132,61 @@ exports.updateMenu = [
     }
 
     try {
-      const kas = {
-        id: req.body.data.id,
-        user_id: req.body.data.user_id,
-        deskripsi: req.body.data.description,
-        type: req.body.data.transactionType,
-        amount: req.body.data.amount,
-        updated_at: new Date(),
-      }; 
-      Menu.update(kas, (err, data) => {
+    const { id, parent_id, name, icon, address, order_list } = req.body.data;
+
+     
+      const menu = {
+        id: id,
+        parent_id: parent_id,
+        name: name,
+        icon: icon,
+        address: address,
+        order_list: order_list,
+        updated_at: new Date()
+      };
+      Menu.update(menu, (err, data) => {
+        if (err) {
+          return res.status(500).send({
+            message:
+              err.message || "Some error occurred while updating the Menu.",
+          });
+        } else {
+          res.send(data);
+        }
+      });
+    } catch (error) {
+      res.status(500).send({ message: "Error updating Menus" });
+    }
+  },
+];
+
+// Update existing Admin
+exports.updateMenuPermission = [
+  upload.none(),
+  async (req, res) => {
+    if (!req.body) {
+      return res.status(400).send({
+        message: "Content cannot be empty!",
+      });
+    }
+
+    try {
+    const { id, school_id, menu_id, role_id, created, status, read, updated, deleted } = req.body.data;
+
+     
+      const menu = {
+        id: id,
+        school_id: school_id,
+        menu_id: menu_id,
+        role_id: role_id,
+        created: created,
+        status: status,
+        read: read,
+        updated: updated,
+        deleted: deleted,
+        updated_at: new Date()
+      };
+      Menu.updateMenuPermission(menu, (err, data) => {
         if (err) {
           return res.status(500).send({
             message:
@@ -115,10 +216,35 @@ exports.delete = (req, res) => {
     }
   });
 };
+// Delete an Admin
+exports.deletePermission = (req, res) => {
+  const uid = req.body.data;
+
+  Menu.deletePermission(uid, (err, data) => {
+    if (err) {
+      return res.status(500).send({
+        message: err.message || "Some error occurred while deleting the Admin.",
+      });
+    } else {
+      res.send(data);
+    }
+  });
+};
 
 exports.detailMenu = (req, res, next) => {
   const uid = req.body.uid;
   Menu.detailMenu(uid, (err, data) => {
+    if (err)
+      res.status(500).send({
+        message:
+          err.message || "Some error occurred while retrieving tutorials.",
+      });
+    else res.send(data);
+  });
+};
+exports.detailMenuPermission = (req, res, next) => {
+  const uid = req.body.uid;
+  Menu.detailMenuPermission(uid, (err, data) => {
     if (err)
       res.status(500).send({
         message:

@@ -303,8 +303,19 @@ module.exports = (app) => {
   router.post("/newPin", token.authenticateToken, general.newPin);
   router.post("/resetPin", token.authenticateToken, general.resetPin);
 
-  router.get("/menu", menu.listMenu);
+  //menu
+  router.get("/list-menu", token.authenticateToken, menu.listMenu);
+  router.post("/create-menu", token.authenticateToken, menu.createMenu);
+  router.post("/update-menu", token.authenticateToken, menu.updateMenu);
+  router.post("/detailMenu", token.authenticateToken, menu.detailMenu);
+  router.post("/delete-menu", token.authenticateToken, menu.delete);
 
+  //menu permission
+  router.get("/list-menuPermission", token.authenticateToken, menu.listMenuPermission);
+  router.post("/create-menuPermission", token.authenticateToken, menu.createMenuPermission);
+  router.post("/update-menuPermission", token.authenticateToken, menu.updateMenuPermission);
+  router.post("/detailMenuPermission", token.authenticateToken, menu.detailMenuPermission);
+  router.post("/delete-menuPermission", token.authenticateToken, menu.deletePermission);
 
 
   router.get("/cekFunction", general.cekFunction);

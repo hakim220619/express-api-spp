@@ -113,7 +113,7 @@ Menu.updateMenuPermission = (newData, result) => {
   );
 };
 
-Menu.listMenu = (name, school_id, is_active, result) => {
+Menu.listMenu = (name, school_id, status, result) => {
   let query =
     `
 SELECT ROW_NUMBER() OVER () AS no, 
@@ -142,8 +142,35 @@ LEFT JOIN menu_permission mp ON m.id = mp.menu_id where 1=1
   if (school_id) {
     query += ` AND mp.school_id = '${school_id}'`;
   }
-  if (is_active) {
-    query += ` AND mp.status = '${is_active}'`;
+  if (status) {
+    query += ` AND mp.status = '${status}'`;
+  }
+  query += ` order by m.order_list asc`;
+
+
+  db.query(query, (err, res) => {
+
+    if (err) {
+      console.log("error: ", err);
+      result(null, err);
+      return;
+    }
+    // console.log("users: ", res);
+    result(null, res);
+  });
+};
+
+Menu.listMenuMain = (name, result) => {
+  let query =
+    `
+SELECT ROW_NUMBER() OVER () AS no, 
+       m.*
+FROM menu m
+where 1=1
+    `;
+
+  if (name) {
+    query += ` AND m.name like '%${name}%'`;
   }
   query += ` order by m.order_list asc`;
 

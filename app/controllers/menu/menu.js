@@ -16,6 +16,30 @@ exports.listMenu = (req, res, next) => {
     else res.send({ data: data });
   });
 };
+exports.listMenuMain = (req, res, next) => {
+  const name = req.query.q;
+
+  Menu.listMenuMain(name, (err, data) => {
+    if (err)
+      res.status(500).send({
+        message: err.message || "Some error occurred while retrieving Data.",
+      });
+    else res.send({ data: data });
+  });
+};
+exports.listMenu = (req, res, next) => {
+  const name = req.query.q;
+  const school_id = req.query.school_id;
+  const is_active = req.query.is_active;
+
+  Menu.listMenu(name, school_id, is_active, (err, data) => {
+    if (err)
+      res.status(500).send({
+        message: err.message || "Some error occurred while retrieving Data.",
+      });
+    else res.send({ data: data });
+  });
+};
 exports.listMenuPermission = (req, res, next) => {
   const name = req.query.q;
   const school_id = req.query.school_id;

@@ -592,6 +592,7 @@ exports. getMonths = (req, res, next) => {
 };
 exports.rolePermissions = (req, res, next) => {
   const school_id = req.query.school_id;
+  const role_id = req.query.role_id;
 
   // Validasi jika schoolId tidak ada di query
   if (!school_id) {
@@ -599,7 +600,7 @@ exports.rolePermissions = (req, res, next) => {
   }
 
   // Panggil fungsi General.getMonths dengan schoolId sebagai parameter
-  General.rolePermissions(school_id, (err, data) => {
+  General.rolePermissions(school_id, role_id, (err, data) => {
     if (err) {
       return res.status(500).send({
         message: err.message || "Some error occurred while retrieving majors.",

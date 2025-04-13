@@ -305,6 +305,7 @@ module.exports = (app) => {
 
   //menu
   router.get("/list-menu", token.authenticateToken, menu.listMenu);
+  router.get("/list-menu-main", token.authenticateToken, menu.listMenuMain);
   router.post("/create-menu", token.authenticateToken, menu.createMenu);
   router.post("/update-menu", token.authenticateToken, menu.updateMenu);
   router.post("/detailMenu", token.authenticateToken, menu.detailMenu);

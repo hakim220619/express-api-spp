@@ -3769,11 +3769,30 @@ General.getMonths = async (schoolId, result) => {
     result(null, res);
   });
 };
-General.rolePermissions = async (school_id, result) => {
+General.rolePermissions = async (school_id, role_id, result) => {
+  
   // Siapkan query dasar
-  let query = "SELECT * FROM role_permission WHERE 1=1";
+  let query = `SELECT ROW_NUMBER() OVER () AS no, 
+       m.id, 
+       mp.school_id, 
+       m.parent_id, 
+       m.name, 
+       m.icon, 
+       m.address, 
+       m.order_list, 
+       mp.role_id as role, 
+       mp.created, 
+       mp.updated, 
+       mp.read, 
+       mp.deleted, 
+       mp.status  
+FROM menu m
+RIGHT JOIN menu_permission mp ON m.id = mp.menu_id where 1=1 `;
   if (school_id) {
-    query += ` and school_id = '${school_id}'`;
+    query += ` and mp.school_id = '${school_id}'`;
+  }
+  if (role_id) {
+    query += ` and mp.role_id = '${role_id}'`;
   }
   // Eksekusi query
   db.query(query, (err, res) => {
@@ -3788,15 +3807,16 @@ General.rolePermissions = async (school_id, result) => {
 
     // Loop melalui hasil query untuk membangun rolePermissions
     res.forEach((row) => {
-      const path = row.path; // Assuming 'path' is the column name for the route
+      const path = row.address; // Assuming 'path' is the column name for the route
       const roleId = row.role; // Assuming 'role' is the column name for role identifier
-
-      // Masukkan ke dalam rolePermissions
-      // Gunakan array untuk mendukung beberapa role di masa depan
-      if (!rolePermissions[path]) {
-        rolePermissions[path] = [];
+    
+      // Filter out the empty path
+      if (path !== '') {
+        if (!rolePermissions[path]) {
+          rolePermissions[path] = [];
+        }
+        rolePermissions[path].push(roleId); // Push roleId into the array
       }
-      rolePermissions[path].push(roleId); // Push roleId into the array
     });
 
     // Kembalikan hasil query dalam format JSON

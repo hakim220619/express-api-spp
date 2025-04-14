@@ -25,6 +25,7 @@ module.exports = (app) => {
   const Cuti = require("../controllers/cuti/cuti.js"); 
   const Holiday = require("../controllers/holiday/holiday.js"); 
   const Subjects = require("../controllers/subject/subject.js"); 
+  const ProgresSiswa = require("../controllers/progres_siswa/progres_siswa.js"); 
   const TemplateMessage = require("../controllers/templateMessage/templateMessage.js");
   const token = require("../../app/config/tokenHandler.js");
   var router = require("express").Router();
@@ -144,6 +145,12 @@ module.exports = (app) => {
   router.post("/update-subjects", token.authenticateToken, Subjects.updateSubjects);
   router.post("/delete-subjects", token.authenticateToken, Subjects.deleteSubjects);
   router.post("/detailSubjects", token.authenticateToken, Subjects.detailSubjects);
+  //Progress Siswa
+  router.get("/list-progresSiswa", token.authenticateToken, ProgresSiswa.listProgresSiswa);
+  router.post("/create-progresSiswa", token.authenticateToken, ProgresSiswa.createProgresSiswa);
+  // router.post("/update-progresSiswa", token.authenticateToken, ProgresSiswa.updateProgresSiswa);
+  // router.post("/delete-progresSiswa", token.authenticateToken, ProgresSiswa.deleteProgresSiswa);
+  // router.post("/detailProgresSiswa", token.authenticateToken, ProgresSiswa.detailProgresSiswa);
   // //Kas
   router.get("/list-kas", token.authenticateToken, Kas.listKas);
   router.post("/create-kas", token.authenticateToken, Kas.createKas);

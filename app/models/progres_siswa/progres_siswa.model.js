@@ -6,8 +6,7 @@ const ProgresSiswa = function (data) {
 };
 
 ProgresSiswa.create = (newData, result) => {
-    console.log(newData);
-    
+
   db.query("INSERT INTO progres_siswa SET ?", newData, (err, res) => {
     if (err) {
       console.log("error: ", err);
@@ -21,8 +20,8 @@ ProgresSiswa.create = (newData, result) => {
 };
 
 ProgresSiswa.update = (newData, result) => {
-    console.log(newData);
-    
+  console.log(newData);
+
   db.query(
     "UPDATE ProgresSiswa SET ? WHERE id = ?",
     [newData, newData.id],
@@ -43,15 +42,18 @@ ProgresSiswa.update = (newData, result) => {
   );
 };
 
-ProgresSiswa.listProgresSiswa = (ProgresSiswa_name, school_id, result) => {
+ProgresSiswa.listProgresSiswa = (full_name, school_id, subjec, result) => {
   let query =
-    "SELECT ROW_NUMBER() OVER () AS no, u.*  FROM ProgresSiswa u WHERE 1=1";
+    "SELECT ROW_NUMBER() OVER () AS no, p.*, u.full_name, u.school_id  FROM progres_siswa p, users u WHERE p.user_id=u.id ";
 
-  if (ProgresSiswa_name) {
-    query += ` AND u.ProgresSiswa_name like '%${ProgresSiswa_name}%'`;
+  if (full_name) {
+    query += ` AND u.full_name like '%${full_name}%'`;
   }
   if (school_id) {
     query += ` AND u.school_id = '${school_id}'`;
+  }
+  if (subjec) {
+    query += ` AND p.subject_id = '${subjec}'`;
   }
 
   db.query(query, (err, res) => {
@@ -64,8 +66,31 @@ ProgresSiswa.listProgresSiswa = (ProgresSiswa_name, school_id, result) => {
     result(null, res);
   });
 };
-ProgresSiswa.delete = (uid, result) => {
-  let query = `DELETE FROM ProgresSiswa WHERE id = '${uid}'`;
+
+ProgresSiswa.listRekapSiswa = (full_name, school_id, result) => {
+  let query =
+    "SELECT ROW_NUMBER() OVER () AS no, p.*, u.full_name, u.school_id, s.subject_name  FROM progres_siswa p, users u, subjects s WHERE p.user_id=u.id AND p.subject_id=s.id ";
+
+  if (full_name) {
+    query += ` AND u.full_name like '%${full_name}%'`;
+  }
+  if (school_id) {
+    query += ` AND u.school_id = '${school_id}'`;
+  }
+
+
+  db.query(query, (err, res) => {
+    if (err) {
+      console.log("error: ", err);
+      result(null, err);
+      return;
+    }
+    // console.log("users: ", res);
+    result(null, res);
+  });
+};
+ProgresSiswa.deleteProgresSiswa = (uid, result) => {
+  let query = `DELETE FROM progres_siswa WHERE id = '${uid}'`;
   db.query(query, (err, res) => {
     if (err) {
       console.log("error: ", err);

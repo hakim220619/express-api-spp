@@ -19,13 +19,13 @@ module.exports = (app) => {
   const Unit = require("../controllers/unit/unit.js");
   const general = require("../controllers/general/general.js");
   const Permission = require("../controllers/permission/permission.js");
-  const Tunggakan = require("../controllers/tunggakan/tunggakan.js"); 
-  const Ppdb = require("../controllers/ppdb/ppdb.js"); 
-  const Absensi = require("../controllers/absensi/absensi.js"); 
-  const Cuti = require("../controllers/cuti/cuti.js"); 
-  const Holiday = require("../controllers/holiday/holiday.js"); 
-  const Subjects = require("../controllers/subject/subject.js"); 
-  const ProgresSiswa = require("../controllers/progres_siswa/progres_siswa.js"); 
+  const Tunggakan = require("../controllers/tunggakan/tunggakan.js");
+  const Ppdb = require("../controllers/ppdb/ppdb.js");
+  const Absensi = require("../controllers/absensi/absensi.js");
+  const Cuti = require("../controllers/cuti/cuti.js");
+  const Holiday = require("../controllers/holiday/holiday.js");
+  const Subjects = require("../controllers/subject/subject.js");
+  const ProgresSiswa = require("../controllers/progres_siswa/progres_siswa.js");
   const TemplateMessage = require("../controllers/templateMessage/templateMessage.js");
   const token = require("../../app/config/tokenHandler.js");
   var router = require("express").Router();
@@ -86,7 +86,7 @@ module.exports = (app) => {
   router.post("/detailKelas", token.authenticateToken, Kelas.detailKelas);
 
   //Pindah Kelas
-  
+
   router.get("/list-pindah-kelas", token.authenticateToken, Kelas.listPindahKelas);
   router.post("/pindah-kelas-siswa-by-kelas", token.authenticateToken, Kelas.pindahKelasByUserId);
   router.post("/kembali-kelas-siswa-by-kelas", token.authenticateToken, Kelas.kembaliKelasByUserId);
@@ -114,7 +114,7 @@ module.exports = (app) => {
   router.post("/delete-absensi-aktif", token.authenticateToken, Absensi.deleteAbsensiAktif);
 
 
-  
+
   //activities
   router.get("/list-activities", token.authenticateToken, Absensi.listActivities);
   router.post("/create-activities", token.authenticateToken, Absensi.createActivities);
@@ -146,11 +146,13 @@ module.exports = (app) => {
   router.post("/delete-subjects", token.authenticateToken, Subjects.deleteSubjects);
   router.post("/detailSubjects", token.authenticateToken, Subjects.detailSubjects);
   //Progress Siswa
-  router.get("/list-progresSiswa", token.authenticateToken, ProgresSiswa.listProgresSiswa);
-  router.post("/create-progresSiswa", token.authenticateToken, ProgresSiswa.createProgresSiswa);
+  router.get("/list-progres-siswa", token.authenticateToken, ProgresSiswa.listProgresSiswa);
+  router.post("/create-progres-siswa", token.authenticateToken, ProgresSiswa.createProgresSiswa);
   // router.post("/update-progresSiswa", token.authenticateToken, ProgresSiswa.updateProgresSiswa);
-  // router.post("/delete-progresSiswa", token.authenticateToken, ProgresSiswa.deleteProgresSiswa);
+  router.post("/delete-progres-siswa", token.authenticateToken, ProgresSiswa.deleteProgresSiswa);
   // router.post("/detailProgresSiswa", token.authenticateToken, ProgresSiswa.detailProgresSiswa);
+  //Rekap Siswa
+  router.get("/list-rekap-siswa", token.authenticateToken, ProgresSiswa.listRekapSiswa);
   // //Kas
   router.get("/list-kas", token.authenticateToken, Kas.listKas);
   router.post("/create-kas", token.authenticateToken, Kas.createKas);
@@ -169,7 +171,7 @@ module.exports = (app) => {
   router.post("/update-templateMessage", token.authenticateToken, TemplateMessage.updateTemplateMessage);
   router.post("/delete-templateMessage", token.authenticateToken, TemplateMessage.delete);
   router.post("/detailTemplateMessage", token.authenticateToken, TemplateMessage.detailTemplateMessage);
-  
+
   //Jurusan
   router.get("/list-jurusan", token.authenticateToken, Jurusan.listJurusan);
   router.post(
@@ -298,14 +300,14 @@ module.exports = (app) => {
   router.get("/getUnits", general.getUnit);
   router.get("/getListPpdbActive", general.getListPpdbActive);
   router.get("/getDataAbsensiFromToken", general.getDataAbsensiFromToken);
-  router.get("/get-list-balance-by-userId",token.authenticateToken, general.getListBalanceByUserId);
-  router.get("/get-riwayat-topup-by-userId",token.authenticateToken, general.getRiwayatToUpByUserId);
+  router.get("/get-list-balance-by-userId", token.authenticateToken, general.getListBalanceByUserId);
+  router.get("/get-riwayat-topup-by-userId", token.authenticateToken, general.getRiwayatToUpByUserId);
   router.post("/forgot-password", general.forgetPassword);
   router.post("/reset-new-password", general.resetNewPassword);
-  router.post("/new-password-all",  token.authenticateToken, general.newPasswordAll);
-  router.post("/send-message",  token.authenticateToken, general.sendMessages);
-  router.post("/send-message-payment-success",  token.authenticateToken, general.sendMessagesPaymentSuccess);
-  router.post("/send-message-payment-success-free",  token.authenticateToken, general.sendMessagesPaymentSuccessFree);
+  router.post("/new-password-all", token.authenticateToken, general.newPasswordAll);
+  router.post("/send-message", token.authenticateToken, general.sendMessages);
+  router.post("/send-message-payment-success", token.authenticateToken, general.sendMessagesPaymentSuccess);
+  router.post("/send-message-payment-success-free", token.authenticateToken, general.sendMessagesPaymentSuccessFree);
   router.post("/cekPin", token.authenticateToken, general.cekPin);
   router.post("/newPin", token.authenticateToken, general.newPin);
   router.post("/resetPin", token.authenticateToken, general.resetPin);

@@ -25,6 +25,25 @@ exports.listPembayaranPayByMonth = (req, res, next) => {
     }
   );
 };
+
+exports.listPaymentByAdminV2 = (req, res, next) => {
+  const month_name = req.query.q;
+  const school_id = req.query.school_id;
+  const user_id = req.query.user_id;
+
+  Pembayaran.listPaymentByAdminV2(
+    month_name,
+    school_id,
+    user_id,
+    (err, data) => {
+      if (err)
+        res.status(500).send({
+          message: err.message || "Some error occurred while retrieving Data.",
+        });
+      else res.send(data);
+    }
+  );
+};
 exports.listPembayaranPayByFree = (req, res, next) => {
   const school_id = req.query.school_id;
   const user_id = req.query.user_id;
@@ -155,7 +174,7 @@ exports.createPayWithBalanceMonth = [
       });
     }
 
-    const { dataUsers, dataPayment,  total_affiliate, total_amount } = req.body;
+    const { dataUsers, dataPayment, total_affiliate, total_amount } = req.body;
 
     try {
       // Create new admin object

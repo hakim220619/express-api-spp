@@ -148,9 +148,10 @@ module.exports = (app) => {
   //Progress Siswa
   router.get("/list-progres-siswa", token.authenticateToken, ProgresSiswa.listProgresSiswa);
   router.post("/create-progres-siswa", token.authenticateToken, ProgresSiswa.createProgresSiswa);
-  // router.post("/update-progresSiswa", token.authenticateToken, ProgresSiswa.updateProgresSiswa);
+  router.post("/update-progres-siswa", token.authenticateToken, ProgresSiswa.updateProgresSiswa);
   router.post("/delete-progres-siswa", token.authenticateToken, ProgresSiswa.deleteProgresSiswa);
-  // router.post("/detailProgresSiswa", token.authenticateToken, ProgresSiswa.detailProgresSiswa);
+  router.post("/send-whatsapp-progres-siswa", token.authenticateToken, ProgresSiswa.sendWhatsappProgresSiswa);
+  router.post("/send-progres-siswa", token.authenticateToken, ProgresSiswa.sendProgresSiswaByWhatsapp);
   //Rekap Siswa
   router.get("/list-rekap-siswa", token.authenticateToken, ProgresSiswa.listRekapSiswa);
   // //Kas
@@ -235,6 +236,9 @@ module.exports = (app) => {
   router.post("/create-topup-pending", token.authenticateToken, Pembayaran.createTopUpPending);
   router.post("/create-pay-with-balance-month", token.authenticateToken, Pembayaran.createPayWithBalanceMonth);
   router.post("/create-pay-with-balance-free", token.authenticateToken, Pembayaran.createPayWithBalanceFree);
+
+  //payment v2
+  router.get("/list-payment-byAdmin-v2", token.authenticateToken, Pembayaran.listPaymentByAdminV2);
   //Sekolah
   router.get("/list-unit", token.authenticateToken, Unit.listUnit);
   router.post("/create-unit", token.authenticateToken, Unit.createUnit);

@@ -200,7 +200,7 @@ SettingPembayaran.createPaymentByMonth = (newSettingPembayaran, result) => {
             ],
             (checkErr, existingPayments) => {
               console.log(existingPayments);
-              
+
               if (checkErr) {
                 console.log("error checking existing payment: ", checkErr);
                 return result(
@@ -311,7 +311,7 @@ SettingPembayaran.createPaymentByStudent = (newSettingPembayaran, result) => {
             ],
             (checkErr, existingPayments) => {
               console.log(existingPayments);
-              
+
               if (checkErr) {
                 console.log("error checking existing payment: ", checkErr);
                 return result(
@@ -319,7 +319,7 @@ SettingPembayaran.createPaymentByStudent = (newSettingPembayaran, result) => {
                   null
                 );
               }
-              
+
 
               if (existingPayments.length === 0) {
                 // Loop untuk setiap bulan

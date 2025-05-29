@@ -669,7 +669,6 @@ WHERE
     query += `AND p.school_id = '${schoolId}' `;
   }
 
-  // console.log(query);
 
   // Eksekusi query dengan atau tanpa parameter schoolId
   db.query(query, [schoolId], (err, res) => {

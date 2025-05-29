@@ -43,6 +43,7 @@ exports.listReportDate = (req, res, next) => {
     school_id: req.query.school_id,
     date_first: req.query.date_first,
     date_last: req.query.date_last,
+    status: req.query.status,
   };
 
   Report.listReportDate(dataAll, (err, data) => {
@@ -79,7 +80,7 @@ exports.listReportPaidorPending = (req, res, next) => {
     years: req.query.years,
     month: req.query.month
   };
-console.log(dataAll);
+  console.log(dataAll);
 
   Report.listReportPaidorPending(dataAll, (err, data) => {
     if (err)

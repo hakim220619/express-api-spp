@@ -28,11 +28,12 @@ exports.listMenuMain = (req, res, next) => {
   });
 };
 exports.listMenu = (req, res, next) => {
+
   const name = req.query.q;
   const school_id = req.query.school_id;
-  const is_active = req.query.is_active;
+  const role_id = req.query.role_id;
 
-  Menu.listMenu(name, school_id, is_active, (err, data) => {
+  Menu.listMenu(name, school_id, role_id, (err, data) => {
     if (err)
       res.status(500).send({
         message: err.message || "Some error occurred while retrieving Data.",
@@ -43,9 +44,9 @@ exports.listMenu = (req, res, next) => {
 exports.listMenuPermission = (req, res, next) => {
   const name = req.query.q;
   const school_id = req.query.school_id;
-  const status = req.query.status;
+  const role_id = req.query.role_id;
 
-  Menu.listMenuPermission(name, school_id, status, (err, data) => {
+  Menu.listMenuPermission(name, school_id, role_id, (err, data) => {
     if (err)
       res.status(500).send({
         message: err.message || "Some error occurred while retrieving Data.",
@@ -156,9 +157,9 @@ exports.updateMenu = [
     }
 
     try {
-    const { id, parent_id, name, icon, address, order_list } = req.body.data;
+      const { id, parent_id, name, icon, address, order_list } = req.body.data;
 
-     
+
       const menu = {
         id: id,
         parent_id: parent_id,
@@ -195,9 +196,9 @@ exports.updateMenuPermission = [
     }
 
     try {
-    const { id, school_id, menu_id, role_id, created, status, read, updated, deleted } = req.body.data;
+      const { id, school_id, menu_id, role_id, created, status, read, updated, deleted } = req.body.data;
 
-     
+
       const menu = {
         id: id,
         school_id: school_id,

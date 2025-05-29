@@ -6,8 +6,8 @@ const Report = function (data) {
 };
 
 Report.listReport = (dataAll, result) => {
-    console.log(dataAll.setting_payment_uid);
-    
+  console.log(dataAll.setting_payment_uid);
+
   let query =
     `SELECT ROW_NUMBER() OVER () AS no, p.id, p.unit_id, p.user_id, p.school_id, p.setting_payment_uid, p.years, p.type, p.amount, p.status, u.unit_name, p.month_id, m.month, sp.sp_name, us.full_name, s.school_name, s.address as school_address, 
 c.class_name, mj.major_name, us.nisn, p.updated_at,
@@ -40,7 +40,7 @@ AND p.major_id=mj.id`;
   if (dataAll.setting_payment_uid) {
     query += ` AND p.setting_payment_uid = '${dataAll.setting_payment_uid}'`;
   }
-  
+
 
 
   db.query(query, (err, res) => {
@@ -54,7 +54,7 @@ AND p.major_id=mj.id`;
   });
 };
 Report.listReportFree = (dataAll, result) => {
-    
+
   let query =
     `SELECT ROW_NUMBER() OVER () AS no, pd.*, p.unit_id, p.school_id, p.years, u.full_name, u.nisn, sp.sp_name, p.amount as amount_payment, ut.unit_name, s.school_name, c.class_name, m.major_name, s.address as school_address, (SELECT SUM(amount) as amount FROM affiliate WHERE school_id = u.school_id ) as affiliate
 FROM payment_detail pd, payment p, users u, setting_payment sp, unit ut, school s, class c, major m
@@ -96,11 +96,38 @@ AND p.major_id=m.id`;
     result(null, res);
   });
 };
+
+
 Report.listReportDate = (dataAll, result) => {
-    
-  let query =
-    `SELECT * FROM (
-    SELECT 
+  let conditions1 = [];
+  let conditions2 = [];
+  let outerCondition = [];
+
+  if (dataAll.school_id) {
+    conditions1.push(`p.school_id = '${dataAll.school_id}'`);
+    conditions2.push(`p.school_id = '${dataAll.school_id}'`);
+  }
+  if (dataAll.date_first && dataAll.date_last) {
+    conditions1.push(`DATE(p.updated_at) >= '${dataAll.date_first}' AND DATE(p.updated_at) <= '${dataAll.date_last}'`);
+    conditions2.push(`DATE(pd.created_at) >= '${dataAll.date_first}' AND DATE(pd.created_at) <= '${dataAll.date_last}'`);
+  }
+  if (dataAll.status) {
+    conditions1.push(`p.status = '${dataAll.status}'`);
+    conditions2.push(`pd.status = '${dataAll.status}'`);
+  }
+
+  let whereClause1 = conditions1.length ? 'WHERE ' + conditions1.join(' AND ') : '';
+  let whereClause2 = conditions2.length ? 'WHERE ' + conditions2.join(' AND ') : '';
+
+  if (dataAll.full_name) {
+    outerCondition.push(`full_name LIKE '%${dataAll.full_name}%'`);
+  }
+
+  let finalOuterCondition = outerCondition.length ? 'WHERE ' + outerCondition.join(' AND ') : '';
+
+  let query = `
+SELECT * FROM (
+  SELECT 
     ROW_NUMBER() OVER () AS no, 
     p.id, 
     p.unit_id, 
@@ -111,6 +138,7 @@ Report.listReportDate = (dataAll, result) => {
     p.type, 
     p.amount, 
     p.status, 
+    p.metode_pembayaran,
     u.unit_name, 
     p.month_id, 
     m.month, 
@@ -122,34 +150,31 @@ Report.listReportDate = (dataAll, result) => {
     mj.major_name, 
     us.nisn, 
     (SELECT SUM(af.amount) FROM affiliate af WHERE af.school_id = p.school_id) AS affiliate,
-    (p.amount + COALESCE((SELECT SUM(af.amount) FROM affiliate af WHERE af.school_id = p.school_id), 0)) AS total_payment,
+    p.amount AS total_payment,
     p.updated_at as date
-FROM 
+  FROM 
     payment p
-JOIN 
+  JOIN 
     school s ON p.school_id = s.id 
-JOIN 
+  JOIN 
     unit u ON p.unit_id = u.id 
-JOIN 
+  JOIN 
     months m ON p.month_id = m.id 
-JOIN 
+  JOIN 
     setting_payment sp ON p.setting_payment_uid = sp.uid 
-JOIN 
+  JOIN 
     users us ON p.user_id = us.id 
-LEFT JOIN 
+  LEFT JOIN 
     affiliate a ON p.school_id = a.school_id 
-JOIN 
+  JOIN 
     class c ON p.class_id = c.id
-JOIN 
+  JOIN 
     major mj ON p.major_id = mj.id
-WHERE 
-    p.school_id = '${dataAll.school_id}'
-    AND DATE(p.updated_at) >= '${dataAll.date_first}' 
-    AND DATE(p.updated_at) <= '${dataAll.date_last}'
+  ${whereClause1}
 
-UNION ALL
+  UNION ALL
 
-SELECT 
+  SELECT 
     ROW_NUMBER() OVER () AS no, 
     pd.id, 
     p.unit_id, 
@@ -160,6 +185,7 @@ SELECT
     pd.type, 
     pd.amount, 
     pd.status, 
+    pd.metode_pembayaran,
     ut.unit_name, 
     p.month_id, 
     NULL AS month, 
@@ -173,30 +199,27 @@ SELECT
     NULL AS affiliate, 
     pd.amount AS total_payment,
     p.created_at as date
-FROM 
+  FROM 
     payment_detail pd
-JOIN 
+  JOIN 
     payment p ON pd.payment_id = p.uid
-JOIN 
+  JOIN 
     users u ON pd.user_id = u.id 
-JOIN 
+  JOIN 
     setting_payment sp ON pd.setting_payment_uid = sp.uid 
-JOIN 
+  JOIN 
     unit ut ON p.unit_id = ut.id
-JOIN 
+  JOIN 
     school s ON p.school_id = s.id
-JOIN 
+  JOIN 
     class c ON p.class_id = c.id
-JOIN 
+  JOIN 
     major m ON p.major_id = m.id
-WHERE 
-    p.school_id = '${dataAll.school_id}'
-    AND DATE(pd.created_at) >= '${dataAll.date_first}' 
-    AND DATE(pd.created_at) <= '${dataAll.date_last}'
-    ) d WHERE full_name like '%${dataAll.full_name}%'
-;
+  ${whereClause2}
+) d
+${finalOuterCondition};
 `;
-// console.log(query);
+
 
   db.query(query, (err, res) => {
     if (err) {
@@ -204,14 +227,14 @@ WHERE
       result(null, err);
       return;
     }
-    // console.log("users: ", res);
     result(null, res);
   });
 };
 
 
+
 Report.listReportClass = (dataAll, result) => {
-    
+
   let query =
     `select * from (
     SELECT 
@@ -306,7 +329,7 @@ WHERE
     AND p.class_id = '${dataAll.class_id}'
 ) d WHERE full_name like '%${dataAll.full_name}%'
 `;
-// console.log(query);
+  // console.log(query);
 
   db.query(query, (err, res) => {
     if (err) {
@@ -319,7 +342,7 @@ WHERE
   });
 };
 Report.listReportPaidorPending = (dataAll, result) => {
-    
+
   let query = `
     SELECT * FROM (
     SELECT

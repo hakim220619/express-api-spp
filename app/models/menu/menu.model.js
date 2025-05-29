@@ -113,7 +113,7 @@ Menu.updateMenuPermission = (newData, result) => {
   );
 };
 
-Menu.listMenu = (name, school_id, status, result) => {
+Menu.listMenu = (name, school_id, role_id, result) => {
   let query =
     `
 SELECT ROW_NUMBER() OVER () AS no, 
@@ -139,12 +139,14 @@ LEFT JOIN menu_permission mp ON m.id = mp.menu_id where 1=1
   if (name) {
     query += ` AND m.name like '%${name}%'`;
   }
+
   if (school_id) {
     query += ` AND mp.school_id = '${school_id}'`;
   }
-  if (status) {
-    query += ` AND mp.status = '${status}'`;
+  if (role_id) {
+    query += ` AND mp.role_id = '${role_id}'`;
   }
+
   query += ` order by m.order_list asc`;
 
 
@@ -155,7 +157,7 @@ LEFT JOIN menu_permission mp ON m.id = mp.menu_id where 1=1
       result(null, err);
       return;
     }
-    // console.log("users: ", res);
+    // console.log(res);
     result(null, res);
   });
 };
@@ -187,23 +189,26 @@ where 1=1
   });
 };
 
-Menu.listMenuPermission = (name, school_id, is_active, result) => {
+Menu.listMenuPermission = (name, school_id, role_id, result) => {
   let query =
     `
 SELECT ROW_NUMBER() OVER () AS no, 
       m.*, mn.name as menu_name, s.school_name, r.role_name
 FROM menu_permission m, menu mn, school s, role r where m.menu_id=mn.id AND m.school_id=s.id AND m.role_id=r.id
     `;
+  console.log(school_id);
 
   if (name) {
     query += ` AND mn.name like '%${name}%'`;
   }
-  if (school_id) {
+  if (school_id && school_id != 1) {
     query += ` AND m.school_id = '${school_id}'`;
+
+    if (role_id) {
+      query += ` AND m.role_id = '${role_id}'`;
+    }
   }
-  if (is_active) {
-    query += ` AND m.status = '${is_active}'`;
-  }
+
   query += ` order by m.created_at asc`;
 
 

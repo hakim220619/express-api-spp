@@ -91,6 +91,84 @@ JOIN
     result(null, res);
   });
 };
+
+Pembayaran.listPaymentByAdminV2 = (
+  sp_name,
+  school_id,
+  user_id,
+  result
+) => {
+  let query = `SELECT
+    ROW_NUMBER() OVER () AS no,
+    p.id,
+    p.uid,
+    p.user_id,
+    p.school_id,
+    p.setting_payment_uid,
+    p.years,
+    p.type,
+    p.status,
+    p.amount,
+    u.full_name,
+    c.class_name,
+    m.major_name,
+    sp.sp_name,
+    ut.unit_name,
+    p.unit_id,
+    CASE
+        WHEN p.type = 'BEBAS' THEN (SELECT mn.month FROM months mn WHERE mn.month_number = EXTRACT(MONTH FROM p.created_at) LIMIT 1)
+        ELSE ms.month
+    END AS month_name,
+    CASE
+        WHEN p.type = 'BEBAS' THEN (SELECT mn.month_number FROM months mn WHERE mn.month_number = EXTRACT(MONTH FROM p.created_at) LIMIT 1)
+        ELSE ms.month_number
+    END AS month_number,
+        CASE
+        WHEN p.type = 'BEBAS' THEN (SELECT SUM(amount) FROM payment_detail pd WHERE pd.payment_id = p.uid AND pd.status = 'Paid')
+        ELSE ''
+    END AS sum_detail_payment_lunas,
+    CASE
+        WHEN p.type = 'BEBAS' THEN p.amount - (SELECT SUM(amount) FROM payment_detail pd WHERE pd.payment_id = p.uid AND pd.status = 'Paid')
+        ELSE ''
+    END AS sum_detail_payment_tunggakan
+FROM
+    payment p
+JOIN
+    users u ON p.user_id = u.id
+JOIN
+    class c ON p.class_id = c.id
+JOIN
+    major m ON p.major_id = m.id
+JOIN
+    unit ut ON p.unit_id = ut.id
+LEFT JOIN
+	  months ms ON p.month_id=ms.id
+JOIN
+    setting_payment sp ON p.setting_payment_uid = sp.uid `;
+
+  if (sp_name) {
+    query += ` AND sp.sp_name like '%${sp_name}%'`;
+  }
+  if (school_id) {
+    query += ` AND p.school_id = '${school_id}'`;
+  }
+  if (user_id) {
+    query += ` AND p.user_id = '${user_id}'`;
+  }
+
+  query += `ORDER BY p.status, month_number ASC`;
+  console.log(query);
+
+  db.query(query, (err, res) => {
+    if (err) {
+      console.log("error: ", err);
+      result(null, err);
+      return;
+    }
+    // console.log("users: ", res);
+    result(null, res);
+  });
+};
 Pembayaran.listPembayaranPayByFree = (
   school_id,
   user_id,
@@ -1886,7 +1964,7 @@ Pembayaran.updateSuccessFree = async (newPayment, result) => {
           result(err, null);
         } else if (rows.length > 0) {
           console.log(jenisPembayaran);
-          
+
           // Record exists, update it
           db.query(
             "UPDATE payment_detail SET metode_pembayaran = ?, redirect_url = ?, status = ?, created_at = ?, uid = ?, user_id = ?, payment_id = ?, setting_payment_uid = ?, type = ?, amount = ?, jenis_pembayaran = ?, updated_by = ? WHERE order_id = ?",
@@ -1904,11 +1982,11 @@ Pembayaran.updateSuccessFree = async (newPayment, result) => {
               jenisPembayaran,
               dataPayment.user_id,
               order_id,
-              
+
             ],
             (updateErr, updateRes) => {
               console.log('asdasdas');
-              
+
               if (updateErr) {
                 console.error("Error updating payment_detail: ", updateErr);
                 result(updateErr, null);
@@ -1935,8 +2013,8 @@ Pembayaran.updateSuccessFree = async (newPayment, result) => {
               dataPayment.uid, // payment_id
               dataPayment.setting_payment_uid, // setting_payment_uid
               dataPayment.type, // type
-              newPayment.total_amount, 
-              jenisPembayaran, 
+              newPayment.total_amount,
+              jenisPembayaran,
               dataPayment.user_id
             ],
             (insertErr, insertRes) => {
@@ -1947,7 +2025,7 @@ Pembayaran.updateSuccessFree = async (newPayment, result) => {
                 );
                 result(insertErr, null);
               } else {
-                
+
                 result(null, {
                   message: "Payment inserted successfully",
                   id: insertRes.insertId,

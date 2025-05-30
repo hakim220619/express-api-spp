@@ -161,33 +161,31 @@ LEFT JOIN menu_permission mp ON m.id = mp.menu_id where 1=1
     result(null, res);
   });
 };
-
 Menu.listMenuMain = (name, result) => {
-  let query =
-    `
-SELECT ROW_NUMBER() OVER () AS no, 
-       m.*
-FROM menu m
-where 1=1
-    `;
+  let query = `
+    SELECT ROW_NUMBER() OVER () AS no, 
+           m.*
+    FROM menu m
+    WHERE 1=1
+  `;
 
   if (name) {
-    query += ` AND m.name like '%${name}%'`;
+    query += ` AND m.name LIKE '%${name}%'`;
   }
-  query += ` order by m.order_list asc`;
 
+
+  query += ` ORDER BY m.order_list ASC`;
 
   db.query(query, (err, res) => {
-
     if (err) {
       console.log("error: ", err);
       result(null, err);
       return;
     }
-    // console.log("users: ", res);
     result(null, res);
   });
 };
+
 
 Menu.listMenuPermission = (name, school_id, role_id, result) => {
   let query =

@@ -9,7 +9,7 @@ const {
   insertKas,
 } = require("../../helpers/helper");
 
-const General = function (data) {};
+const General = function (data) { };
 
 General.findUsersByUid = async (uid, result) => {
   let query =
@@ -1035,44 +1035,44 @@ General.sendMessagesPaymentSuccessFree = async (
   result
 ) => {
   try {
-const { DB_HOST, DB_NAME, DB_USER, DB_PASSWORD } = process.env;
-  const pool = mysql.createPool({
-    host: DB_HOST,
-    user: DB_USER,
-    password: DB_PASSWORD,
-    database: DB_NAME,
-    waitForConnections: true,
-    connectionLimit: 10,
-    queueLimit: 0,
-  });
+    const { DB_HOST, DB_NAME, DB_USER, DB_PASSWORD } = process.env;
+    const pool = mysql.createPool({
+      host: DB_HOST,
+      user: DB_USER,
+      password: DB_PASSWORD,
+      database: DB_NAME,
+      waitForConnections: true,
+      connectionLimit: 10,
+      queueLimit: 0,
+    });
 
-  let paymentConnection;
-  paymentConnection = await pool.getConnection();
+    let paymentConnection;
+    paymentConnection = await pool.getConnection();
 
-  const [dataAplikasi] = await paymentConnection.query(
-    "SELECT * FROM aplikasi WHERE school_id = ?",
-    [dataUsers.school_id]
-  );
+    const [dataAplikasi] = await paymentConnection.query(
+      "SELECT * FROM aplikasi WHERE school_id = ?",
+      [dataUsers.school_id]
+    );
 
-  const midtransServerKey = dataAplikasi[0].serverKey;
-  console.log(dataAplikasi);
+    const midtransServerKey = dataAplikasi[0].serverKey;
+    console.log(dataAplikasi);
 
-  const authHeader = Buffer.from(midtransServerKey + ":").toString("base64");
+    const authHeader = Buffer.from(midtransServerKey + ":").toString("base64");
 
-  const url = `${dataAplikasi[0].urlCekTransaksiMidtrans}/v2/${dataUsers.order_id}/status`;
+    const url = `${dataAplikasi[0].urlCekTransaksiMidtrans}/v2/${dataUsers.order_id}/status`;
 
-  // Make request to Midtrans API
-  const response = await axios.get(url, {
-    headers: {
-      Authorization: `Basic ${authHeader}`,
-      "Content-Type": "application/json",
-    },
-  });
+    // Make request to Midtrans API
+    const response = await axios.get(url, {
+      headers: {
+        Authorization: `Basic ${authHeader}`,
+        "Content-Type": "application/json",
+      },
+    });
 
-  const dataResponse = response.data;
+    const dataResponse = response.data;
 
 
-  // if (dataResponse.status_code == 200) {
+    // if (dataResponse.status_code == 200) {
 
 
     let failedMessages = [];
@@ -1081,31 +1081,31 @@ const { DB_HOST, DB_NAME, DB_USER, DB_PASSWORD } = process.env;
 
     let jenisPembayaran = "";
 
-if (dataUsers.metode_pembayaran == 'Online') {
-  
+    if (dataUsers.metode_pembayaran == 'Online') {
 
 
-    if (dataResponse.permata_va_number) {
-      jenisPembayaran = "Permata".toUpperCase();
-    } else if (dataResponse.payment_type === "bank_transfer") {
-      jenisPembayaran = dataResponse.va_numbers
-        ? dataResponse.va_numbers[0].bank.toUpperCase()
-        : "";
-    } else if (dataResponse.payment_type === "echannel") {
-      jenisPembayaran = "Mandiri".toUpperCase();
-    } else if (dataResponse.payment_type === "qris") {
-      jenisPembayaran =
-        `${dataResponse.payment_type.toUpperCase()}, ${dataResponse.issuer
+
+      if (dataResponse.permata_va_number) {
+        jenisPembayaran = "Permata".toUpperCase();
+      } else if (dataResponse.payment_type === "bank_transfer") {
+        jenisPembayaran = dataResponse.va_numbers
+          ? dataResponse.va_numbers[0].bank.toUpperCase()
+          : "";
+      } else if (dataResponse.payment_type === "echannel") {
+        jenisPembayaran = "Mandiri".toUpperCase();
+      } else if (dataResponse.payment_type === "qris") {
+        jenisPembayaran =
+          `${dataResponse.payment_type.toUpperCase()}, ${dataResponse.issuer
+            .replace(/airpay/gi, "")
+            .toUpperCase()}` || "";
+      } else {
+        jenisPembayaran = `${dataResponse.payment_type.toUpperCase()}, ${dataResponse.issuer
           .replace(/airpay/gi, "")
-          .toUpperCase()}` || "";
+          .toUpperCase()}`;
+      }
     } else {
-      jenisPembayaran = `${dataResponse.payment_type.toUpperCase()}, ${dataResponse.issuer
-        .replace(/airpay/gi, "")
-        .toUpperCase()}`;
+      jenisPembayaran = 'Tunai'
     }
-  } else {
-    jenisPembayaran = 'Tunai'
-  }
     const query = `
       SELECT a.urlWa, a.token_whatsapp, a.sender 
       FROM aplikasi a 
@@ -1213,7 +1213,7 @@ if (dataUsers.metode_pembayaran == 'Online') {
         return;
       }
     });
-  
+
   } catch (err) {
     console.error("Terjadi kesalahan:", err);
     result(null, {
@@ -1223,7 +1223,7 @@ if (dataUsers.metode_pembayaran == 'Online') {
     });
     return;
   }
-  
+
 };
 
 General.sendMessageBroadcast = async (
@@ -1677,7 +1677,7 @@ WHERE
                 }
                 await paymentConnection.query(
                   "UPDATE payment SET status = ?, jenis_pembayaran = ?, updated_by = ?, updated_at = ? WHERE order_id = ?",
-                  ["Paid", jenisPembayaran, payment.user_id,  new Date(), payment.order_id], // Use payment.order_id here
+                  ["Paid", jenisPembayaran, payment.user_id, new Date(), payment.order_id], // Use payment.order_id here
                   (error, results) => {
                     if (error) {
                       console.error("Error updating payment status:", error);
@@ -1928,24 +1928,24 @@ WHERE
                     );
                     let jenisPembayaran = "";
 
-                if (dataResponse.permata_va_number) {
-                  jenisPembayaran = "Permata".toUpperCase();
-                } else if (dataResponse.payment_type === "bank_transfer") {
-                  jenisPembayaran = dataResponse.va_numbers
-                    ? dataResponse.va_numbers[0].bank.toUpperCase()
-                    : "";
-                } else if (dataResponse.payment_type === "echannel") {
-                  jenisPembayaran = "Mandiri".toUpperCase();
-                } else if (dataResponse.payment_type === "qris") {
-                  jenisPembayaran =
-                    `${dataResponse.payment_type.toUpperCase()}, ${dataResponse.issuer
-                      .replace(/airpay/gi, "")
-                      .toUpperCase()}` || "";
-                } else {
-                  jenisPembayaran = `${dataResponse.payment_type.toUpperCase()}, ${dataResponse.issuer
-                    .replace(/airpay/gi, "")
-                    .toUpperCase()}`;
-                }
+                    if (dataResponse.permata_va_number) {
+                      jenisPembayaran = "Permata".toUpperCase();
+                    } else if (dataResponse.payment_type === "bank_transfer") {
+                      jenisPembayaran = dataResponse.va_numbers
+                        ? dataResponse.va_numbers[0].bank.toUpperCase()
+                        : "";
+                    } else if (dataResponse.payment_type === "echannel") {
+                      jenisPembayaran = "Mandiri".toUpperCase();
+                    } else if (dataResponse.payment_type === "qris") {
+                      jenisPembayaran =
+                        `${dataResponse.payment_type.toUpperCase()}, ${dataResponse.issuer
+                          .replace(/airpay/gi, "")
+                          .toUpperCase()}` || "";
+                    } else {
+                      jenisPembayaran = `${dataResponse.payment_type.toUpperCase()}, ${dataResponse.issuer
+                        .replace(/airpay/gi, "")
+                        .toUpperCase()}`;
+                    }
                     db.query(
                       `SELECT tm.*, a.urlWa, a.token_whatsapp, a.sender
                        FROM template_message tm
@@ -2546,7 +2546,7 @@ and p.user_id = '${userId}'`;
                   );
                 });
               });
-              
+
               let jenisPembayaran = "";
 
               if (dataResponse.permata_va_number) {
@@ -2567,11 +2567,11 @@ and p.user_id = '${userId}'`;
                   .replace(/airpay/gi, "")
                   .toUpperCase()}`;
               }
-console.log(jenisPembayaran);
+              console.log(jenisPembayaran);
 
               paymentConnection.query(
                 "UPDATE payment SET status = ?, jenis_pembayaran = ?, updated_at = ?, updated_by = ? WHERE order_id = ?",
-                ["Paid", jenisPembayaran, new Date(),payment.user_id, payment.order_id,  ], // Use payment.order_id here
+                ["Paid", jenisPembayaran, new Date(), payment.user_id, payment.order_id,], // Use payment.order_id here
                 (error, results) => {
                   if (error) {
                     console.error("Error updating payment status:", error);
@@ -2649,7 +2649,7 @@ console.log(jenisPembayaran);
                         total_midtrans: formatRupiah(dataResponse.gross_amount),
                       };
 
-                     
+
                       // Replace placeholders in the template
                       const formattedMessage = template_message.replace(
                         /\$\{(\w+)\}/g,
@@ -2907,7 +2907,7 @@ and pd.user_id = '${userId}'`;
               // Update payment status
               await paymentConnection.query(
                 "UPDATE payment_detail SET status = ?, jenis_pembayaran = ?, updated_by = ?, updated_at = ? WHERE order_id = ?",
-                ["Paid", jenisPembayaran, payment.user_id,  new Date(), payment.order_id] // Use payment.order_id here
+                ["Paid", jenisPembayaran, payment.user_id, new Date(), payment.order_id] // Use payment.order_id here
               );
 
               const kasData = {
@@ -2935,7 +2935,7 @@ and pd.user_id = '${userId}'`;
               };
 
               await insertMmLogs(logData);
-            
+
               db.query(
                 `SELECT tm.*, a.urlWa, a.token_whatsapp, a.sender 
                  FROM template_message tm, aplikasi a 
@@ -3770,7 +3770,7 @@ General.getMonths = async (schoolId, result) => {
   });
 };
 General.rolePermissions = async (school_id, role_id, result) => {
-  
+
   // Siapkan query dasar
   let query = `SELECT ROW_NUMBER() OVER () AS no, 
        m.id, 
@@ -3809,7 +3809,7 @@ RIGHT JOIN menu_permission mp ON m.id = mp.menu_id where 1=1 `;
     res.forEach((row) => {
       const path = row.address; // Assuming 'path' is the column name for the route
       const roleId = row.role; // Assuming 'role' is the column name for role identifier
-    
+
       // Filter out the empty path
       if (path !== '') {
         if (!rolePermissions[path]) {
